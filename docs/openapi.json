@@ -1,0 +1,1643 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TeleReason",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system": {
+      "get": {
+        "summary": "System",
+        "operationId": "system_api_system_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gate": {
+      "get": {
+        "summary": "Gate",
+        "operationId": "gate_api_gate_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/report/latest": {
+      "get": {
+        "summary": "Latest Report",
+        "operationId": "latest_report_api_report_latest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/windows": {
+      "get": {
+        "summary": "List Windows",
+        "operationId": "list_windows_api_windows_get",
+        "parameters": [
+          {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "FactoryWave",
+                    "AURSAD"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line"
+            }
+          },
+          {
+            "name": "flagged",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flagged"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "score",
+                    "deviation"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WindowListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/windows/{window_id}": {
+      "get": {
+        "summary": "Get Window",
+        "operationId": "get_window_api_windows__window_id__get",
+        "parameters": [
+          {
+            "name": "window_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Window Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WindowDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/windows/{window_id}/signals": {
+      "get": {
+        "summary": "Get Signals",
+        "operationId": "get_signals_api_windows__window_id__signals_get",
+        "parameters": [
+          {
+            "name": "window_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Window Id"
+            }
+          },
+          {
+            "name": "channels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated channel names; default: look_first plus two more.",
+              "title": "Channels"
+            },
+            "description": "Comma-separated channel names; default: look_first plus two more."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ask": {
+      "post": {
+        "summary": "Ask",
+        "operationId": "ask_api_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream; one schema item is one `event:` plus `data:` message.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ToolCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolResultMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AnswerMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DoneMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorMessage"
+                    }
+                  ],
+                  "title": "Response Ask Api Ask Post",
+                  "discriminator": {
+                    "propertyName": "event",
+                    "mapping": {
+                      "tool_call": "#/components/schemas/ToolCallMessage",
+                      "tool_result": "#/components/schemas/ToolResultMessage",
+                      "answer": "#/components/schemas/AnswerMessage",
+                      "done": "#/components/schemas/DoneMessage",
+                      "error": "#/components/schemas/ErrorMessage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/examples": {
+      "get": {
+        "summary": "Examples",
+        "operationId": "examples_api_examples_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamplesResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/night-runs": {
+      "post": {
+        "summary": "Start Night Run",
+        "operationId": "start_night_run_api_night_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NightRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NightRunStarted"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/night-runs/{run_id}": {
+      "get": {
+        "summary": "Get Night Run",
+        "operationId": "get_night_run_api_night_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NightRunProgress"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnswerEvent": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "answer_source": {
+            "type": "string",
+            "enum": [
+              "tool",
+              "model"
+            ],
+            "title": "Answer Source"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "answer_source",
+          "text"
+        ],
+        "title": "AnswerEvent"
+      },
+      "AnswerMessage": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "answer",
+            "title": "Event"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AnswerEvent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "AnswerMessage"
+      },
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Question"
+          },
+          "window_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
+      "DoneEvent": {
+        "properties": {
+          "total_ms": {
+            "type": "integer",
+            "title": "Total Ms"
+          },
+          "tokens": {
+            "type": "integer",
+            "title": "Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_ms",
+          "tokens"
+        ],
+        "title": "DoneEvent"
+      },
+      "DoneMessage": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "done",
+            "title": "Event"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DoneEvent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "DoneMessage"
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "bad_request",
+              "not_found",
+              "busy",
+              "rate_limited",
+              "engine_not_ready",
+              "not_implemented"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail"
+      },
+      "ErrorMessage": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "error",
+            "title": "Event"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "ErrorMessage"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Example": {
+        "properties": {
+          "lang": {
+            "type": "string",
+            "enum": [
+              "en",
+              "tr"
+            ],
+            "title": "Lang"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lang",
+          "text"
+        ],
+        "title": "Example"
+      },
+      "ExamplesResponse": {
+        "properties": {
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/Example"
+            },
+            "type": "array",
+            "title": "Examples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "examples"
+        ],
+        "title": "ExamplesResponse"
+      },
+      "Fact": {
+        "properties": {
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "window_mean": {
+            "type": "number",
+            "title": "Window Mean"
+          },
+          "normal_mean": {
+            "type": "number",
+            "title": "Normal Mean"
+          },
+          "difference": {
+            "type": "number",
+            "title": "Difference"
+          },
+          "z": {
+            "type": "number",
+            "title": "Z"
+          },
+          "plain": {
+            "type": "string",
+            "title": "Plain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal",
+          "window_mean",
+          "normal_mean",
+          "difference",
+          "z",
+          "plain"
+        ],
+        "title": "Fact"
+      },
+      "FeatureContribution": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "contribution"
+        ],
+        "title": "FeatureContribution"
+      },
+      "GateLine": {
+        "properties": {
+          "line": {
+            "type": "string",
+            "enum": [
+              "FactoryWave",
+              "AURSAD"
+            ],
+            "title": "Line"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "screening",
+              "open"
+            ],
+            "title": "Verdict"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "auroc": {
+            "type": "number",
+            "title": "Auroc"
+          },
+          "auroc_ci": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Auroc Ci"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "verdict",
+          "label",
+          "auroc",
+          "auroc_ci",
+          "explanation"
+        ],
+        "title": "GateLine"
+      },
+      "GateResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/GateLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "lines"
+        ],
+        "title": "GateResponse"
+      },
+      "GpuInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "memory_total_gb": {
+            "type": "number",
+            "title": "Memory Total Gb"
+          },
+          "memory_used_gb": {
+            "type": "number",
+            "title": "Memory Used Gb"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "memory_total_gb",
+          "memory_used_gb"
+        ],
+        "title": "GpuInfo"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "fake",
+              "vllm"
+            ],
+            "title": "Engine"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "engine",
+          "model",
+          "ready"
+        ],
+        "title": "HealthResponse"
+      },
+      "LastNight": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "timings_s": {
+            "$ref": "#/components/schemas/Timings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "timings_s"
+        ],
+        "title": "LastNight"
+      },
+      "NightRunProgress": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "gate",
+                  "facts",
+                  "scan",
+                  "report"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "timings_s": {
+            "$ref": "#/components/schemas/StepTimings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "step",
+          "done",
+          "total",
+          "timings_s"
+        ],
+        "title": "NightRunProgress"
+      },
+      "NightRunRequest": {
+        "properties": {
+          "max_windows": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Max Windows",
+            "default": 300
+          }
+        },
+        "type": "object",
+        "title": "NightRunRequest"
+      },
+      "NightRunStarted": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "NightRunStarted"
+      },
+      "ReportItem": {
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "title": "Window Id"
+          },
+          "task": {
+            "type": "string",
+            "title": "Task"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "look_first": {
+            "type": "string",
+            "title": "Look First"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_id",
+          "task",
+          "score",
+          "look_first",
+          "note",
+          "verified"
+        ],
+        "title": "ReportItem"
+      },
+      "ReportLine": {
+        "properties": {
+          "line": {
+            "type": "string",
+            "enum": [
+              "FactoryWave",
+              "AURSAD"
+            ],
+            "title": "Line"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "screening",
+              "open"
+            ],
+            "title": "Verdict"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReportItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "verdict",
+          "label",
+          "scanned",
+          "flagged",
+          "threshold",
+          "items"
+        ],
+        "title": "ReportLine"
+      },
+      "ReportResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "timings_s": {
+            "$ref": "#/components/schemas/Timings"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReportLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "timings_s",
+          "lines"
+        ],
+        "title": "ReportResponse"
+      },
+      "SignalChannel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "values": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "normal_low": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Normal Low"
+          },
+          "normal_high": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Normal High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "values",
+          "normal_low",
+          "normal_high"
+        ],
+        "title": "SignalChannel"
+      },
+      "SignalsResponse": {
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "title": "Window Id"
+          },
+          "t_s": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T S"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/SignalChannel"
+            },
+            "type": "array",
+            "title": "Channels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_id",
+          "t_s",
+          "channels"
+        ],
+        "title": "SignalsResponse"
+      },
+      "StepTimings": {
+        "properties": {
+          "gate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gate"
+          },
+          "facts": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facts"
+          },
+          "scan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scan"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report"
+          }
+        },
+        "type": "object",
+        "title": "StepTimings",
+        "description": "Seconds per finished step; `null` while the step has not finished."
+      },
+      "SystemResponse": {
+        "properties": {
+          "gpu": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GpuInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "$ref": "#/components/schemas/Versions"
+          },
+          "last_night": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastNight"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "gpu",
+          "versions",
+          "last_night"
+        ],
+        "title": "SystemResponse"
+      },
+      "Timings": {
+        "properties": {
+          "gate": {
+            "type": "number",
+            "title": "Gate"
+          },
+          "facts": {
+            "type": "number",
+            "title": "Facts"
+          },
+          "scan": {
+            "type": "number",
+            "title": "Scan"
+          },
+          "report": {
+            "type": "number",
+            "title": "Report"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gate",
+          "facts",
+          "scan",
+          "report",
+          "total"
+        ],
+        "title": "Timings"
+      },
+      "ToolCallEvent": {
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          }
+        },
+        "type": "object",
+        "required": [
+          "turn",
+          "tool",
+          "args"
+        ],
+        "title": "ToolCallEvent"
+      },
+      "ToolCallMessage": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "tool_call",
+            "title": "Event"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ToolCallEvent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "ToolCallMessage"
+      },
+      "ToolResultEvent": {
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "title": "Turn"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "ms": {
+            "type": "integer",
+            "title": "Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "turn",
+          "tool",
+          "summary",
+          "ms"
+        ],
+        "title": "ToolResultEvent"
+      },
+      "ToolResultMessage": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "tool_result",
+            "title": "Event"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ToolResultEvent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "ToolResultMessage"
+      },
+      "Versions": {
+        "properties": {
+          "rocm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rocm"
+          },
+          "vllm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vllm"
+          },
+          "xgboost": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xgboost"
+          },
+          "python": {
+            "type": "string",
+            "title": "Python"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rocm",
+          "vllm",
+          "xgboost",
+          "python"
+        ],
+        "title": "Versions"
+      },
+      "WindowDetail": {
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "title": "Window Id"
+          },
+          "line": {
+            "type": "string",
+            "enum": [
+              "FactoryWave",
+              "AURSAD"
+            ],
+            "title": "Line"
+          },
+          "task": {
+            "type": "string",
+            "title": "Task"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "screening",
+              "open"
+            ],
+            "title": "Verdict"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged"
+          },
+          "look_first": {
+            "type": "string",
+            "title": "Look First"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          },
+          "top_features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureContribution"
+            },
+            "type": "array",
+            "title": "Top Features"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_id",
+          "line",
+          "task",
+          "verdict",
+          "score",
+          "flagged",
+          "look_first",
+          "facts",
+          "top_features",
+          "note",
+          "verified"
+        ],
+        "title": "WindowDetail"
+      },
+      "WindowListResponse": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WindowSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total",
+          "items"
+        ],
+        "title": "WindowListResponse"
+      },
+      "WindowSummary": {
+        "properties": {
+          "window_id": {
+            "type": "string",
+            "title": "Window Id"
+          },
+          "line": {
+            "type": "string",
+            "enum": [
+              "FactoryWave",
+              "AURSAD"
+            ],
+            "title": "Line"
+          },
+          "task": {
+            "type": "string",
+            "title": "Task"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flagged"
+          },
+          "look_first": {
+            "type": "string",
+            "title": "Look First"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_id",
+          "line",
+          "task",
+          "score",
+          "flagged",
+          "look_first",
+          "verified"
+        ],
+        "title": "WindowSummary"
+      }
+    }
+  }
+}

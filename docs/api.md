@@ -24,8 +24,11 @@ Status: **draft v0**. Values in the examples are illustrative; `fixtures/` (issu
 | 409 | `busy` | A night run is already active |
 | 429 | `rate_limited` | Too many requests to `/api/ask` or `POST /api/night-runs` |
 | 503 | `engine_not_ready` | The model engine is still loading |
+| 501 | `not_implemented` | Endpoint stub not built yet (development only; none remain at v1.0) |
 
 A change to any schema goes in one PR together with the matching `fixtures/` files and carries the `api-change` label.
+
+The Pydantic models are in `backend/telereason/api/schemas.py`. `docs/openapi.json` is generated from them (in `backend/`: `uv run python -m telereason.api.export_openapi`), and a test fails when it is out of date. Frontend types are generated from it.
 
 ## Endpoints
 
@@ -61,7 +64,7 @@ A change to any schema goes in one PR together with the matching `fixtures/` fil
 }
 ```
 
-`gpu` is `null` when no GPU is visible (fake mode on a laptop).
+`gpu` is `null` when no GPU is visible (fake mode on a laptop). A `versions` entry other than `python` is `null` when that package is not installed. `last_night` is `null` before the first stored night run.
 
 ### GET /api/gate
 
@@ -117,6 +120,7 @@ A change to any schema goes in one PR together with the matching `fixtures/` fil
 
 - AURSAD `items` are sorted by `score`, highest first. FactoryWave `items` are the windows with the largest deviations.
 - `verified: false` means the note did not pass the verifier; the frontend then shows facts only, not the note.
+- On a line without a score (`closed`), `score`, `flagged` and `threshold` are `null`. The same holds for `score` and `flagged` in `/api/windows` and `/api/windows/{window_id}`.
 
 ### GET /api/windows
 
@@ -195,7 +199,8 @@ event: done
 data: {"total_ms": 3400, "tokens": 812}
 ```
 
-- An `error` event (`data` = the error shape above) ends the stream early.
+- An `error` event (`data` = the error shape above) ends the stream early. Errors before the stream starts (for example `bad_request`, `rate_limited`) are plain JSON responses.
+- Payload models in `/openapi.json`: `ToolCallEvent`, `ToolResultEvent`, `AnswerEvent`, `DoneEvent` and `ErrorResponse`. The 200 response describes one message as `{"event", "data"}`.
 - A comment line (`: ping`) is sent every 15 s so proxies keep the stream open; clients ignore it.
 - `answer_source` is `tool` when the answer comes from a tool result, `model` otherwise.
 - Action requests (for example "stop the robot") are refused in `text`.
@@ -232,4 +237,4 @@ Only one run at a time: while one is active, the response is `409` with code `bu
 }
 ```
 
-`status`: `queued` | `running` | `done` | `failed`. `step`: `gate` | `facts` | `scan` | `report`.
+`status`: `queued` | `running` | `done` | `failed`. `step`: `gate` | `facts` | `scan` | `report`, `null` while queued. Every step appears in `timings_s`; a step that has not finished is `null`.
