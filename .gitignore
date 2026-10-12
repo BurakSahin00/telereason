@@ -218,3 +218,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# TeleReason
+.env
+/data/
+/models/
+*.safetensors
+*.parquet
+*.whl
+*.sqlite
+node_modules/
+frontend/dist/
+.claude/
+CLAUDE.md
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

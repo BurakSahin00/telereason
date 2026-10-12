@@ -1,0 +1,11 @@
+# Owner first, reviewer second: whoever opens the PR, the other one is asked to review.
+# Replace seziyy and buraksal52 with real GitHub usernames before committing.
+/frontend/                   @seziyy @BurakSahin00
+/backend/telereason/api/     @BurakSahin00 @buraksal52
+/backend/telereason/store/   @buraksal52 @BurakSahin00
+/backend/telereason/ai/      @BurakSahin00 @buraksal52
+/backend/telereason/night/   @buraksal52 @BurakSahin00
+/backend/telereason/data/    @buraksal52 @BurakSahin00
+/fixtures/                   @BurakSahin00 @seziyy
+/docs/api.md                 @BurakSahin00 @seziyy
+/infra/                      @BurakSahin00 @buraksal52
