@@ -239,3 +239,6 @@ desktop.ini
 .DS_Store
 Thumbs.db
 desktop.ini
+
+#data
+backend/data/
