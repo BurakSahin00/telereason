@@ -1,0 +1,50 @@
+@import url("node_modules/@fontsource/plus-jakarta-sans/latin-400.css");
+@import url("node_modules/@fontsource/plus-jakarta-sans/latin-500.css");
+@import url("node_modules/@fontsource/plus-jakarta-sans/latin-600.css");
+@import url("node_modules/@fontsource/plus-jakarta-sans/latin-700.css");
+@import url("node_modules/@fontsource/ibm-plex-mono/latin-400.css");
+@import url("node_modules/@fontsource/ibm-plex-mono/latin-500.css");
+
+:root {
+  --bg: #111212; --panel: #18191A; --raised: #202122; --line: #343637; --line-strong: #5B5E5F;
+  --text: #EEEEEA; --muted: #A2A5A3; --dim: #6C706E;
+  --closed: #EEEEEA; --screening: #E9A23B; --open: #4CC27A; --fault: #E5484D;
+  --sans: "Plus Jakarta Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: var(--sans); font-size: 18px; line-height: 1.45; }
+.mono { font-family: var(--mono); }
+.label { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.panel { border: 1px solid var(--line); --fill: var(--panel); background: var(--fill); padding: 22px 26px; }
+.brackets { --b: var(--line-strong); --s: 14px; background:
+  linear-gradient(var(--b),var(--b)) left top / var(--s) 1.5px no-repeat, linear-gradient(var(--b),var(--b)) left top / 1.5px var(--s) no-repeat,
+  linear-gradient(var(--b),var(--b)) right top / var(--s) 1.5px no-repeat, linear-gradient(var(--b),var(--b)) right top / 1.5px var(--s) no-repeat,
+  linear-gradient(var(--b),var(--b)) left bottom / var(--s) 1.5px no-repeat, linear-gradient(var(--b),var(--b)) left bottom / 1.5px var(--s) no-repeat,
+  linear-gradient(var(--b),var(--b)) right bottom / var(--s) 1.5px no-repeat, linear-gradient(var(--b),var(--b)) right bottom / 1.5px var(--s) no-repeat, var(--fill, transparent); }
+.brackets.attn { --b: var(--screening); }
+
+.top { margin: 24px 40px 0; height: 76px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 28px; border: 1px solid var(--line); }
+.word { font-weight: 700; font-size: 24px; letter-spacing: -0.02em; }
+.nav { display: flex; gap: 36px; }
+.nav a { font-family: var(--mono); font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 2px; border-bottom: 1.5px solid transparent; }
+.nav a.on { color: var(--text); border-bottom-color: var(--text); }
+.status { justify-self: end; display: flex; gap: 28px; align-items: center; }
+
+.chip { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; background: var(--raised); color: var(--text); white-space: nowrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.closed { background: var(--closed); } .dot.screening { background: var(--screening); } .dot.open { background: var(--open); } .dot.fault { background: var(--fault); }
+
+.head { margin: 36px 40px 28px; display: flex; align-items: flex-end; justify-content: space-between; }
+.head h1 { font-weight: 700; font-size: 48px; letter-spacing: -0.03em; line-height: 1; }
+.head p { color: var(--muted); font-size: 18px; margin-top: 10px; }
+
+.ptitle { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+.ptitle h2 { font-weight: 600; font-size: 24px; letter-spacing: -0.02em; }
+
+.seg { height: 16px; position: relative; background: repeating-linear-gradient(90deg, var(--line-strong) 0 3px, transparent 3px 7px); }
+.seg i { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(90deg, var(--c, var(--text)) 0 3px, transparent 3px 7px); }
+.num { font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.num small { font-size: .45em; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.tri { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid var(--screening); display: inline-block; }

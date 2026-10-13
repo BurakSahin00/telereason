@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TeleReason window detail</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+.crumb { margin: 28px 40px 0; }
+.head { margin-top: 14px; }
+.chips { display: flex; gap: 12px; }
+.grid { display: grid; grid-template-columns: 880px 1fr; gap: 24px; margin: 0 40px; }
+.stage { position: relative; height: 520px; padding: 0; overflow: hidden; }
+.stage canvas { position: absolute; inset: 0; }
+.stage .cap { position: absolute; left: 24px; top: 20px; }
+.stage .tools { position: absolute; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+.stage .tools span { width: 40px; height: 40px; border: 1px solid var(--line-strong); display: grid; place-items: center; font-family: var(--mono); color: var(--muted); background: var(--panel); }
+.callout { position: absolute; width: 270px; padding: 14px 16px; border: 1px solid var(--line-strong); background: rgba(24,25,26,.92); }
+.callout .sig { font-family: var(--mono); font-size: 17px; margin: 6px 0 4px; }
+.callout p { font-size: 15px; color: var(--muted); line-height: 1.4; }
+.marker { position: absolute; width: 34px; height: 34px; transform: translate(-50%,-50%); --s: 9px; }
+.marker::after { content: ""; position: absolute; left: 12px; top: 12px; width: 10px; height: 10px; background: var(--screening); }
+svg.leader { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+.chart { margin-top: 24px; padding: 18px 26px 14px; }
+.note p { font-size: 19px; line-height: 1.5; }
+.note .meta { margin-top: 14px; display: flex; gap: 12px; }
+.facts { margin-top: 24px; }
+.ft { width: 100%; border-collapse: collapse; }
+.ft th { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 400; padding: 0 10px 12px; }
+.ft td { padding: 14px 10px; border-top: 1px solid var(--line); font-size: 17px; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.ft td.sig { font-family: var(--mono); font-size: 16px; }
+.ft td.num { text-align: right; font-weight: 500; letter-spacing: -0.01em; }
+.ft tr.focus td { border-top-color: var(--line); }
+.ft tr.focus { --fill: var(--raised); }
+.nr { position: relative; height: 22px; width: 150px; }
+.nr .track { position: absolute; left: 0; right: 0; top: 10px; height: 1px; background: var(--line-strong); }
+.nr .nb { position: absolute; top: 4px; height: 14px; background: var(--raised); border-left: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
+.nr .ptr { position: absolute; top: 1px; transform: translateX(-50%); }
+.nr .tick { position: absolute; top: 2px; width: 2px; height: 18px; background: var(--text); transform: translateX(-50%); }
+.reading { font-size: 16px; }
+.ask { margin-top: 24px; }
+.askbox { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--line-strong); padding: 14px 16px; color: var(--muted); }
+.reading.calm { color: var(--muted); }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js" } }</script>
+</head>
+<body>
+<header class="top brackets">
+  <div class="word">TeleReason</div>
+  <nav class="nav"><a class="on">Report</a><a>Gate</a><a>Assistant</a><a>AMD</a></nav>
+  <div class="status"><span class="label">Last night 13 Oct 02:00</span><span class="chip"><span class="dot open"></span>Engine ready</span></div>
+</header>
+<div class="crumb label">Report / AURSAD / W-003114</div>
+<div class="head">
+  <div><h1>Window W-003114</h1><p>Screening score 0.97. The score shows unusual behaviour, not its cause.</p></div>
+  <div class="chips"><span class="chip"><span class="dot screening"></span>Screening</span><span class="chip">AURSAD</span><span class="chip">Score 0.97</span></div>
+</div>
+<div class="grid">
+  <div>
+    <section class="panel stage brackets" id="stage">
+      <div class="cap"><div class="label">Robot cell, look first</div></div>
+      <div class="tools"><span>3D</span><span>+</span><span>−</span></div>
+      <div class="callout" id="callout" style="left:28px;top:330px">
+        <div class="label" style="color:var(--screening)">Look first: wrist 3</div>
+        <div class="sig">setpoint_acc_5</div>
+        <p>Acceleration setpoint, clearly off normal: 4.1 standard deviations above.</p>
+      </div>
+      <svg class="leader" id="leader"></svg>
+      <div class="marker brackets attn" id="marker"></div>
+    </section>
+    <section class="panel chart">
+      <div class="ptitle" style="margin-bottom:8px"><h2 style="font-size:20px">setpoint_acc_5</h2><span class="label">Window against the normal band</span></div>
+      <svg id="chart" width="826" height="150"></svg>
+    </section>
+  </div>
+  <div>
+    <section class="panel note">
+      <div class="ptitle"><h2>Note</h2><span class="chip">Verified</span></div>
+      <p>Joint 5 acceleration setpoint stays above its normal band for most of the window, starting about 2 s in. The other joints stay within their normal ranges.</p>
+    </section>
+    <section class="panel facts">
+      <div class="ptitle"><h2>Facts</h2><span class="label">Window against normal windows</span></div>
+      <table class="ft">
+        <thead><tr><th>Signal</th><th style="text-align:right">Window</th><th style="text-align:right">Normal</th><th>Position</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr class="focus"><td class="sig">setpoint_acc_5</td><td class="num">0.84</td><td class="num">0.12</td><td><div class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="ptr" style="left:95%"><span class="tri"></span></span></div></td><td class="reading">Clearly off normal, 4.1 SD above</td></tr>
+          <tr><td class="sig">actual_current_5</td><td class="num">1.92</td><td class="num">1.40</td><td><div class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="ptr" style="left:84%"><span class="tri"></span></span></div></td><td class="reading">Off normal, 2.3 SD above</td></tr>
+          <tr><td class="sig">setpoint_vel_5</td><td class="num">0.31</td><td class="num">0.28</td><td><div class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="tick" style="left:58%"></span></div></td><td class="reading calm">Within normal range</td></tr>
+          <tr><td class="sig">target_moment_4</td><td class="num">0.07</td><td class="num">0.08</td><td><div class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="tick" style="left:46%"></span></div></td><td class="reading calm">Within normal range</td></tr>
+          <tr><td class="sig">actual_current_3</td><td class="num">0.66</td><td class="num">0.71</td><td><div class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="tick" style="left:41%"></span></div></td><td class="reading calm">Within normal range</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="panel ask">
+      <div class="ptitle"><h2>Ask about this window</h2><span class="label">Assistant</span></div>
+      <div class="askbox"><span>Which other windows look like W-003114?</span><span class="chip">Ask</span></div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const svg = document.getElementById('chart'); const W = 826, H = 150, pad = 52;
+  const ns = 'http://www.w3.org/2000/svg';
+  const el = (n, a) => { const e = document.createElementNS(ns, n); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+  const y = v => H - 22 - v * (H - 34);
+  el('rect', { x: pad, y: y(0.62), width: W - pad, height: y(0.30) - y(0.62), fill: '#25272A' });
+  el('line', { x1: pad, x2: W, y1: y(0.62), y2: y(0.62), stroke: '#5B5E5F', 'stroke-dasharray': '3 4' });
+  el('line', { x1: pad, x2: W, y1: y(0.30), y2: y(0.30), stroke: '#5B5E5F', 'stroke-dasharray': '3 4' });
+  const n = 160, pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1); let v = 0.46 + 0.07 * Math.sin(i * 0.55) + 0.03 * Math.sin(i * 1.7);
+    if (t > 0.2) v += 0.34 * Math.min(1, (t - 0.2) * 6) * (0.85 + 0.15 * Math.sin(i * 0.3));
+    pts.push([pad + t * (W - pad), y(Math.min(v, 0.98))]);
+  }
+  for (let i = 1; i < n; i++) {
+    const over = pts[i][1] < y(0.62) && pts[i - 1][1] < y(0.62);
+    el('line', { x1: pts[i - 1][0], y1: pts[i - 1][1], x2: pts[i][0], y2: pts[i][1], stroke: over ? '#E9A23B' : '#EEEEEA', 'stroke-width': over ? 2.5 : 1.75 });
+  }
+  const lab = (x, yy, t, anchor) => { const e = el('text', { x, y: yy, fill: '#A2A5A3', 'font-family': 'IBM Plex Mono', 'font-size': 12, 'text-anchor': anchor || 'start' }); e.textContent = t; };
+  lab(0, y(0.62) + 4, 'HIGH'); lab(0, y(0.30) + 4, 'LOW');
+  lab(pad, H - 4, '0 S'); lab(W, H - 4, '10 S', 'end');
+})();
+</script>
+<script type="module">
+import * as THREE from 'three';
+const stage = document.getElementById('stage');
+const w = stage.clientWidth, h = stage.clientHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(1); renderer.setSize(w, h);
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 200);
+camera.position.set(11, 7.5, 15.5); camera.lookAt(1.2, 2.6, 0.4);
+
+const LINE = 0xD6D6D1, HI = 0xE9A23B;
+const fillMat = new THREE.MeshBasicMaterial({ color: 0x1E1F20, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+function hull(geom, d) {
+  const g = geom.clone(); const pos = g.attributes.position, nor = g.attributes.normal;
+  for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) + nor.getX(i) * d, pos.getY(i) + nor.getY(i) * d, pos.getZ(i) + nor.getZ(i) * d);
+  return g;
+}
+function part(geom, parent, { hi = false, pos = [0, 0, 0], rot = [0, 0, 0] } = {}) {
+  const color = hi ? HI : LINE;
+  const g = new THREE.Group(); g.position.set(...pos); g.rotation.set(...rot);
+  g.add(new THREE.Mesh(geom, fillMat));
+  g.add(new THREE.Mesh(hull(geom, 0.03), new THREE.MeshBasicMaterial({ color, side: THREE.BackSide })));
+  g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom, 30), new THREE.LineBasicMaterial({ color })));
+  parent.add(g); return g;
+}
+const cyl = (r, len) => new THREE.CylinderGeometry(r, r, len, 48, 1);
+const Z = [Math.PI / 2, 0, 0], X = [0, 0, Math.PI / 2];
+
+const grid = new THREE.GridHelper(22, 22, 0x2F3132, 0x26282A); scene.add(grid);
+part(new THREE.CylinderGeometry(1.0, 1.15, 0.45, 48, 1), scene, { pos: [0, 0.225, 0] });
+
+const j0 = new THREE.Group(); j0.position.set(0, 0.45, 0); j0.rotation.y = -0.25; scene.add(j0);
+part(cyl(0.7, 1.0), j0, { pos: [0, 0.5, 0] });
+const j1 = new THREE.Group(); j1.position.set(0, 1.4, 0); j1.rotation.z = 0.95; j0.add(j1);
+part(cyl(0.7, 1.2), j1, { pos: [0, 0, 0.3], rot: Z });
+part(cyl(0.42, 4.2), j1, { pos: [2.1, 0, 0.72], rot: X });
+const j2 = new THREE.Group(); j2.position.set(4.2, 0, 0); j2.rotation.z = -1.55; j1.add(j2);
+part(cyl(0.58, 1.15), j2, { pos: [0, 0, 0.72], rot: Z });
+part(cyl(0.34, 3.6), j2, { pos: [1.8, 0, 0.3], rot: X });
+const j3 = new THREE.Group(); j3.position.set(3.6, 0, 0); j3.rotation.z = -0.971; j2.add(j3);
+part(cyl(0.4, 0.9), j3, { pos: [0, 0, 0.45], rot: Z });
+part(cyl(0.38, 0.85), j3, { pos: [0.62, 0, 0.95], rot: X });
+const j5 = new THREE.Group(); j5.position.set(1.05, 0, 0.95); j3.add(j5);
+part(cyl(0.4, 0.35), j5, { hi: true, pos: [0.18, 0, 0], rot: X });
+part(cyl(0.11, 0.9), j5, { pos: [0.8, 0, 0], rot: X });
+part(new THREE.ConeGeometry(0.11, 0.3, 24, 1), j5, { pos: [1.4, 0, 0], rot: [0, 0, -Math.PI / 2] });
+scene.updateMatrixWorld(true);
+const tip = new THREE.Vector3(); j5.localToWorld(tip.set(1.55, 0, 0));
+part(new THREE.BoxGeometry(1.8, 0.3, 1.4), scene, { pos: [tip.x, 0.15, tip.z] });
+part(new THREE.CylinderGeometry(0.12, 0.12, 0.06, 24, 1), scene, { pos: [tip.x, 0.33, tip.z] });
+renderer.render(scene, camera);
+scene.updateMatrixWorld(true);
+const p = new THREE.Vector3(); j5.localToWorld(p.set(0.3, 0, 0)); p.project(camera);
+const mx = (p.x * 0.5 + 0.5) * w, my = (-p.y * 0.5 + 0.5) * h;
+const marker = document.getElementById('marker'); marker.style.left = mx + 'px'; marker.style.top = my + 'px';
+const c = document.getElementById('callout');
+const cx = c.offsetLeft + c.offsetWidth, cy = c.offsetTop + 20;
+document.getElementById('leader').innerHTML = `<polyline points="${cx},${cy} ${cx + 40},${cy} ${mx - 17},${my}" fill="none" stroke="#E9A23B" stroke-width="1.25" stroke-dasharray="4 4"/>`;
+</script>
+</body>
+</html>
