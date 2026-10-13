@@ -1,0 +1,23 @@
+{
+  "gpu": {
+    "name": "AMD Instinct MI300X",
+    "memory_total_gib": 191.6875,
+    "memory_used_gib": 160.11891174316406
+  },
+  "versions": {
+    "rocm": "7.2.3",
+    "vllm": "0.27.1",
+    "xgboost": "3.2.0",
+    "python": "3.12"
+  },
+  "last_night": {
+    "run_id": "2026-10-11-amd",
+    "timings_s": {
+      "gate": 461.54380083084106,
+      "facts": 81.77016472816467,
+      "scan": 1019.966655254364,
+      "report": 0.005202054977416992,
+      "total": 1565.5220742225647
+    }
+  }
+}

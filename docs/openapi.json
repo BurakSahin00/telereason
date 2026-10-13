@@ -835,20 +835,20 @@
             "type": "string",
             "title": "Name"
           },
-          "memory_total_gb": {
+          "memory_total_gib": {
             "type": "number",
-            "title": "Memory Total Gb"
+            "title": "Memory Total Gib"
           },
-          "memory_used_gb": {
+          "memory_used_gib": {
             "type": "number",
-            "title": "Memory Used Gb"
+            "title": "Memory Used Gib"
           }
         },
         "type": "object",
         "required": [
           "name",
-          "memory_total_gb",
-          "memory_used_gb"
+          "memory_total_gib",
+          "memory_used_gib"
         ],
         "title": "GpuInfo"
       },
@@ -1374,7 +1374,14 @@
             "title": "Summary"
           },
           "ms": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Ms"
           }
         },

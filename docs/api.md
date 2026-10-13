@@ -2,7 +2,7 @@
 
 Contract between the backend (FastAPI) and the frontend. The frontend works against `fixtures/` (served by MSW) until the real endpoints are ready; only the base URL changes.
 
-Status: **draft v0**. Values in the examples are illustrative; `fixtures/` (issue #11) will hold responses generated from the real 11 Oct MI300X run.
+Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds responses generated from the real 11 Oct MI300X run (see `fixtures/README.md`).
 
 ## Conventions
 
@@ -58,13 +58,13 @@ The Pydantic models are in `backend/telereason/api/schemas.py`. `docs/openapi.js
 
 ```json
 {
-  "gpu": {"name": "AMD Instinct MI300X", "memory_total_gb": 192, "memory_used_gb": 168.4},
+  "gpu": {"name": "AMD Instinct MI300X", "memory_total_gib": 191.6875, "memory_used_gib": 160.11891174316406},
   "versions": {"rocm": "7.2.3", "vllm": "0.27.1", "xgboost": "3.2.0", "python": "3.12"},
   "last_night": {"run_id": "2026-10-11-amd", "timings_s": {"gate": 462, "facts": 84, "scan": 1020, "report": 2, "total": 1566}}
 }
 ```
 
-`gpu` is `null` when no GPU is visible (fake mode on a laptop). A `versions` entry other than `python` is `null` when that package is not installed. `last_night` is `null` before the first stored night run.
+Memory is in GiB (2^30 bytes), as the GPU driver reports it. `gpu` is `null` when no GPU is visible (fake mode on a laptop). A `versions` entry other than `python` is `null` when that package is not installed. `last_night` is `null` before the first stored night run.
 
 ### GET /api/gate
 
@@ -202,6 +202,7 @@ data: {"total_ms": 3400, "tokens": 812}
 - An `error` event (`data` = the error shape above) ends the stream early. Errors before the stream starts (for example `bad_request`, `rate_limited`) are plain JSON responses.
 - Payload models in `/openapi.json`: `ToolCallEvent`, `ToolResultEvent`, `AnswerEvent`, `DoneEvent` and `ErrorResponse`. The 200 response describes one message as `{"event", "data"}`.
 - A comment line (`: ping`) is sent every 15 s so proxies keep the stream open; clients ignore it.
+- `ms` is the tool's run time; `null` when it was not measured.
 - `answer_source` is `tool` when the answer comes from a tool result, `model` otherwise.
 - Action requests (for example "stop the robot") are refused in `text`.
 
