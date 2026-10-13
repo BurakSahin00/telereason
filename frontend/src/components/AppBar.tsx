@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router'
 import { EngineStatus } from './EngineStatus.tsx'
+import { LastRun } from './LastRun.tsx'
 
 type NavItem = {
   to: string
@@ -42,8 +43,8 @@ export function AppBar() {
         })}
       </nav>
 
-      {/* Last night's run time goes before the engine chip (#21). */}
       <div className="flex items-center justify-self-end gap-7">
+        <LastRun />
         <EngineStatus />
       </div>
     </header>
