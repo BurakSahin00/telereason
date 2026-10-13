@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TeleReason morning report</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+.grid { display: grid; grid-template-columns: 590px 1fr; gap: 24px; margin: 0 40px; }
+.legend { margin-top: auto; border-top: 1px solid var(--line); padding-top: 18px; }
+.legend > div:not(.label) { display: grid; grid-template-columns: 20px 130px 1fr; align-items: center; font-size: 15px; color: var(--muted); padding: 4px 0; }
+.line + .line { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 22px; }
+.lh { display: flex; justify-content: space-between; align-items: center; }
+.lname { font-family: var(--mono); font-size: 16px; letter-spacing: .06em; color: var(--muted); }
+.verdict { font-weight: 700; font-size: 34px; letter-spacing: -0.025em; line-height: 1.1; margin: 12px 0 8px; }
+.expl { color: var(--muted); font-size: 17px; }
+.scale { position: relative; height: 48px; margin-top: 18px; }
+.scale .base { position: absolute; left: 0; right: 0; top: 22px; height: 1px; background: var(--line-strong); }
+.scale .ticks { position: absolute; left: 0; right: 0; top: 14px; height: 9px; background: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px 10%); }
+.scale .band { position: absolute; top: 9px; height: 12px; }
+.scale .chance { position: absolute; left: 50%; top: 2px; height: 28px; border-left: 1.5px dashed var(--text); }
+.scale .sl { position: absolute; top: 30px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px; }
+.stat .num { font-size: 56px; margin: 14px 0 6px; }
+.stat .sub { color: var(--muted); font-size: 15px; margin-bottom: 14px; }
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 112px 180px 230px 1fr 118px; gap: 22px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row .id { font-family: var(--mono); font-size: 16px; color: var(--muted); }
+.row .sig { font-family: var(--mono); font-size: 16px; }
+.row .note { font-size: 17px; line-height: 1.35; }
+.row .note.facts { color: var(--muted); }
+.meter { display: flex; align-items: center; gap: 14px; }
+.meter .seg { flex: 1; }
+.meter b { font-weight: 600; font-size: 20px; font-variant-numeric: tabular-nums; }
+.row.focus { --s: 12px; }
+.dev { grid-template-columns: 112px 180px 360px 1fr; }
+.nr { position: relative; height: 22px; }
+.nr .track { position: absolute; left: 0; right: 0; top: 10px; height: 1px; background: var(--line-strong); }
+.nr .nb { position: absolute; top: 4px; height: 14px; background: var(--raised); border-left: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted); }
+.nr .ptr { position: absolute; top: 1px; transform: translateX(-50%); }
+.nr .tick { position: absolute; top: 2px; width: 2px; height: 18px; background: var(--text); transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<header class="top brackets">
+  <div class="word">TeleReason</div>
+  <nav class="nav"><a class="on">Report</a><a>Gate</a><a>Assistant</a><a>AMD</a></nav>
+  <div class="status"><span class="label">Last night 13 Oct 02:00</span><span class="chip"><span class="dot open"></span>Engine ready</span></div>
+</header>
+<div class="head">
+  <div><h1>Morning report</h1><p>Night run finished at 02:52. Two lines scanned.</p></div>
+</div>
+<div class="grid">
+  <section class="panel brackets" style="display:flex;flex-direction:column">
+    <div class="ptitle"><h2>Gate</h2><span class="label">What the data can support</span></div>
+    <div class="line">
+      <div class="lh"><span class="lname">FACTORYWAVE</span><span class="chip"><span class="dot closed"></span>Facts only</span></div>
+      <div class="verdict">No diagnosis on this line</div>
+      <p class="expl">The data can't tell faults apart better than chance, so the report shows measured facts only.</p>
+      <div class="scale"><div class="base"></div><div class="ticks"></div>
+        <div class="band" style="left:32.3%;width:38.3%;background:var(--raised);border:1.5px solid var(--closed)"></div>
+        <div class="chance"></div>
+        <span class="sl" style="left:0">0</span><span class="sl" style="left:50%;transform:translateX(-50%)">CHANCE</span><span class="sl" style="right:0">1</span></div>
+    </div>
+    <div class="line">
+      <div class="lh"><span class="lname">AURSAD</span><span class="chip"><span class="dot screening"></span>Screening</span></div>
+      <div class="verdict">Unusual behaviour only</div>
+      <p class="expl">Windows that behave unlike normal ones are ranked by score. A score is not a cause.</p>
+      <div class="scale"><div class="base"></div><div class="ticks"></div>
+        <div class="band" style="left:89.9%;width:2.2%;background:var(--screening)"></div>
+        <div class="chance"></div>
+        <span class="sl" style="left:0">0</span><span class="sl" style="left:50%;transform:translateX(-50%)">CHANCE</span><span class="sl" style="right:0">1</span></div>
+    </div>
+    <div class="legend">
+      <div class="label" style="margin-bottom:12px">Status legend</div>
+      <div><span class="dot closed"></span><span class="label" style="color:var(--text)">Facts only</span><span>Measured facts, no diagnosis</span></div>
+      <div><span class="dot screening"></span><span class="label" style="color:var(--text)">Screening</span><span>Unusual behaviour score, no cause</span></div>
+      <div><span class="dot open"></span><span class="label" style="color:var(--text)">Diagnosis</span><span>Fault names allowed</span></div>
+    </div>
+  </section>
+  <div>
+    <div class="stats">
+      <div class="panel stat"><div class="label">Windows scanned</div><div class="num">7,422</div><div class="sub">FactoryWave and AURSAD</div><div class="seg"><i style="width:100%"></i></div></div>
+      <div class="panel stat"><div class="label">Flagged</div><div class="num">148</div><div class="sub">AURSAD, by screening score</div><div class="seg"><i style="width:20%;--c:var(--screening)"></i></div></div>
+      <div class="panel stat"><div class="label">Night run</div><div class="num">52<small>min</small></div><div class="sub">Gate, facts, notes, report</div><div class="seg"><i style="width:72%"></i></div></div>
+      <div class="panel stat"><div class="label">Notes verified</div><div class="num">91<small>%</small></div><div class="sub">Unverified notes are hidden</div><div class="seg"><i style="width:91%"></i></div></div>
+    </div>
+    <section class="panel" style="margin-bottom:24px">
+      <div class="ptitle"><h2>Look first</h2><span class="label">AURSAD, ranked by score</span></div>
+      <div class="rows">
+        <div class="row focus brackets attn"><span class="id">W-003114</span><span class="sig">setpoint_acc_5</span><span class="meter"><span class="seg"><i style="width:97%;--c:var(--screening)"></i></span><b>0.97</b></span><span class="note">Joint 5 acceleration setpoint stays above its normal band for most of the window.</span><span class="chip" style="justify-self:end">Verified</span></div>
+        <div class="row"><span class="id">W-001877</span><span class="sig">setpoint_vel_3</span><span class="meter"><span class="seg"><i style="width:94%;--c:var(--screening)"></i></span><b>0.94</b></span><span class="note">Joint 3 velocity setpoint repeats a short spike four times near the end.</span><span class="chip" style="justify-self:end">Verified</span></div>
+        <div class="row"><span class="id">W-005302</span><span class="sig">actual_current_2</span><span class="meter"><span class="seg"><i style="width:91%;--c:var(--screening)"></i></span><b>0.91</b></span><span class="note facts">Facts only. Open the window for the measured values.</span><span class="chip" style="justify-self:end;color:var(--muted)">Facts only</span></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="ptitle"><h2>Largest deviations</h2><span class="label">FactoryWave, facts only</span></div>
+      <div class="rows">
+        <div class="row dev"><span class="id">W-012908</span><span class="sig">true_force_5</span><span class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="ptr" style="left:94%"><span class="tri"></span></span></span><span class="note">Clearly off normal, 3.7 standard deviations above</span></div>
+        <div class="row dev"><span class="id">W-010455</span><span class="sig">true_force_2</span><span class="nr"><span class="track"></span><span class="nb" style="left:30%;width:40%"></span><span class="ptr" style="left:8%"><span class="tri"></span></span></span><span class="note">Clearly off normal, 3.1 standard deviations below</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
