@@ -186,7 +186,8 @@ mkdir -p /root/logs /root/data
 running() { [[ -f "/root/logs/$1.pid" ]] && kill -0 "$(cat "/root/logs/$1.pid")" 2>/dev/null; }
 if [[ "$SKIP_MODEL" == "0" ]]; then
   if running model; then ok "model download already running"; else
-    nohup hf download "$MODEL_ID" </dev/null > /root/logs/model.log 2>&1 &
+    # the repo also holds a second copy of the weights (original/) and a Metal build (metal/); vLLM needs neither
+    nohup hf download "$MODEL_ID" --exclude "original/*" --exclude "metal/*" </dev/null > /root/logs/model.log 2>&1 &
     echo $! > /root/logs/model.pid
     ok "model download started ($MODEL_ID, about 65 GB) -> /root/logs/model.log"
   fi
