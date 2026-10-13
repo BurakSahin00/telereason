@@ -1,6 +1,6 @@
 # TeleReason API (v0)
 
-Contract between the backend (FastAPI) and the frontend. The frontend works against `fixtures/` (served by MSW) until the real endpoints are ready; only the base URL changes.
+Contract between the backend (FastAPI) and the frontend. Until the real endpoints are ready, the backend's fake mode (`ENGINE=fake`) serves `fixtures/` as the responses, so the frontend always talks to the same backend; `GET /api/health` reports the real engine setting, not a fixture.
 
 Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds responses generated from the real 11 Oct MI300X run (see `fixtures/README.md`).
 

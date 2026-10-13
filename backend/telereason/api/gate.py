@@ -1,11 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
-from telereason.api.errors import not_implemented
+from telereason.api.fake import fixture_response
 from telereason.api.schemas import GateResponse
 
 router = APIRouter()
 
 
 @router.get("/api/gate", response_model=GateResponse)
-def gate() -> GateResponse:
-    raise not_implemented("GET /api/gate")
+def gate(request: Request) -> GateResponse:
+    return fixture_response(request, GateResponse, "gate.json", "GET /api/gate")
