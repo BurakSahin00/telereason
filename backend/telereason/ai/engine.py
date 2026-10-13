@@ -6,13 +6,14 @@ AsyncLLM engine on the droplet. Everything else receives an `Engine` and never o
 
 import logging
 import time
+import uuid
 from collections import deque
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
-from telereason.settings import Settings
+from telereason.settings import DEFAULT_GPU_MEMORY_UTILIZATION, Settings
 
 logger = logging.getLogger(__name__)
 
@@ -163,15 +164,22 @@ def _canned(kind: GenerationKind | None) -> str:
 
 
 class VllmEngine:
-    """vLLM AsyncLLM engine in this process. Skeleton; the engine itself lands in #14.
+    """vLLM AsyncLLM engine in this process, with priority scheduling.
 
-    vllm is imported only in `start`, so this module imports on machines without vllm.
+    vllm is imported only in `start` and `generate`, so this module imports on machines
+    without vllm. Text keeps harmony special tokens, like the fake agent turn.
     """
 
     name: Literal["fake", "vllm"] = "vllm"
 
-    def __init__(self, model: str) -> None:
+    def __init__(
+        self,
+        model: str,
+        gpu_memory_utilization: float = DEFAULT_GPU_MEMORY_UTILIZATION,
+    ) -> None:
         self.model = model
+        self.gpu_memory_utilization = gpu_memory_utilization
+        self._llm: Any = None
         self._ready = False
 
     @property
@@ -179,16 +187,39 @@ class VllmEngine:
         return self._ready
 
     async def start(self) -> None:
+        if self._llm is not None:
+            return
         try:
-            import vllm  # noqa: F401
+            from vllm import AsyncEngineArgs
+            from vllm.v1.engine.async_llm import AsyncLLM
         except ImportError as exc:
             raise RuntimeError(
                 "ENGINE=vllm needs the vllm package, which the droplet container provides"
             ) from exc
-        raise NotImplementedError("VllmEngine.start is implemented in #14")
+
+        started = time.perf_counter()
+        args = AsyncEngineArgs(
+            model=self.model,
+            gpu_memory_utilization=self.gpu_memory_utilization,
+            scheduling_policy="priority",
+        )
+        # Loading the weights blocks the event loop for minutes; the app serves nothing yet.
+        self._llm = AsyncLLM.from_engine_args(args)
+        self._ready = True
+        logger.info(
+            "vllm engine started in %.1f s (model=%s, gpu_memory_utilization=%.2f, "
+            "scheduling_policy=priority)",
+            time.perf_counter() - started,
+            self.model,
+            self.gpu_memory_utilization,
+        )
 
     async def close(self) -> None:
         self._ready = False
+        llm, self._llm = self._llm, None
+        if llm is not None:
+            llm.shutdown()
+            logger.info("vllm engine closed")
 
     async def generate(
         self,
@@ -200,7 +231,39 @@ class VllmEngine:
         stop: Sequence[str] | None = None,
         kind: GenerationKind | None = None,
     ) -> Generation:
-        raise NotImplementedError("VllmEngine.generate is implemented in #14")
+        if not self._ready or self._llm is None:
+            raise EngineNotReadyError("engine is not ready")
+        if max_tokens < 1:
+            raise ValueError("max_tokens must be at least 1")
+        from vllm import SamplingParams, TokensPrompt
+        from vllm.sampling_params import RequestOutputKind
+
+        params = SamplingParams(
+            max_tokens=max_tokens,
+            temperature=temperature,
+            stop=list(stop) if stop else None,
+            skip_special_tokens=False,
+            output_kind=RequestOutputKind.FINAL_ONLY,
+        )
+        request = prompt if isinstance(prompt, str) else TokensPrompt(prompt_token_ids=list(prompt))
+        request_id = f"{kind or 'generate'}-{uuid.uuid4().hex}"
+        started = time.perf_counter()
+
+        final = None
+        async for output in self._llm.generate(request, params, request_id, priority=int(priority)):
+            final = output
+        if final is None or not final.outputs:
+            raise RuntimeError(f"vllm returned no output for request {request_id}")
+
+        completion = final.outputs[0]
+        token_ids = list(completion.token_ids)
+        return Generation(
+            text=completion.text,
+            token_ids=token_ids,
+            prompt_tokens=len(final.prompt_token_ids or ()),
+            completion_tokens=len(token_ids),
+            elapsed_ms=round((time.perf_counter() - started) * 1000),
+        )
 
 
 def create_engine(settings: Settings) -> Engine:
@@ -208,5 +271,8 @@ def create_engine(settings: Settings) -> Engine:
     if settings.engine == "fake":
         return FakeEngine(model=settings.model)
     if settings.engine == "vllm":
-        return VllmEngine(model=settings.model)
+        return VllmEngine(
+            model=settings.model,
+            gpu_memory_utilization=settings.gpu_memory_utilization,
+        )
     raise ValueError(f"unknown engine {settings.engine!r}; expected 'fake' or 'vllm'")
