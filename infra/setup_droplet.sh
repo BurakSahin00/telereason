@@ -135,12 +135,15 @@ read -r torch_v vllm_v < <(python -c 'from importlib.metadata import version as 
 [[ "$rocm" == "$EXPECT_ROCM"* ]] || die "ROCm $rocm, expected $EXPECT_ROCM (the XGBoost wheel is built for it)"
 [[ "$py" == "$EXPECT_PYTHON" ]] || die "Python $py, expected $EXPECT_PYTHON"
 [[ "$torch_v" == "$EXPECT_TORCH"* ]] || warn "torch $torch_v, expected $EXPECT_TORCH"
-[[ "$vllm_v" == "$EXPECT_VLLM" ]] || warn "vLLM $vllm_v, expected $EXPECT_VLLM"
+[[ "$vllm_v" == "$EXPECT_VLLM"* ]] || warn "vLLM $vllm_v, expected $EXPECT_VLLM"
 ok "ROCm $rocm, Python $py, torch $torch_v, vLLM $vllm_v"
 
 # system packages: git for the repo, OpenMP runtime for XGBoost
 if ! command -v git >/dev/null || ! ldconfig -p | grep 'libomp\.so' >/dev/null; then
-  apt-get update -qq </dev/null && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git libomp-dev >/dev/null </dev/null
+  # apt prints harmless warnings about the image's legacy ROCm repository keys
+  apt-get update -qq </dev/null 2>&1 | grep -v 'legacy trusted.gpg' || true
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git libomp-dev </dev/null >/dev/null 2>&1 \
+    || die "apt-get install git libomp-dev failed"
 fi
 ok "git and libomp present"
 
@@ -149,7 +152,7 @@ if ! python -c 'import xgboost, sys; sys.exit(0 if xgboost.__version__ == "3.2.0
   tmp="$(mktemp -d)"
   curl -fsSL -o "$tmp/$XGB_WHEEL" "$XGB_URL"
   echo "$XGB_SHA256  $tmp/$XGB_WHEEL" | sha256sum -c --quiet - || die "XGBoost wheel checksum mismatch"
-  pip install -q --no-deps "$tmp/$XGB_WHEEL"
+  pip install -q --root-user-action=ignore --no-deps "$tmp/$XGB_WHEEL"
   rm -f "$tmp/$XGB_WHEEL" && rmdir "$tmp"
 fi
 python - <<'PY' || exit 1
@@ -165,8 +168,8 @@ PY
 
 # extra Python packages: everything already in the image is pinned, so nothing there is upgraded
 pip list --format=freeze > /tmp/container-constraints.txt
-python -c 'import sklearn' 2>/dev/null || pip install -q scikit-learn -c /tmp/container-constraints.txt
-command -v hf >/dev/null || pip install -q "huggingface_hub[cli]" -c /tmp/container-constraints.txt
+python -c 'import sklearn' 2>/dev/null || pip install -q --root-user-action=ignore scikit-learn -c /tmp/container-constraints.txt
+command -v hf >/dev/null || pip install -q --root-user-action=ignore "huggingface_hub[cli]" -c /tmp/container-constraints.txt
 ok "scikit-learn $(python -c 'import sklearn; print(sklearn.__version__)'), hf CLI present"
 
 # repository at the requested ref (the droplet only pulls; no code is edited here)

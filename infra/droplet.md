@@ -29,8 +29,8 @@ The script is safe to run again. Run it again after a reboot (the Docker port ru
 |---|---|---|
 | Firewall | `ufw` allows only OpenSSH; the image's 80/443 rules are removed. Docker-published ports bypass `ufw`, so inbound traffic to the container ports 8000, 8091, 8888 and 30000 is dropped in the `DOCKER-USER` chain | `ufw allows: OpenSSH` |
 | SSH | Password login off, root login with keys only. A drop-in file `01-telereason.conf` is written only if password login was on | `password login disabled` |
-| Team keys | Public keys from GitHub for the users in `--team` (default: `buraksal52`) are added to `authorized_keys`, without duplicates | `<user>: N new key(s)` |
-| Versions | ROCm and Python must match the XGBoost build (the script stops otherwise); torch and vLLM are checked and never upgraded | `ROCm 7.2.3, Python 3.12, torch 2.11.0+…, vLLM 0.27.1` |
+| Team keys | Public keys from GitHub for the users in `--team` (default: `buraksal52`) are added to `authorized_keys`, without duplicates. A teammate first adds a public key under GitHub → Settings → SSH and GPG keys | `<user>: N new key(s)`, or a warning if the user has no public key on GitHub |
+| Versions | ROCm and Python must match the XGBoost build (the script stops otherwise); torch and vLLM are checked and never upgraded | `ROCm 7.2.3, Python 3.12, torch 2.11.0+…, vLLM 0.27.1+…` |
 | XGBoost | Our ROCm build from the GitHub Release (below), checked by SHA-256, installed with `--no-deps`; then a short training on the GPU | `xgboost 3.2.0 on cuda:0` |
 | Python extras | `scikit-learn` (the gate's AUROC) and the `hf` CLI if missing; every package already in the image is pinned as a constraint, so nothing there changes | `scikit-learn …, hf CLI present` |
 | Repository | `/root/telereason` inside the container at `--ref` (default `main`), shallow, detached | `repo at main: <commit>` |
