@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router'
+import { EngineStatus } from './EngineStatus.tsx'
 
 type NavItem = {
   to: string
@@ -41,8 +42,10 @@ export function AppBar() {
         })}
       </nav>
 
-      {/* Last night's run time and the engine chip go here once the API types are generated. */}
-      <div className="flex items-center justify-self-end gap-7" />
+      {/* Last night's run time goes before the engine chip (#21). */}
+      <div className="flex items-center justify-self-end gap-7">
+        <EngineStatus />
+      </div>
     </header>
   )
 }
