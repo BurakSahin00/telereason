@@ -14,6 +14,8 @@ DEFAULT_MODEL = "openai/gpt-oss-120b"
 class Settings:
     engine: EngineKind
     model: str
+    data_dir: str = "./data"
+    hf_dataset: str = "FactoryBench/FactoryBench"
 
 
 def load_settings() -> Settings:
@@ -21,4 +23,11 @@ def load_settings() -> Settings:
     if engine not in ENGINE_KINDS:
         raise ValueError(f"ENGINE must be one of {ENGINE_KINDS}, got {engine!r}")
     model = os.environ.get("MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
-    return Settings(engine=cast(EngineKind, engine), model=model)
+    data_dir = os.environ.get("DATA_DIR", "./data").strip() or "./data"
+    hf_dataset = os.environ.get("HF_DATASET", "FactoryBench/FactoryBench").strip()
+    return Settings(
+        engine=cast(EngineKind, engine),
+        model=model,
+        data_dir=data_dir,
+        hf_dataset=hf_dataset or "FactoryBench/FactoryBench",
+    )
