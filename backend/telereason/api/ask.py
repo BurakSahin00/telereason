@@ -1,7 +1,8 @@
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from telereason.api.errors import not_implemented
+from telereason.api.fake import fixture_path, is_fake, replay_sse
 from telereason.api.schemas import AskRequest, AskStreamMessage
 
 router = APIRouter()
@@ -31,5 +32,11 @@ class EventStreamSchema(JSONResponse):
         },
     },
 )
-async def ask(body: AskRequest) -> None:
-    raise not_implemented("POST /api/ask")
+async def ask(request: Request, body: AskRequest) -> StreamingResponse:
+    if not is_fake(request):
+        raise not_implemented("POST /api/ask")
+    return StreamingResponse(
+        replay_sse(fixture_path(request, "ask.sse")),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache"},
+    )
