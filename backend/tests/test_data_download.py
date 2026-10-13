@@ -14,13 +14,13 @@ def test_download_dataset_is_idempotent_setup_boundary(monkeypatch, tmp_path: Pa
 
     result = download.download_dataset(tmp_path, token="test-token")
 
-    assert result == tmp_path.resolve()
+    assert result == tmp_path.resolve() / "factorybench"
     assert calls == [
         {
             "repo_id": "FactoryBench/FactoryBench",
             "repo_type": "dataset",
             "revision": "main",
-            "local_dir": tmp_path.resolve(),
+            "local_dir": tmp_path.resolve() / "factorybench",
             "allow_patterns": [
                 "factorywave/episodes.parquet",
                 "factorywave/flow.parquet",

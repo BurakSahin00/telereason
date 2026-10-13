@@ -11,7 +11,9 @@ ROUTERS = (health, system, gate, report, windows, ask, examples, night_runs)
 def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason")
     app.state.settings = settings or load_settings()
-    app.state.data_store = DataStore(app.state.settings.data_dir)
+    app.state.data_store = DataStore(
+        app.state.settings.data_dir, use_fixtures=app.state.settings.engine == "fake"
+    )
     install_error_handlers(app)
     for module in ROUTERS:
         app.include_router(module.router, responses=ERROR_RESPONSES)

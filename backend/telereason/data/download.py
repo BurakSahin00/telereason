@@ -1,9 +1,9 @@
 """Download TeleReason's public dataset dependencies from Hugging Face.
 
 The repository intentionally contains no telemetry.  This module is an
-idempotent setup step: files are downloaded into ``DATA_DIR`` and are never
-written into the source tree unless the caller explicitly points DATA_DIR
-there.
+idempotent setup step: files are downloaded into ``DATA_DIR/factorybench`` (see
+``telereason.data.paths``) and are never written into the source tree unless the
+caller explicitly points DATA_DIR there.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 
 from huggingface_hub import snapshot_download
+
+from telereason.data.paths import dataset_dir
 
 DEFAULT_DATASET = "FactoryBench/FactoryBench"
 DEFAULT_PATTERNS = (
@@ -30,14 +32,14 @@ def download_dataset(
     token: str | None = None,
     revision: str = "main",
 ) -> Path:
-    """Download the files needed by the data loader and return their root.
+    """Download the files needed by the data loader and return the dataset folder.
 
     ``snapshot_download`` handles resumable downloads and its local directory
     metadata makes repeated setup calls cheap.  The dataset is public, so a
     token is optional; ``HF_TOKEN`` is used when supplied by the environment.
     """
 
-    root = Path(data_dir).expanduser().resolve()
+    root = dataset_dir(data_dir)
     root.mkdir(parents=True, exist_ok=True)
     auth_token = token or os.environ.get("HF_TOKEN") or None
     snapshot_download(

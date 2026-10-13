@@ -17,8 +17,10 @@ cd backend
 uv run python -m telereason.data.download
 ```
 
-The destination is `DATA_DIR` (default `./data`). Existing Hugging Face files
-are reused, and `HF_TOKEN` may be set for authenticated Hub access.
+The destination is `DATA_DIR/factorybench` (`DATA_DIR` defaults to `./data`).
+Existing Hugging Face files are reused, and `HF_TOKEN` may be set for
+authenticated Hub access. Without downloaded data the API serves `fixtures/`
+only when `ENGINE=fake`.
 
 ## License
 

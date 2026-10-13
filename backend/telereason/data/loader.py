@@ -1,10 +1,9 @@
-"""Read TeleReason windows from downloaded data or local API-shaped fixtures."""
+"""Read TeleReason windows from downloaded data or, in fake mode, API-shaped fixtures."""
 
 from __future__ import annotations
 
 import ast
 import json
-import math
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +11,6 @@ import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
 from telereason.api.schemas import (
-    Fact,
     Line,
     SignalsResponse,
     Verdict,
@@ -20,6 +18,7 @@ from telereason.api.schemas import (
     WindowListResponse,
     WindowSummary,
 )
+from telereason.data.paths import factorywave_dir
 
 
 class DataNotAvailableError(RuntimeError):
@@ -79,13 +78,22 @@ def _fixture_root() -> Path:
 class DataStore:
     """Small, read-only data access layer for the window API.
 
-    The preferred source is ``DATA_DIR``.  A fixture directory is used only
-    when the requested data directory has not been downloaded yet, which keeps
-    fake-mode tests and the local demo usable without network access.
+    The preferred source is the downloaded dataset under ``DATA_DIR`` (see
+    ``telereason.data.paths``).  With ``use_fixtures`` (fake mode only) the
+    fixture directory is used when that dataset has not been downloaded, which
+    keeps tests and the laptop demo usable without network access.  Otherwise a
+    missing dataset raises ``DataNotAvailableError``.
     """
 
-    def __init__(self, root: str | Path, *, fixture_root: str | Path | None = None) -> None:
-        self.root = Path(root).expanduser().resolve()
+    def __init__(
+        self,
+        data_dir: str | Path,
+        *,
+        use_fixtures: bool = False,
+        fixture_root: str | Path | None = None,
+    ) -> None:
+        self.data_root = factorywave_dir(data_dir)
+        self.use_fixtures = use_fixtures
         self.fixture_root = Path(fixture_root).resolve() if fixture_root else _fixture_root()
         self._summaries: dict[str, dict[str, Any]] | None = None
         self._declared_total: int | None = None
@@ -94,12 +102,12 @@ class DataStore:
 
     @property
     def source(self) -> Path:
-        if (self.root / "windows.json").exists() or (self.root / "episodes.parquet").exists():
-            return self.root
-        if (self.fixture_root / "windows.json").exists():
+        if (self.data_root / "episodes.parquet").exists():
+            return self.data_root
+        if self.use_fixtures and (self.fixture_root / "windows.json").exists():
             return self.fixture_root
         raise DataNotAvailableError(
-            f"No windows data found in {self.root}; run telereason.data.download first."
+            f"No windows data found in {self.data_root}; run telereason.data.download first."
         )
 
     def _load_summaries(self) -> dict[str, dict[str, Any]]:
@@ -187,6 +195,10 @@ class DataStore:
         channel_rows = payload.get("channels", payload)
         if isinstance(channel_rows, dict):
             channel_rows = [dict(value, name=name) for name, value in channel_rows.items()]
+        if any("normal_low" not in row or "normal_high" not in row for row in channel_rows):
+            raise DataNotAvailableError(
+                f"Signals for window {window_id}: normal band not computed yet."
+            )
         if wanted:
             channel_rows = [row for row in channel_rows if row.get("name") in wanted]
         return SignalsResponse.model_validate(
@@ -194,11 +206,14 @@ class DataStore:
         )
 
     def _read_parquet_signals(self, window_id: str) -> dict[str, Any] | None:
-        """Read one episode from a FactoryBench wide signal parquet file."""
-        source = self.source
-        if not (source / "factorywave").exists():
+        """Read one episode from a FactoryBench wide signal parquet file.
+
+        Channels carry values only: the normal band comes from normal windows
+        and is not computed yet, so ``get_signals`` refuses these payloads.
+        """
+        if not self.data_root.exists():
             return None
-        for path in sorted((source / "factorywave").glob("*_signals.parquet")):
+        for path in sorted(self.data_root.glob("*_signals.parquet")):
             dataset = ds.dataset(path, format="parquet")
             names = set(dataset.schema.names)
             id_name = next(
@@ -231,32 +246,7 @@ class DataStore:
             channels = []
             for name in numeric_names:
                 values = [float(row[name]) for row in rows]
-                if not values:
-                    continue
-                low, high = min(values), max(values)
-                channels.append(
-                    {
-                        "name": name,
-                        "values": values,
-                        "normal_low": [low] * len(values),
-                        "normal_high": [high] * len(values),
-                    }
-                )
+                if values:
+                    channels.append({"name": name, "values": values})
             return {"t_s": time_values, "channels": channels}
         return None
-
-
-def make_fact(signal: str, values: list[float]) -> Fact:
-    """Build a deterministic fact for a signal series used by adapters/tests."""
-    mean = sum(values) / len(values) if values else 0.0
-    variance = sum((value - mean) ** 2 for value in values) / len(values) if values else 0.0
-    deviation = math.sqrt(variance)
-    z = 0.0 if deviation == 0 else (values[-1] - mean) / deviation
-    return Fact(
-        signal=signal,
-        window_mean=mean,
-        normal_mean=mean,
-        difference=0.0,
-        z=z,
-        plain="Within the normal range" if abs(z) < 2 else "Off normal",
-    )
