@@ -10,6 +10,18 @@ Built for the AMD Developer Hackathon ACT III, Track 1: Intelligent Industry.
 
 This repository contains no datasets or model weights. See [DATA_NOTICE.md](DATA_NOTICE.md).
 
+To download the FactoryBench telemetry outside the repository:
+
+```bash
+cd backend
+uv run python -m telereason.data.download
+```
+
+The destination is `DATA_DIR/factorybench` (`DATA_DIR` defaults to `./data`).
+Existing Hugging Face files are reused, and `HF_TOKEN` may be set for
+authenticated Hub access. Without downloaded data the API serves `fixtures/`
+only when `ENGINE=fake`.
+
 ## License
 
 [MIT](LICENSE)
