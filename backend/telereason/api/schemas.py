@@ -56,8 +56,8 @@ class Timings(BaseModel):
 
 class GpuInfo(BaseModel):
     name: str
-    memory_total_gb: float
-    memory_used_gb: float
+    memory_total_gib: float
+    memory_used_gib: float
 
 
 class Versions(BaseModel):
@@ -208,7 +208,7 @@ class ToolResultEvent(BaseModel):
     turn: int
     tool: str
     summary: str
-    ms: int
+    ms: int | None
 
 
 class AnswerEvent(BaseModel):

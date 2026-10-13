@@ -1,0 +1,187 @@
+{
+  "page": 1,
+  "page_size": 20,
+  "total": 7422,
+  "items": [
+    {
+      "window_id": "W-823610",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.845,
+      "flagged": false,
+      "look_first": "setpoint_acc_5",
+      "verified": true
+    },
+    {
+      "window_id": "W-122000",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.041,
+      "flagged": false,
+      "look_first": "setpoint_acc_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-117128",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.996,
+      "flagged": true,
+      "look_first": "feedback_pos_1 vs setpoint_pos_1",
+      "verified": true
+    },
+    {
+      "window_id": "W-497051",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.126,
+      "flagged": false,
+      "look_first": "robot_voltage",
+      "verified": true
+    },
+    {
+      "window_id": "W-657587",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 1.0,
+      "flagged": true,
+      "look_first": "joint_voltage_1",
+      "verified": true
+    },
+    {
+      "window_id": "W-044597",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.076,
+      "flagged": false,
+      "look_first": "feedback_speed_5 vs setpoint_speed_5",
+      "verified": true
+    },
+    {
+      "window_id": "W-275920",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.993,
+      "flagged": true,
+      "look_first": "setpoint_speed_5",
+      "verified": true
+    },
+    {
+      "window_id": "W-574031",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.017,
+      "flagged": false,
+      "look_first": "joint_voltage_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-456792",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.996,
+      "flagged": true,
+      "look_first": "feedback_pos_3 vs setpoint_pos_3",
+      "verified": true
+    },
+    {
+      "window_id": "W-667424",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.101,
+      "flagged": false,
+      "look_first": "vibration_2",
+      "verified": true
+    },
+    {
+      "window_id": "W-539547",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.988,
+      "flagged": true,
+      "look_first": "feedback_speed_2 vs setpoint_speed_2",
+      "verified": true
+    },
+    {
+      "window_id": "W-585479",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.993,
+      "flagged": true,
+      "look_first": "joint_voltage_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-570264",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.011,
+      "flagged": false,
+      "look_first": "est_contact_force_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-101208",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.998,
+      "flagged": true,
+      "look_first": "setpoint_pos_5",
+      "verified": true
+    },
+    {
+      "window_id": "W-932998",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.75,
+      "flagged": false,
+      "look_first": "setpoint_pos_5",
+      "verified": true
+    },
+    {
+      "window_id": "W-895212",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.994,
+      "flagged": true,
+      "look_first": "est_contact_force_4",
+      "verified": true
+    },
+    {
+      "window_id": "W-982116",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.016,
+      "flagged": false,
+      "look_first": "joint_voltage_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-432945",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.993,
+      "flagged": true,
+      "look_first": "joint_voltage_0",
+      "verified": true
+    },
+    {
+      "window_id": "W-055514",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.129,
+      "flagged": false,
+      "look_first": "est_contact_force_4",
+      "verified": true
+    },
+    {
+      "window_id": "W-646653",
+      "line": "AURSAD",
+      "task": "aursad",
+      "score": 0.977,
+      "flagged": true,
+      "look_first": "joint_voltage_0",
+      "verified": true
+    }
+  ]
+}

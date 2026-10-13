@@ -1,0 +1,12 @@
+{
+  "examples": [
+    {
+      "lang": "en",
+      "text": "What went wrong in this record?"
+    },
+    {
+      "lang": "tr",
+      "text": "Bu kayıtta ne ters gitti?"
+    }
+  ]
+}
