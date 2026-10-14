@@ -17,6 +17,14 @@ export function useGate() {
   })
 }
 
+// getJson fills {window_id} with encodeURIComponent, so any id is safe in the path.
+export function useWindow(windowId: string) {
+  return useQuery({
+    queryKey: ['window', windowId],
+    queryFn: ({ signal }) => getJson('/api/windows/{window_id}', { path: { window_id: windowId }, signal }),
+  })
+}
+
 /** True when the API answered that nothing is stored yet, which is an empty state, not an error. */
 export function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.code === 'not_found'

@@ -1,24 +1,9 @@
 import type { components } from '../api/schema.d.ts'
 import { ChanceScale } from './ChanceScale.tsx'
 import { StatusChip } from './StatusChip.tsx'
+import { type Verdict, VERDICTS } from './verdicts.ts'
 
-type Verdict = components['schemas']['GateLine']['verdict']
 type GateLine = components['schemas']['GateLine']
-
-/** Chip word, verdict statement and legend text per gate verdict (DESIGN.md, Gate verdict). */
-const VERDICTS: Record<Verdict, { chip: string; statement: string; legend: string }> = {
-  closed: {
-    chip: 'Facts only',
-    statement: 'No diagnosis on this line',
-    legend: 'Measured facts, no diagnosis',
-  },
-  screening: {
-    chip: 'Screening',
-    statement: 'Unusual behaviour only',
-    legend: 'Unusual behaviour score, no cause',
-  },
-  open: { chip: 'Diagnosis', statement: 'Diagnosis on this line', legend: 'Fault names allowed' },
-}
 
 const LEGEND_ORDER: Verdict[] = ['closed', 'screening', 'open']
 
