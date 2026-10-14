@@ -188,7 +188,9 @@ def test_tool_steps_are_capped_and_the_last_turn_is_forced(data: AgentData) -> N
     assert len(engine.calls) == MAX_TOOL_STEPS + 1
     assert str(engine.calls[-1].prompt).endswith("<|start|>assistant<|channel|>final<|message|>")
     # The forced turn got a tool call, not an answer: nothing usable, so not answerable.
-    assert answer_of(messages).text == NOT_ANSWERABLE_TEXT
+    assert answer_of(messages) == AnswerEvent(
+        answer="NOT_ANSWERABLE", answer_source="tool", text=NOT_ANSWERABLE_TEXT
+    )
 
 
 def test_forced_turn_text_is_the_answer(data: AgentData) -> None:
@@ -213,7 +215,7 @@ def test_action_requests_are_refused_without_the_model(data: AgentData, question
     assert engine.calls == []
     assert [m.event for m in messages] == ["answer", "done"]
     answer = answer_of(messages)
-    assert (answer.answer, answer.text) == ("ACTION_REFUSED", REFUSAL_TEXT)
+    assert answer == AnswerEvent(answer="ACTION_REFUSED", answer_source="tool", text=REFUSAL_TEXT)
 
 
 @pytest.mark.parametrize(
@@ -226,7 +228,7 @@ def test_questions_about_actions_are_not_refused(question: str) -> None:
 def test_out_of_scope_is_not_answerable(data: AgentData) -> None:
     messages, _ = run(data, "Who won the football match?", final("NOT_ANSWERABLE"))
     assert answer_of(messages) == AnswerEvent(
-        answer="NOT_ANSWERABLE", answer_source="model", text=NOT_ANSWERABLE_TEXT
+        answer="NOT_ANSWERABLE", answer_source="tool", text=NOT_ANSWERABLE_TEXT
     )
 
 
@@ -271,7 +273,9 @@ def test_fault_name_is_blocked_on_restricted_lines(data: AgentData, window_id: s
 
 def test_fault_name_without_any_tool_is_not_answered(data: AgentData) -> None:
     messages, _ = run(data, "What usually breaks?", final("Mostly a loose gripper finger."))
-    assert answer_of(messages).text == NOT_ANSWERABLE_TEXT
+    assert answer_of(messages) == AnswerEvent(
+        answer="NOT_ANSWERABLE", answer_source="tool", text=NOT_ANSWERABLE_TEXT
+    )
 
 
 def test_protocols_are_blocked_on_restricted_lines(data: AgentData) -> None:

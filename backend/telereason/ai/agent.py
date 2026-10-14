@@ -10,7 +10,8 @@ refused before the model runs, fault questions are answered by `classify_fault` 
 and a model answer that names a fault on a closed or screening line is replaced by the
 verified facts.
 
-`answer_source` is `tool` when the answer text comes from a tool result, `model` otherwise.
+`answer_source` is `model` when the language model wrote the answer text and `tool` when
+code wrote it: from a tool result, a refusal or the not-answerable text.
 """
 
 from __future__ import annotations
@@ -223,7 +224,7 @@ def _start_session(data: AgentData, question: str, window_id: str | None) -> _Se
 
 
 def _not_answerable() -> AnswerEvent:
-    return AnswerEvent(answer=NOT_ANSWERABLE, answer_source="model", text=NOT_ANSWERABLE_TEXT)
+    return AnswerEvent(answer=NOT_ANSWERABLE, answer_source="tool", text=NOT_ANSWERABLE_TEXT)
 
 
 def _final_answer(session: _Session, text: str) -> AnswerEvent:
@@ -256,7 +257,7 @@ async def ask(
         return DoneMessage(event="done", data=DoneEvent(total_ms=total_ms, tokens=tokens))
 
     if is_action_request(question):
-        refusal = AnswerEvent(answer="ACTION_REFUSED", answer_source="model", text=REFUSAL_TEXT)
+        refusal = AnswerEvent(answer="ACTION_REFUSED", answer_source="tool", text=REFUSAL_TEXT)
         yield AnswerMessage(event="answer", data=refusal)
         yield done()
         return
