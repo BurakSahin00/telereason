@@ -9,17 +9,18 @@ import asyncio
 import logging
 import time
 
-from telereason.ai.engine import Engine, Generation, GenerationKind, Priority, create_engine
+from telereason.ai.engine import (
+    Engine,
+    Generation,
+    GenerationKind,
+    Priority,
+    create_engine,
+    harmony_prompt,
+)
 from telereason.settings import load_settings
 
 logger = logging.getLogger("telereason.ai.smoke")
 
-SYSTEM = (
-    "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\n\n"
-    "Reasoning: low\n\n"
-    "# Valid channels: analysis, commentary, final. Channel must be included for every "
-    "message.<|end|>"
-)
 REQUESTS: tuple[tuple[Priority, GenerationKind, str], ...] = (
     (
         Priority.LIVE,
@@ -34,10 +35,6 @@ REQUESTS: tuple[tuple[Priority, GenerationKind, str], ...] = (
 )
 MAX_TOKENS = 256
 PREVIEW_CHARS = 200
-
-
-def harmony_prompt(question: str) -> str:
-    return f"{SYSTEM}<|start|>user<|message|>{question}<|end|><|start|>assistant"
 
 
 async def ask(engine: Engine, priority: Priority, kind: GenerationKind, question: str) -> None:

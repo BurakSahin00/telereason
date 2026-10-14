@@ -4,6 +4,7 @@
 AsyncLLM engine on the droplet. Everything else receives an `Engine` and never opens one.
 """
 
+import asyncio
 import logging
 import time
 import uuid
@@ -79,6 +80,20 @@ FAKE_AGENT_TURN = (
     "equipment.<|return|>"
 )
 FAKE_DEFAULT = "Fake engine output."
+
+HARMONY_SYSTEM = (
+    "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\n\n"
+    "Reasoning: low\n\n"
+    "# Valid channels: analysis, commentary, final. Channel must be included for every "
+    "message.<|end|>"
+)
+WARMUP_QUESTION = "Reply with one word: ready."
+WARMUP_MAX_TOKENS = 64
+
+
+def harmony_prompt(question: str) -> str:
+    """One user turn in the harmony format, ending where the assistant starts."""
+    return f"{HARMONY_SYSTEM}<|start|>user<|message|>{question}<|end|><|start|>assistant"
 
 
 @dataclass(frozen=True)
@@ -203,8 +218,9 @@ class VllmEngine:
             gpu_memory_utilization=self.gpu_memory_utilization,
             scheduling_policy="priority",
         )
-        # Loading the weights blocks the event loop for minutes; the app serves nothing yet.
-        self._llm = AsyncLLM.from_engine_args(args)
+        # Loading the weights takes minutes; a worker thread keeps the event loop free, so
+        # /api/health can answer ready=false meanwhile.
+        self._llm = await asyncio.to_thread(AsyncLLM.from_engine_args, args)
         self._ready = True
         logger.info(
             "vllm engine started in %.1f s (model=%s, gpu_memory_utilization=%.2f, "
@@ -264,6 +280,13 @@ class VllmEngine:
             completion_tokens=len(token_ids),
             elapsed_ms=round((time.perf_counter() - started) * 1000),
         )
+
+
+async def warm_up(engine: Engine) -> Generation:
+    """Send one short LIVE request so the first real question does not pay first-call costs."""
+    return await engine.generate(
+        harmony_prompt(WARMUP_QUESTION), priority=Priority.LIVE, max_tokens=WARMUP_MAX_TOKENS
+    )
 
 
 def create_engine(settings: Settings) -> Engine:

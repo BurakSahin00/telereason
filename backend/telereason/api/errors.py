@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from telereason.ai.engine import EngineNotReadyError
 from telereason.api.schemas import ErrorCode, ErrorDetail, ErrorResponse
 
 # Status codes raised by FastAPI or Starlette themselves (404 unknown path, 405 wrong method).
@@ -21,6 +22,8 @@ _CODE_BY_STATUS: dict[int, ErrorCode] = {
 ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
     "default": {"model": ErrorResponse, "description": "Error"},
 }
+
+ENGINE_NOT_READY_MESSAGE = "The model engine is still loading; try again in a few minutes."
 
 
 class ApiError(Exception):
@@ -56,6 +59,11 @@ async def _http_error(_: Request, exc: Exception) -> JSONResponse:
     return error_response(exc.status_code, code, str(exc.detail), exc.headers)
 
 
+async def _engine_not_ready(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, EngineNotReadyError)
+    return error_response(503, "engine_not_ready", ENGINE_NOT_READY_MESSAGE)
+
+
 async def _validation_error(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
     parts = []
@@ -68,4 +76,5 @@ async def _validation_error(_: Request, exc: Exception) -> JSONResponse:
 def install_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ApiError, _api_error)
     app.add_exception_handler(StarletteHTTPException, _http_error)
+    app.add_exception_handler(EngineNotReadyError, _engine_not_ready)
     app.add_exception_handler(RequestValidationError, _validation_error)

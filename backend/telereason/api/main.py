@@ -1,16 +1,76 @@
+import asyncio
+import logging
+import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
+
 from fastapi import FastAPI
 
+from telereason.ai.engine import Engine, create_engine, warm_up
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.data.loader import DataStore
 from telereason.settings import Settings, load_settings
 
 ROUTERS = (health, system, gate, report, windows, ask, examples, night_runs)
+WARMUP_PREVIEW_CHARS = 200
+
+logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    app = FastAPI(title="TeleReason")
+def log_to_stderr() -> None:
+    """uvicorn configures only its own loggers; show ours at INFO next to them."""
+    package = logging.getLogger("telereason")
+    if not package.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        package.addHandler(handler)
+        package.setLevel(logging.INFO)
+
+
+async def open_engine(engine: Engine) -> None:
+    """Start the engine and send one warm-up request. A failure is logged, not raised:
+    the app keeps serving and /api/health keeps reporting ready=false."""
+    started = time.perf_counter()
+    try:
+        await engine.start()
+        warm = await warm_up(engine)
+    except Exception:
+        logger.exception("%s engine failed to start; /api/health stays ready=false", engine.name)
+        await engine.close()
+        return
+    logger.info(
+        "%s engine ready in %.1f s (model=%s); warm-up: %d ms, %d completion tokens\n%s",
+        engine.name,
+        time.perf_counter() - started,
+        engine.model,
+        warm.elapsed_ms,
+        warm.completion_tokens,
+        warm.text[:WARMUP_PREVIEW_CHARS],
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Open the one engine of this process at startup and close it at shutdown."""
+    log_to_stderr()
+    engine: Engine = app.state.engine
+    # Open in the background so the app answers requests while the model loads.
+    opening = asyncio.create_task(open_engine(engine))
+    try:
+        yield
+    finally:
+        opening.cancel()
+        with suppress(asyncio.CancelledError):
+            await opening
+        await engine.close()
+
+
+def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
+    app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
+    # Building the engine imports no GPU code; vllm is imported only when it starts.
+    app.state.engine = engine or create_engine(app.state.settings)
     app.state.data_store = DataStore(
         app.state.settings.data_dir, use_fixtures=app.state.settings.engine == "fake"
     )
