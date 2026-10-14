@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import type { components } from '../api/schema.d.ts'
+import { formatScore } from './format.ts'
 import { SegmentMeter } from './SegmentMeter.tsx'
 
 type ReportItem = components['schemas']['ReportItem']
@@ -8,7 +9,7 @@ type ReportItem = components['schemas']['ReportItem']
 const SCORE_COLUMNS = 'grid-cols-[100px_220px_200px_1fr_112px]'
 const FACTS_COLUMNS = 'grid-cols-[100px_220px_1fr_112px]'
 
-function VerifiedChip({ verified }: { verified: boolean }) {
+export function VerifiedChip({ verified }: { verified: boolean }) {
   return (
     <span
       className={`mono-label justify-self-end bg-raised px-2.5 py-1 whitespace-nowrap ${
@@ -65,7 +66,7 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
                 <span className="flex items-center gap-3.5">
                   <SegmentMeter value={item.score ?? 0} tone="screening" className="flex-1" />
                   <b className="text-[20px] font-semibold tabular-nums">
-                    {item.score === null ? '–' : item.score.toFixed(2)}
+                    {item.score === null ? '–' : formatScore(item.score)}
                   </b>
                 </span>
               )}

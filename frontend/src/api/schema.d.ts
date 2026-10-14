@@ -245,7 +245,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "not_found" | "busy" | "rate_limited" | "engine_not_ready" | "not_implemented";
+            code: "bad_request" | "not_found" | "busy" | "rate_limited" | "engine_not_ready" | "not_implemented" | "timeout" | "internal_error";
             /** Message */
             message: string;
         };
