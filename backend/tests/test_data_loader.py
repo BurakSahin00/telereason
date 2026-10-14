@@ -88,6 +88,28 @@ def test_store_reports_unknown_window(tmp_path) -> None:
         store.get_window("missing")
 
 
+def test_store_opens_detail_missing_from_summaries(tmp_path) -> None:
+    # windows.json holds one page only; a report window may be in window_detail.json alone.
+    (tmp_path / "windows.json").write_text(json.dumps({"items": []}), encoding="utf-8")
+    detail = {
+        "window_id": "W-2",
+        "line": "FactoryWave",
+        "task": "pick_and_place",
+        "verdict": "closed",
+        "score": None,
+        "flagged": None,
+        "look_first": "signal_a",
+        "facts": [],
+        "top_features": [],
+        "note": "",
+        "verified": True,
+    }
+    (tmp_path / "window_detail.json").write_text(json.dumps({"W-2": detail}), encoding="utf-8")
+    store = DataStore(tmp_path / "data", use_fixtures=True, fixture_root=tmp_path)
+
+    assert store.get_window("W-2").model_dump(mode="json") == detail
+
+
 def test_store_reads_factorybench_signal_parquet_without_band(tmp_path) -> None:
     write_factorywave(tmp_path / "factorybench" / "factorywave")
     store = DataStore(tmp_path)

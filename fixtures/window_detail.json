@@ -75,42 +75,308 @@
     "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most from normal operation are feedback_tcp_4 (z = -1.98, difference = -2.76) and setpoint_tcp_4 (z = -1.97, difference = -2.77). A technician should look first at the signal named feedback_tcp_4.",
     "verified": true
   },
-  "W-823610": {
-    "window_id": "W-823610",
+  "W-083850": {
+    "window_id": "W-083850",
     "line": "AURSAD",
     "task": "aursad",
     "verdict": "screening",
-    "score": 0.845,
-    "flagged": false,
-    "look_first": "setpoint_acc_5",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "vibration_2",
     "facts": [
       {
+        "signal": "vibration_2",
+        "window_mean": -0.0738,
+        "normal_mean": 0.127,
+        "difference": -0.201,
+        "z": -3.79,
+        "plain": "Clearly off normal (3.79 standard deviations)."
+      },
+      {
+        "signal": "setpoint_acc_4",
+        "window_mean": -0.197,
+        "normal_mean": -0.0119,
+        "difference": -0.185,
+        "z": -2.11,
+        "plain": "Slightly off normal (2.11 standard deviations)."
+      },
+      {
         "signal": "effort_target_torque_5",
-        "window_mean": -0.00149,
+        "window_mean": 0.0,
         "normal_mean": 0.0,
-        "difference": -0.00149,
-        "z": -8.36,
-        "plain": "Clearly off normal (8.36 standard deviations)."
-      },
-      {
-        "signal": "setpoint_acc_5",
-        "window_mean": -0.0208,
-        "normal_mean": -0.00139,
-        "difference": -0.0194,
-        "z": -8.36,
-        "plain": "Clearly off normal (8.36 standard deviations)."
-      },
-      {
-        "signal": "effort_target_torque_0",
-        "window_mean": -0.205,
-        "normal_mean": 0.0198,
-        "difference": -0.225,
-        "z": -4.35,
-        "plain": "Clearly off normal (4.35 standard deviations)."
+        "difference": 0.0,
+        "z": -2.01,
+        "plain": "Slightly off normal (2.01 standard deviations)."
       }
     ],
     "top_features": [],
-    "note": "The abnormal‑behaviour score is 0.845. The most deviating signals are effort_target_torque_5 (z = ‑8.36, difference = ‑0.00149), setpoint_acc_5 (z = ‑8.36, difference = ‑0.0194) and effort_target_torque_0 (z = ‑4.35, difference = ‑0.225). A technician should look first at the signal named setpoint_acc_5.",
+    "note": "The abnormal‑behaviour score is 1.0. The most deviating signals are vibration_2 (z = -3.79, difference = -0.201), setpoint_acc_4 (z = -2.11, difference = -0.185) and effort_target_torque_5 (z = -2.01, difference = 0.0). A technician should look first at the signal named vibration_2.",
+    "verified": true
+  },
+  "W-055777": {
+    "window_id": "W-055777",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
+    "facts": [
+      {
+        "signal": "setpoint_acc_5",
+        "window_mean": -0.00619,
+        "normal_mean": -0.00137,
+        "difference": -0.00482,
+        "z": -2.11,
+        "plain": "Slightly off normal (2.11 standard deviations)."
+      },
+      {
+        "signal": "effort_target_torque_5",
+        "window_mean": 0.0,
+        "normal_mean": 0.0,
+        "difference": 0.0,
+        "z": -2.11,
+        "plain": "Slightly off normal (2.11 standard deviations)."
+      },
+      {
+        "signal": "joint_voltage_0",
+        "window_mean": 47.1,
+        "normal_mean": 47.1,
+        "difference": 0.0,
+        "z": -2.02,
+        "plain": "Slightly off normal (2.02 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score for this window is 1.0. The signals that deviate most are setpoint_acc_5 (z = -2.11, difference = -0.00482) and effort_target_torque_5 (z = -2.11, difference = 0.0), while the plan‑vs‑measured gap for feedback_tcp_speed_0 vs setpoint_tcp_speed_0 shows a z = 3.72 and excess = 0.00548. A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
+    "verified": true
+  },
+  "W-775654": {
+    "window_id": "W-775654",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "feedback_tcp_4",
+    "facts": [
+      {
+        "signal": "feedback_tcp_4",
+        "window_mean": -1.84,
+        "normal_mean": 1.02,
+        "difference": -2.86,
+        "z": -2.04,
+        "plain": "Slightly off normal (2.04 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_4",
+        "window_mean": -1.83,
+        "normal_mean": 1.03,
+        "difference": -2.86,
+        "z": -2.03,
+        "plain": "Slightly off normal (2.03 standard deviations)."
+      },
+      {
+        "signal": "effort_current_3",
+        "window_mean": -0.994,
+        "normal_mean": 0.00338,
+        "difference": -0.997,
+        "z": -1.86,
+        "plain": "Within the normal range (1.86 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 1.0. The signals deviating most are feedback_tcp_4 (z = -2.04, difference = -2.86) and setpoint_tcp_4 (z = -2.03, difference = -2.86). A technician should look first at the signal named feedback_tcp_4.",
+    "verified": true
+  },
+  "W-959299": {
+    "window_id": "W-959299",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
+    "facts": [
+      {
+        "signal": "feedback_pos_5",
+        "window_mean": -1.53,
+        "normal_mean": -1.56,
+        "difference": 0.03,
+        "z": 2.05,
+        "plain": "Slightly off normal (2.05 standard deviations)."
+      },
+      {
+        "signal": "setpoint_pos_5",
+        "window_mean": -1.53,
+        "normal_mean": -1.56,
+        "difference": 0.03,
+        "z": 2.05,
+        "plain": "Slightly off normal (2.05 standard deviations)."
+      },
+      {
+        "signal": "feedback_tcp_4",
+        "window_mean": -1.74,
+        "normal_mean": 1.02,
+        "difference": -2.76,
+        "z": -1.97,
+        "plain": "Within the normal range (1.97 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most are feedback_tcp_4 (z = -1.97, difference = -2.76) and feedback_pos_5 (z = 2.05, difference = 0.03). A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
+    "verified": true
+  },
+  "W-278145": {
+    "window_id": "W-278145",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "speed_scaling",
+    "facts": [
+      {
+        "signal": "speed_scaling",
+        "window_mean": 0.695,
+        "normal_mean": 0.866,
+        "difference": -0.171,
+        "z": -1.94,
+        "plain": "Within the normal range (1.94 standard deviations)."
+      },
+      {
+        "signal": "setpoint_speed_5",
+        "window_mean": 0.00761,
+        "normal_mean": 0.0,
+        "difference": 0.00761,
+        "z": 1.74,
+        "plain": "Within the normal range (1.74 standard deviations)."
+      },
+      {
+        "signal": "feedback_speed_5",
+        "window_mean": 0.00764,
+        "normal_mean": 0.0,
+        "difference": 0.00764,
+        "z": 1.72,
+        "plain": "Within the normal range (1.72 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 1.0. The most deviating signals are speed_scaling (z = -1.94, difference = -0.171), setpoint_speed_5 (z = 1.74, difference = 0.00761) and feedback_speed_5 (z = 1.72, difference = 0.00764). A technician should look first at the signal named speed_scaling.",
+    "verified": true
+  },
+  "W-285205": {
+    "window_id": "W-285205",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "est_contact_force_2",
+    "facts": [
+      {
+        "signal": "est_contact_force_2",
+        "window_mean": 25.3,
+        "normal_mean": 11.4,
+        "difference": 13.9,
+        "z": 1.7,
+        "plain": "Within the normal range (1.7 standard deviations)."
+      },
+      {
+        "signal": "feedback_pos_0",
+        "window_mean": -1.32,
+        "normal_mean": -0.413,
+        "difference": -0.907,
+        "z": -1.63,
+        "plain": "Within the normal range (1.63 standard deviations)."
+      },
+      {
+        "signal": "setpoint_pos_0",
+        "window_mean": -1.32,
+        "normal_mean": -0.413,
+        "difference": -0.907,
+        "z": -1.63,
+        "plain": "Within the normal range (1.63 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 1.0. The signal est_contact_force_2 deviates most with a z‑value of 1.7 and a difference of 13.9, while feedback_pos_0 and setpoint_pos_0 both show a z‑value of -1.63 and a difference of -0.907. A technician should look first at the signal named est_contact_force_2.",
+    "verified": true
+  },
+  "W-246610": {
+    "window_id": "W-246610",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "est_contact_force_5",
+    "facts": [
+      {
+        "signal": "est_contact_force_5",
+        "window_mean": 0.375,
+        "normal_mean": 0.0206,
+        "difference": 0.354,
+        "z": 1.76,
+        "plain": "Within the normal range (1.76 standard deviations)."
+      },
+      {
+        "signal": "robot_voltage",
+        "window_mean": 47.4,
+        "normal_mean": 47.4,
+        "difference": 0.0,
+        "z": -1.71,
+        "plain": "Within the normal range (1.71 standard deviations)."
+      },
+      {
+        "signal": "est_contact_force_2",
+        "window_mean": 25.2,
+        "normal_mean": 11.4,
+        "difference": 13.8,
+        "z": 1.68,
+        "plain": "Within the normal range (1.68 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most from normal operation are est_contact_force_5 (z = 1.76, difference = 0.354), robot_voltage (z = ‑1.71, difference = 0.0) and est_contact_force_2 (z = 1.68, difference = 13.8). A technician should look first at the signal named est_contact_force_5.",
+    "verified": true
+  },
+  "W-199472": {
+    "window_id": "W-199472",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 1.0,
+    "flagged": true,
+    "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
+    "facts": [
+      {
+        "signal": "effort_current_0",
+        "window_mean": 0.298,
+        "normal_mean": -0.0468,
+        "difference": 0.345,
+        "z": 1.87,
+        "plain": "Within the normal range (1.87 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_4",
+        "window_mean": -1.27,
+        "normal_mean": 1.03,
+        "difference": -2.3,
+        "z": -1.63,
+        "plain": "Within the normal range (1.63 standard deviations)."
+      },
+      {
+        "signal": "feedback_tcp_4",
+        "window_mean": -1.26,
+        "normal_mean": 1.02,
+        "difference": -2.28,
+        "z": -1.63,
+        "plain": "Within the normal range (1.63 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal-behaviour score is 1.0. The most deviating signals are effort_current_0 (z = 1.87, difference = 0.345), setpoint_tcp_4 (z = -1.63, difference = -2.3) and feedback_tcp_4 (z = -1.63, difference = -2.28); the largest plan‑vs‑measured gap is feedback_tcp_speed_0 vs setpoint_tcp_speed_0 (z = 1.96, excess_over_typical = 0.00288). A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
     "verified": true
   },
   "W-246062": {
@@ -187,6 +453,348 @@
     ],
     "top_features": [],
     "note": "The signals with the largest deviations are vibration_1 (z = 1410.0, difference = 3.1), vibration_2 (z = ‑217.0, difference = ‑9.58) and vibration_0 (z = ‑44.1, difference = ‑2.12). The biggest plan‑vs‑measured gap is for the pair feedback_tcp_1 vs setpoint_tcp_1 (z = 0.011, excess over typical = 0.001). A technician should look first at the signal vibration_1.",
+    "verified": true
+  },
+  "W-726372": {
+    "window_id": "W-726372",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.59,
+        "normal_mean": -0.986,
+        "difference": 2.58,
+        "z": 1170.0,
+        "plain": "Clearly off normal (1170 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.87,
+        "normal_mean": -0.0179,
+        "difference": -9.85,
+        "z": -223.0,
+        "plain": "Clearly off normal (223 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_speed_3",
+        "window_mean": 0.0907,
+        "normal_mean": 0.0,
+        "difference": 0.0907,
+        "z": 19.6,
+        "plain": "Clearly off normal (19.6 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The most deviating signals are vibration_1 with a z‑value of 1170.0 and a difference of 2.58, vibration_2 with a z‑value of -223.0 and a difference of -9.85, and setpoint_tcp_speed_3 with a z‑value of 19.6 and a difference of 0.0907. The largest plan‑vs‑measured gap is feedback_tcp_1 vs setpoint_tcp_1 with a max absolute gap of 0.001, a z‑value of 0.011 and an excess over typical of 0.001. A technician should look first at the signal vibration_1.",
+    "verified": true
+  },
+  "W-222671": {
+    "window_id": "W-222671",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.53,
+        "normal_mean": -0.986,
+        "difference": 2.52,
+        "z": 1150.0,
+        "plain": "Clearly off normal (1150 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.93,
+        "normal_mean": -0.0179,
+        "difference": -9.91,
+        "z": -224.0,
+        "plain": "Clearly off normal (224 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_5",
+        "window_mean": 0.262,
+        "normal_mean": 0.0,
+        "difference": 0.262,
+        "z": 18.3,
+        "plain": "Clearly off normal (18.3 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The signals that deviate most are vibration_1 (z = 1150.0, difference = 2.52), vibration_2 (z = ‑224.0, difference = ‑9.91) and setpoint_tcp_5 (z = 18.3, difference = 0.262). The largest plan‑vs‑measured gap is feedback_tcp_speed_0 vs setpoint_tcp_speed_0 (z = 0.0202, excess_over_typical = 0.0). A technician should look first at vibration_1.",
+    "verified": true
+  },
+  "W-836504": {
+    "window_id": "W-836504",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.51,
+        "normal_mean": -0.986,
+        "difference": 2.5,
+        "z": 1130.0,
+        "plain": "Clearly off normal (1130 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.67,
+        "normal_mean": -0.0179,
+        "difference": -9.65,
+        "z": -218.0,
+        "plain": "Clearly off normal (218 standard deviations)."
+      },
+      {
+        "signal": "vibration_0",
+        "window_mean": 2.48,
+        "normal_mean": -0.0114,
+        "difference": 2.49,
+        "z": 51.9,
+        "plain": "Clearly off normal (51.9 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The most deviating signals are vibration_1 (z = 1130.0, difference = 2.5), vibration_2 (z = ‑218.0, difference = ‑9.65) and vibration_0 (z = 51.9, difference = 2.49). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess_over_typical = 0.0339). A technician should look first at vibration_1.",
+    "verified": true
+  },
+  "W-864504": {
+    "window_id": "W-864504",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.48,
+        "normal_mean": -0.986,
+        "difference": 2.47,
+        "z": 1120.0,
+        "plain": "Clearly off normal (1120 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.94,
+        "normal_mean": -0.0179,
+        "difference": -9.92,
+        "z": -224.0,
+        "plain": "Clearly off normal (224 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_speed_4",
+        "window_mean": 0.0497,
+        "normal_mean": 0.0,
+        "difference": 0.0497,
+        "z": 21.2,
+        "plain": "Clearly off normal (21.2 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The signals that deviate most from normal operation are vibration_1 (z = 1120.0, difference = 2.47), vibration_2 (z = ‑224.0, difference = ‑9.92) and setpoint_tcp_speed_4 (z = 21.2, difference = 0.0497). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess over typical = 0.0339). A technician should look first at vibration_1.",
+    "verified": true
+  },
+  "W-107479": {
+    "window_id": "W-107479",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "feedback_tcp_2 vs setpoint_tcp_2",
+    "facts": [
+      {
+        "signal": "robot_voltage",
+        "window_mean": 0.0,
+        "normal_mean": 47.9,
+        "difference": -47.9,
+        "z": -38.2,
+        "plain": "Clearly off normal (38.2 standard deviations)."
+      },
+      {
+        "signal": "control_output_2",
+        "window_mean": 4.98,
+        "normal_mean": -1.47,
+        "difference": 6.45,
+        "z": 33.1,
+        "plain": "Clearly off normal (33.1 standard deviations)."
+      },
+      {
+        "signal": "control_output_3",
+        "window_mean": 4.68,
+        "normal_mean": -0.69,
+        "difference": 5.37,
+        "z": 32.2,
+        "plain": "Clearly off normal (32.2 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The signals with the largest deviations are robot_voltage (z -38.2, difference -47.9), control_output_2 (z 33.1, difference 6.45) and control_output_3 (z 32.2, difference 5.37). The biggest plan‑vs‑measured gap is feedback_tcp_2 vs setpoint_tcp_2 (z 1030.0, excess over typical 0.394). A technician should look first at feedback_tcp_2 vs setpoint_tcp_2.",
+    "verified": true
+  },
+  "W-644671": {
+    "window_id": "W-644671",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.21,
+        "normal_mean": -0.986,
+        "difference": 2.2,
+        "z": 998.0,
+        "plain": "Clearly off normal (998 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.9,
+        "normal_mean": -0.0179,
+        "difference": -9.88,
+        "z": -224.0,
+        "plain": "Clearly off normal (224 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_speed_3",
+        "window_mean": 0.1,
+        "normal_mean": 0.0,
+        "difference": 0.1,
+        "z": 21.6,
+        "plain": "Clearly off normal (21.6 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The signals that deviate most from normal operation are vibration_1 (z = 998.0, difference = 2.2), vibration_2 (z = ‑224.0, difference = ‑9.88) and setpoint_tcp_speed_3 (z = 21.6, difference = 0.1). The largest plan‑vs‑measured gap is for feedback_speed_0 vs setpoint_speed_0 (max_abs_gap = 1.6, z = 0.661, excess_over_typical = 0.618). A technician should look first at vibration_1.",
+    "verified": true
+  },
+  "W-913866": {
+    "window_id": "W-913866",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.14,
+        "normal_mean": -0.986,
+        "difference": 2.13,
+        "z": 966.0,
+        "plain": "Clearly off normal (966 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -9.86,
+        "normal_mean": -0.0179,
+        "difference": -9.84,
+        "z": -223.0,
+        "plain": "Clearly off normal (223 standard deviations)."
+      },
+      {
+        "signal": "vibration_0",
+        "window_mean": 2.03,
+        "normal_mean": -0.0114,
+        "difference": 2.04,
+        "z": 42.5,
+        "plain": "Clearly off normal (42.5 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The signals that deviate most are vibration_1 (z = 966.0, difference = 2.13), vibration_2 (z = ‑223.0, difference = ‑9.84) and vibration_0 (z = 42.5, difference = 2.04). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess over typical = 0.0339). A technician should look first at vibration_1.",
+    "verified": true
+  },
+  "W-787038": {
+    "window_id": "W-787038",
+    "line": "FactoryWave",
+    "task": "pick_and_place",
+    "verdict": "closed",
+    "score": null,
+    "flagged": null,
+    "look_first": "vibration_1",
+    "facts": [
+      {
+        "signal": "vibration_1",
+        "window_mean": 1.13,
+        "normal_mean": -0.986,
+        "difference": 2.12,
+        "z": 962.0,
+        "plain": "Clearly off normal (962 standard deviations)."
+      },
+      {
+        "signal": "vibration_2",
+        "window_mean": -10.1,
+        "normal_mean": -0.0179,
+        "difference": -10.1,
+        "z": -228.0,
+        "plain": "Clearly off normal (228 standard deviations)."
+      },
+      {
+        "signal": "setpoint_tcp_5",
+        "window_mean": -0.194,
+        "normal_mean": 0.0,
+        "difference": -0.194,
+        "z": -13.6,
+        "plain": "Clearly off normal (13.6 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The most deviating signals are vibration_1 (z = 962.0, difference = 2.12), vibration_2 (z = ‑228.0, difference = ‑10.1) and setpoint_tcp_5 (z = ‑13.6, difference = ‑0.194). A technician should look first at the signal named vibration_1.",
+    "verified": true
+  },
+  "W-823610": {
+    "window_id": "W-823610",
+    "line": "AURSAD",
+    "task": "aursad",
+    "verdict": "screening",
+    "score": 0.845,
+    "flagged": false,
+    "look_first": "setpoint_acc_5",
+    "facts": [
+      {
+        "signal": "effort_target_torque_5",
+        "window_mean": -0.00149,
+        "normal_mean": 0.0,
+        "difference": -0.00149,
+        "z": -8.36,
+        "plain": "Clearly off normal (8.36 standard deviations)."
+      },
+      {
+        "signal": "setpoint_acc_5",
+        "window_mean": -0.0208,
+        "normal_mean": -0.00139,
+        "difference": -0.0194,
+        "z": -8.36,
+        "plain": "Clearly off normal (8.36 standard deviations)."
+      },
+      {
+        "signal": "effort_target_torque_0",
+        "window_mean": -0.205,
+        "normal_mean": 0.0198,
+        "difference": -0.225,
+        "z": -4.35,
+        "plain": "Clearly off normal (4.35 standard deviations)."
+      }
+    ],
+    "top_features": [],
+    "note": "The abnormal‑behaviour score is 0.845. The most deviating signals are effort_target_torque_5 (z = ‑8.36, difference = ‑0.00149), setpoint_acc_5 (z = ‑8.36, difference = ‑0.0194) and effort_target_torque_0 (z = ‑4.35, difference = ‑0.225). A technician should look first at the signal named setpoint_acc_5.",
     "verified": true
   }
 }
