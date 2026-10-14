@@ -15,7 +15,11 @@ ErrorCode = Literal[
     "rate_limited",
     "engine_not_ready",
     "not_implemented",
+    "timeout",
+    "internal_error",
 ]
+# Window ids in requests: "W-" and six digits, e.g. W-246062.
+WINDOW_ID_PATTERN = r"^W-[0-9]{6}$"
 
 
 # Errors
@@ -195,7 +199,7 @@ class SignalsResponse(BaseModel):
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1)
-    window_id: str | None = None
+    window_id: str | None = Field(default=None, pattern=WINDOW_ID_PATTERN)
 
 
 class ToolCallEvent(BaseModel):

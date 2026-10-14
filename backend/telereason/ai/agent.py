@@ -114,6 +114,17 @@ def is_action_request(question: str) -> bool:
     return bool(_EN_ACTION.search(text) or _TR_ACTION.search(text))
 
 
+# A harmony special token in the question would open a message of its own (prompt injection).
+_HARMONY_MARKER = re.compile(r"<\|.*?\|>", re.DOTALL)
+
+
+def strip_harmony_markers(text: str) -> str:
+    """Remove every `<|...|>` string; repeat until none is left, so markers cannot nest."""
+    while (cleaned := _HARMONY_MARKER.sub("", text)) != text:
+        text = cleaned
+    return text
+
+
 # Harmony
 
 
@@ -188,6 +199,15 @@ def _user(question: str) -> str:
     return f"<|start|>user<|message|>{question}<|end|>"
 
 
+WARMUP_QUESTION = "Which windows did last night's scan flag?"
+
+
+def warm_up_prompt() -> str:
+    """The first-turn prompt of a real question. Warming up with a prompt of this size
+    compiles the GPU kernels for it, so the first technician's question does not wait."""
+    return SYSTEM + _developer(None) + _user(WARMUP_QUESTION) + "<|start|>assistant"
+
+
 # The loop
 
 
@@ -255,6 +275,12 @@ async def ask(
     def done() -> DoneMessage:
         total_ms = round((time.perf_counter() - started) * 1000)
         return DoneMessage(event="done", data=DoneEvent(total_ms=total_ms, tokens=tokens))
+
+    question = strip_harmony_markers(question).strip()
+    if not question:
+        yield AnswerMessage(event="answer", data=_not_answerable())
+        yield done()
+        return
 
     if is_action_request(question):
         refusal = AnswerEvent(answer="ACTION_REFUSED", answer_source="tool", text=REFUSAL_TEXT)

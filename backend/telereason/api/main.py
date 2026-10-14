@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 
+from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import Engine, create_engine, warm_up
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
@@ -29,22 +30,24 @@ def log_to_stderr() -> None:
 
 
 async def open_engine(engine: Engine) -> None:
-    """Start the engine and send one warm-up request. A failure is logged, not raised:
-    the app keeps serving and /api/health keeps reporting ready=false."""
+    """Start the engine and send one agent-sized warm-up request. A failure is logged, not
+    raised: the app keeps serving and /api/health keeps reporting ready=false."""
     started = time.perf_counter()
     try:
         await engine.start()
-        warm = await warm_up(engine)
+        warm = await warm_up(engine, warm_up_prompt())
     except Exception:
         logger.exception("%s engine failed to start; /api/health stays ready=false", engine.name)
         await engine.close()
         return
     logger.info(
-        "%s engine ready in %.1f s (model=%s); warm-up: %d ms, %d completion tokens\n%s",
+        "%s engine ready in %.1f s (model=%s); warm-up: %d ms, %d prompt + %d completion "
+        "tokens\n%s",
         engine.name,
         time.perf_counter() - started,
         engine.model,
         warm.elapsed_ms,
+        warm.prompt_tokens,
         warm.completion_tokens,
         warm.text[:WARMUP_PREVIEW_CHARS],
     )

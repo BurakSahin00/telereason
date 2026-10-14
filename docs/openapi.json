@@ -550,7 +550,8 @@
           "window_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^W-[0-9]{6}$"
               },
               {
                 "type": "null"
@@ -611,7 +612,9 @@
               "busy",
               "rate_limited",
               "engine_not_ready",
-              "not_implemented"
+              "not_implemented",
+              "timeout",
+              "internal_error"
             ],
             "title": "Code"
           },

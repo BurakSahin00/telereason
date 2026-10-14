@@ -25,6 +25,8 @@ Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds
 | 429 | `rate_limited` | Too many requests to `/api/ask` or `POST /api/night-runs` |
 | 503 | `engine_not_ready` | The model engine is still loading |
 | 501 | `not_implemented` | Endpoint stub not built yet (development only; none remain at v1.0) |
+| – | `timeout` | `error` event only: a `/api/ask` answer took longer than 60 s |
+| – | `internal_error` | `error` event only: `/api/ask` failed after the stream started |
 
 A change to any schema goes in one PR together with the matching `fixtures/` files and carries the `api-change` label.
 
@@ -183,7 +185,7 @@ Request:
 {"question": "What went wrong in this record?", "window_id": "W-574006"}
 ```
 
-`window_id` is optional. The response is an SSE stream; the frontend reads it with `fetch` (EventSource cannot POST).
+`window_id` is optional; when given it is `W-` followed by six digits (for example `W-574006`), otherwise the request gets 422 `bad_request`. Harmony special tokens (any `<|...|>` string) are removed from `question` before it reaches the model. The response is an SSE stream; the frontend reads it with `fetch` (EventSource cannot POST).
 
 ```
 event: tool_call
@@ -199,12 +201,23 @@ event: done
 data: {"total_ms": 3400, "tokens": 812}
 ```
 
-- An `error` event (`data` = the error shape above) ends the stream early. Errors before the stream starts (for example `bad_request`, `rate_limited`) are plain JSON responses.
+- An `error` event (`data` = the error shape above) ends the stream early, without `done`: `timeout` when no answer came within 60 s, `internal_error` when the assistant failed, `engine_not_ready` when the engine stopped mid-answer. Errors before the stream starts (for example `bad_request`, `rate_limited`, `engine_not_ready`) are plain JSON responses.
 - Payload models in `/openapi.json`: `ToolCallEvent`, `ToolResultEvent`, `AnswerEvent`, `DoneEvent` and `ErrorResponse`. The 200 response describes one message as `{"event", "data"}`.
 - A comment line (`: ping`) is sent every 15 s so proxies keep the stream open; clients ignore it.
+- When the client disconnects, the server stops the answer and cancels the model request.
 - `ms` is the tool's run time; `null` when it was not measured.
-- `answer_source` is `tool` when the answer comes from a tool result, `model` otherwise.
-- Action requests (for example "stop the robot") are refused in `text`.
+- `total_ms` is the time from the request to `done`; `tokens` is the number of tokens the model generated for this question (0 when the model did not run).
+- `answer_source` says who wrote `text`: `tool` when code wrote it (from a tool result, a refusal or the not-answerable text), `model` when the language model wrote it.
+- `answer` is one of these codes:
+
+| `answer` | `answer_source` | When |
+|---|---|---|
+| `ANSWERED` | `model` | The model answered from tool results |
+| `FACTS_ONLY` | `tool` | The model's answer named a fault on a `closed` or `screening` line; it is replaced by the verified facts |
+| `DIAGNOSIS_CLOSED` | `tool` | Fault question on a `closed` line: the gate verdict and the verified facts, no cause |
+| `SCREENING_ONLY` | `tool` | Fault question on a `screening` line: the abnormal-behaviour score, no cause |
+| `ACTION_REFUSED` | `tool` | A request to start, stop or change equipment (for example "Stop the robot"); refused before the model runs |
+| `NOT_ANSWERABLE` | `tool` | The tools cannot answer the question, or it is not about these robot cells |
 
 ### GET /api/examples
 
