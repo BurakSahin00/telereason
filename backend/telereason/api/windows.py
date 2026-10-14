@@ -19,7 +19,7 @@ def list_windows(
     page_size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> WindowListResponse:
     try:
-        return request.app.state.data_store.list_windows(
+        return request.app.state.night_store.list_windows(
             line=line, flagged=flagged, sort=sort, page=page, page_size=page_size
         )
     except DataNotAvailableError as exc:
@@ -29,7 +29,7 @@ def list_windows(
 @router.get("/api/windows/{window_id}", response_model=WindowDetail)
 def get_window(request: Request, window_id: str) -> WindowDetail:
     try:
-        return request.app.state.data_store.get_window(window_id)
+        return request.app.state.night_store.get_window(window_id)
     except WindowNotFoundError as exc:
         raise ApiError(404, "not_found", f"Window {window_id} does not exist.") from exc
     except DataNotAvailableError as exc:

@@ -2,6 +2,8 @@
 
 Contract between the backend (FastAPI) and the frontend. Until the real endpoints are ready, the backend's fake mode (`ENGINE=fake`) serves `fixtures/` as the responses, so the frontend always talks to the same backend; `GET /api/health` reports the real engine setting, not a fixture.
 
+In real mode (`ENGINE=vllm`) with `NIGHT_SOURCE=stored`, for now the default and only value, `/api/report/latest`, `/api/gate`, `/api/examples`, `/api/windows` and `/api/windows/{window_id}` serve the stored 11 Oct night from `fixtures/`, and the live assistant's tools read the same files; `/api/windows/{window_id}/signals` reads the downloaded dataset, and `/api/system` and `/api/night-runs` answer `501` until they are built.
+
 Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds responses generated from the real 11 Oct MI300X run (see `fixtures/README.md`).
 
 ## Conventions

@@ -8,4 +8,6 @@ router = APIRouter()
 
 @router.get("/api/report/latest", response_model=ReportResponse)
 def latest_report(request: Request) -> ReportResponse:
-    return fixture_response(request, ReportResponse, "report_latest.json", "GET /api/report/latest")
+    return fixture_response(
+        request, ReportResponse, "report_latest.json", "GET /api/report/latest", stored_night=True
+    )
