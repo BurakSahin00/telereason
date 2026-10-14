@@ -1,0 +1,132 @@
+/*
+ * Design tokens for TeleReason. This is the only place colours, type, the
+ * type scale and layout sizes are defined (see frontend/DESIGN.md).
+ * Components use these names only; Tailwind's default palette and type scale
+ * are switched off so nothing else can slip in.
+ *
+ * source(".") limits class scanning to src/, so the reference mockups in
+ * design/ never reach the build.
+ */
+@import 'tailwindcss' source('.');
+
+@theme {
+  /* Surfaces, rules and text */
+  --color-*: initial;
+  --color-bg: #111212;
+  --color-panel: #18191a;
+  --color-raised: #202122;
+  --color-line: #343637;
+  --color-line-strong: #5b5e5f;
+  --color-text: #eeeeea;
+  --color-muted: #a2a5a3;
+  --color-dim: #6c706e;
+
+  /* Meaning colours: they mark (dots, triangles, brackets, meters), never text */
+  --color-closed: #eeeeea;
+  --color-screening: #e9a23b;
+  --color-open: #4cc27a;
+  --color-fault: #e5484d;
+
+  /* Type families (self-hosted through Fontsource, imported in main.tsx) */
+  --font-*: initial;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type scale for a 1920x1080 recording; nothing below 12px */
+  --text-*: initial;
+  --text-title: 48px;
+  --text-title--line-height: 1;
+  --text-title--letter-spacing: -0.03em;
+  --text-title--font-weight: 700;
+  --text-stat: 56px;
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.03em;
+  --text-stat--font-weight: 600;
+  --text-verdict: 34px;
+  --text-verdict--line-height: 1.1;
+  --text-verdict--letter-spacing: -0.025em;
+  --text-verdict--font-weight: 700;
+  --text-panel-title: 24px;
+  --text-panel-title--line-height: 1.2;
+  --text-panel-title--letter-spacing: -0.02em;
+  --text-panel-title--font-weight: 600;
+  --text-body: 18px;
+  --text-body--line-height: 1.45;
+  --text-table: 17px;
+  --text-table--line-height: 1.35;
+  --text-id: 16px;
+  --text-id--line-height: 1.4;
+  --text-label: 13px;
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.08em;
+
+  /* Layout on the 8px grid */
+  --spacing-page: 40px;
+  --spacing-gutter: 24px;
+  --container-content: 1840px;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-text);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Small section labels, chips and navigation: mono, uppercase, 13px */
+@utility mono-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--text-label--letter-spacing);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/*
+ * Corner brackets (14px arms, 1.5px) drawn as background images, so they
+ * combine with a bg-* colour. Neutral by default; brackets-attention turns
+ * them screening for the one look-first panel or row.
+ */
+@utility brackets {
+  --bracket: var(--bracket-color, var(--color-line-strong));
+  background-image:
+    linear-gradient(var(--bracket), var(--bracket)), linear-gradient(var(--bracket), var(--bracket)),
+    linear-gradient(var(--bracket), var(--bracket)), linear-gradient(var(--bracket), var(--bracket)),
+    linear-gradient(var(--bracket), var(--bracket)), linear-gradient(var(--bracket), var(--bracket)),
+    linear-gradient(var(--bracket), var(--bracket)), linear-gradient(var(--bracket), var(--bracket));
+  background-position:
+    left top, left top, right top, right top,
+    left bottom, left bottom, right bottom, right bottom;
+  background-size:
+    14px 1.5px, 1.5px 14px, 14px 1.5px, 1.5px 14px,
+    14px 1.5px, 1.5px 14px, 14px 1.5px, 1.5px 14px;
+  background-repeat: no-repeat;
+}
+
+@utility brackets-attention {
+  --bracket-color: var(--color-screening);
+}

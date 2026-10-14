@@ -1,0 +1,187 @@
+import { useState } from 'react'
+import { errorSentence, isNotFound, useGate, useLatestReport } from '../api/queries.ts'
+import type { components } from '../api/schema.d.ts'
+import { GateLines } from '../components/GateLines.tsx'
+import { ErrorState, LoadingBlocks } from '../components/LoadStates.tsx'
+import { PageHeader } from '../components/PageHeader.tsx'
+import { Panel } from '../components/Panel.tsx'
+import { ReportRows } from '../components/ReportRows.tsx'
+import { StatPanel } from '../components/StatPanel.tsx'
+
+type ReportResponse = components['schemas']['ReportResponse']
+type ReportLine = components['schemas']['ReportLine']
+
+// Rows shown before "Show all", so the page fits one 1080p screen.
+const LOOK_FIRST_ROWS = 3
+const DEVIATION_ROWS = 2
+
+function GatePanel() {
+  const gate = useGate()
+  let body
+  if (gate.isPending) body = <LoadingBlocks rows={4} height="h-24" />
+  else if (gate.isError && isNotFound(gate.error))
+    body = <p className="text-muted">No gate result is stored yet. Start a small night from the AMD page.</p>
+  else if (gate.isError)
+    body = <ErrorState message={errorSentence(gate.error, 'the gate')} onRetry={() => void gate.refetch()} />
+  else body = <GateLines lines={gate.data.lines} />
+
+  return (
+    <Panel title="Gate" label="What the data can support" brackets className="flex flex-col">
+      {body}
+    </Panel>
+  )
+}
+
+function Stats({ report }: { report: ReportResponse }) {
+  const scanned = report.lines.reduce((sum, line) => sum + line.scanned, 0)
+  const screening = report.lines.find((line) => line.verdict === 'screening')
+  const flagged = screening?.flagged ?? null
+  const threshold = screening?.threshold ?? null
+
+  return (
+    <div className="grid grid-cols-4 gap-gutter">
+      <StatPanel
+        label="Windows scanned"
+        value={scanned.toLocaleString('en-US')}
+        context={report.lines.map((line) => line.line).join(' and ')}
+        meter={1}
+      />
+      <StatPanel
+        label="Flagged"
+        value={flagged === null ? null : flagged.toLocaleString('en-US')}
+        context={screening ? `${screening.line}, by screening score` : 'No screening line last night'}
+        meter={flagged !== null && screening?.scanned ? flagged / screening.scanned : 0}
+        tone="screening"
+      />
+      <StatPanel
+        label="Night run"
+        value={String(Math.round(report.timings_s.total / 60))}
+        unit="min"
+        context="Gate, facts, scan, report"
+        meter={1}
+      />
+      <StatPanel
+        label="Screening threshold"
+        value={threshold === null ? null : String(threshold)}
+        context={screening ? `${screening.line}, report cut-off` : 'No screening line last night'}
+        meter={threshold ?? 0}
+      />
+    </div>
+  )
+}
+
+type LinePanelProps = {
+  title: string
+  label: string
+  line: ReportLine
+  rows: number
+  withScore: boolean
+  empty: string
+}
+
+function LinePanel({ title, label, line, rows, withScore, empty }: LinePanelProps) {
+  const [showAll, setShowAll] = useState(false)
+  const items = showAll ? line.items : line.items.slice(0, rows)
+  const hidden = line.items.length - rows
+
+  return (
+    <Panel
+      title={title}
+      label={label}
+      action={
+        hidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(!showAll)}
+            aria-expanded={showAll}
+            className="mono-label text-text underline underline-offset-4 hover:no-underline"
+          >
+            {showAll ? 'Show fewer' : `Show all ${line.items.length}`}
+          </button>
+        )
+      }
+    >
+      <ReportRows items={items} withScore={withScore} markFirst={withScore} empty={empty} />
+    </Panel>
+  )
+}
+
+function ReportBody() {
+  const report = useLatestReport()
+
+  if (report.isPending) {
+    return (
+      <>
+        <LoadingBlocks rows={1} height="h-[190px]" />
+        <Panel title="Look first">
+          <LoadingBlocks rows={LOOK_FIRST_ROWS} />
+        </Panel>
+        <Panel title="Largest deviations">
+          <LoadingBlocks rows={DEVIATION_ROWS} />
+        </Panel>
+      </>
+    )
+  }
+
+  if (report.isError) {
+    return (
+      <Panel title="Last night">
+        {isNotFound(report.error) ? (
+          <p className="text-muted">No night run is stored yet. Start a small night from the AMD page.</p>
+        ) : (
+          <ErrorState
+            message={errorSentence(report.error, "last night's report")}
+            onRetry={() => void report.refetch()}
+          />
+        )}
+      </Panel>
+    )
+  }
+
+  // A closed line never gets a score or a cause: it only lists its largest deviations.
+  const scored = report.data.lines.filter((line) => line.verdict !== 'closed')
+  const closed = report.data.lines.filter((line) => line.verdict === 'closed')
+
+  return (
+    <>
+      <Stats report={report.data} />
+      {scored.map((line) => (
+        <LinePanel
+          key={line.line}
+          title="Look first"
+          label={`${line.line}, ranked by score`}
+          line={line}
+          rows={LOOK_FIRST_ROWS}
+          withScore
+          empty="No windows were flagged on this line last night."
+        />
+      ))}
+      {closed.map((line) => (
+        <LinePanel
+          key={line.line}
+          title="Largest deviations"
+          label={`${line.line}, facts only`}
+          line={line}
+          rows={DEVIATION_ROWS}
+          withScore={false}
+          empty="No windows were scanned on this line last night."
+        />
+      ))}
+    </>
+  )
+}
+
+// Layout from design/report.png: gate on the left, the report on the right.
+export function ReportPage() {
+  return (
+    <>
+      <PageHeader title="Morning report" subtitle="What happened last night, and where to look first." />
+      <div className="grid gap-gutter lg:grid-cols-[590px_1fr]">
+        <GatePanel />
+        <div className="flex min-w-0 flex-col gap-gutter">
+          <ReportBody />
+        </div>
+      </div>
+    </>
+  )
+}

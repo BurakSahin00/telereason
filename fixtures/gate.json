@@ -1,0 +1,27 @@
+{
+  "run_id": "2026-10-11-amd",
+  "lines": [
+    {
+      "line": "FactoryWave",
+      "verdict": "closed",
+      "label": "Facts, not diagnosis",
+      "auroc": 0.5287666985522128,
+      "auroc_ci": [
+        0.32329907654196094,
+        0.7063211589471536
+      ],
+      "explanation": "On new days, fault prediction is no better than chance, so this line gets facts only."
+    },
+    {
+      "line": "AURSAD",
+      "verdict": "screening",
+      "label": "Abnormal-behaviour screening only",
+      "auroc": 0.9097825624441513,
+      "auroc_ci": [
+        0.8990961351591692,
+        0.9205725114119723
+      ],
+      "explanation": "Normal and faulty runs separate well, but the fault cause is not reliable."
+    }
+  ]
+}

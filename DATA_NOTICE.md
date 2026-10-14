@@ -2,6 +2,8 @@
 
 This repository contains no datasets and no model weights. They are downloaded at setup time and stay outside the repository.
 
+`fixtures/` contains small example responses derived from FactoryBench (CC BY 4.0).
+
 ## Datasets
 
 - **FactoryBench** (Hugging Face: `FactoryBench/FactoryBench`), CC BY 4.0. Its card asks users to also cite AURSAD and voraus-AD.

@@ -1,0 +1,6 @@
+{
+  "status": "ok",
+  "engine": "vllm",
+  "model": "openai/gpt-oss-120b",
+  "ready": true
+}
