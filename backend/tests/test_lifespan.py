@@ -7,6 +7,7 @@ import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
 
+from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import WARMUP_MAX_TOKENS, FakeEngine, Priority
 from telereason.api.main import create_app, open_engine
 from telereason.settings import DEFAULT_MODEL, Settings
@@ -52,6 +53,7 @@ def test_lifespan_opens_warms_up_and_closes_the_engine(monkeypatch: pytest.Monke
         assert engine.ready is True
         assert len(engine.calls) == 1
         assert engine.calls[0].priority == Priority.LIVE
+        assert engine.calls[0].prompt == warm_up_prompt()  # agent-sized, not a one-liner
 
     assert engine.ready is False
 

@@ -134,13 +134,6 @@ def test_fake_ask_rejects_invalid_body(fake_client: TestClient, body: dict[str, 
     assert_error_shape(response.json(), "bad_request")
 
 
-def test_vllm_ask_is_not_implemented(vllm_client: TestClient) -> None:
-    response = vllm_client.post("/api/ask", json=ASK_BODY)
-
-    assert response.status_code == 501
-    assert_error_shape(response.json(), "not_implemented")
-
-
 def test_event_delay_stays_in_range() -> None:
     delays = [fake.event_delay_s() for _ in range(200)]
 

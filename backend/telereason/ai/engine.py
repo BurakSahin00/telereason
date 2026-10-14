@@ -265,9 +265,17 @@ class VllmEngine:
         request_id = f"{kind or 'generate'}-{uuid.uuid4().hex}"
         started = time.perf_counter()
 
+        llm = self._llm
         final = None
-        async for output in self._llm.generate(request, params, request_id, priority=int(priority)):
-            final = output
+        try:
+            async for output in llm.generate(request, params, request_id, priority=int(priority)):
+                final = output
+        except asyncio.CancelledError:
+            # The client left or the request timed out: free the GPU slot now. AsyncLLM
+            # aborts on cancellation too; aborting a finished request is a no-op.
+            await llm.abort(request_id)
+            logger.info("vllm request %s cancelled", request_id)
+            raise
         if final is None or not final.outputs:
             raise RuntimeError(f"vllm returned no output for request {request_id}")
 
@@ -282,10 +290,15 @@ class VllmEngine:
         )
 
 
-async def warm_up(engine: Engine) -> Generation:
-    """Send one short LIVE request so the first real question does not pay first-call costs."""
+async def warm_up(engine: Engine, prompt: Prompt | None = None) -> Generation:
+    """Send one LIVE request so the first real question does not pay first-call costs.
+
+    Pass a prompt as long as the real ones: the GPU kernels are compiled per prompt size.
+    """
     return await engine.generate(
-        harmony_prompt(WARMUP_QUESTION), priority=Priority.LIVE, max_tokens=WARMUP_MAX_TOKENS
+        prompt if prompt is not None else harmony_prompt(WARMUP_QUESTION),
+        priority=Priority.LIVE,
+        max_tokens=WARMUP_MAX_TOKENS,
     )
 
 

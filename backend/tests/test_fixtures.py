@@ -90,6 +90,8 @@ def parse_sse(text: str) -> list[tuple[str, Any]]:
     messages = []
     for block in text.strip().split("\n\n"):
         lines = [line for line in block.splitlines() if not line.startswith(":")]  # skip pings
+        if not lines:
+            continue
         fields = dict(line.split(": ", 1) for line in lines)
         assert set(fields) == {"event", "data"}, block
         messages.append((fields["event"], json.loads(fields["data"])))

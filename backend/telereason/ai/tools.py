@@ -114,7 +114,9 @@ class ProtocolIndex:
         if not path.exists():
             logger.warning("knowledge graph not found at %s; protocol search is empty", path)
             return cls([])
-        return cls.from_knowledge_graph(json.loads(path.read_text(encoding="utf-8")))
+        index = cls.from_knowledge_graph(json.loads(path.read_text(encoding="utf-8")))
+        logger.info("protocol search: %d protocols from %s", len(index.protocols), path)
+        return index
 
     @property
     def fault_names(self) -> frozenset[str]:
