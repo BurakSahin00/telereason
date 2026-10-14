@@ -20,7 +20,7 @@ export function AppBar() {
   const { pathname } = useLocation()
 
   return (
-    <header className="brackets mt-6 grid h-[76px] grid-cols-[1fr_auto_1fr] items-center gap-6 border border-line px-7">
+    <header className="brackets grid h-[76px] grid-cols-[1fr_auto_1fr] items-center gap-6 border border-line px-7">
       <Link to="/" className="justify-self-start text-panel-title font-bold">
         TeleReason
       </Link>

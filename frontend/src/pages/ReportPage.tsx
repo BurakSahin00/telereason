@@ -32,41 +32,23 @@ function GatePanel() {
   )
 }
 
-function Stats({ report }: { report: ReportResponse }) {
-  const scanned = report.lines.reduce((sum, line) => sum + line.scanned, 0)
+// Only the flagged share gets a meter: it is the one stat whose fill carries information.
+function FlaggedStat({ report }: { report: ReportResponse }) {
   const screening = report.lines.find((line) => line.verdict === 'screening')
   const flagged = screening?.flagged ?? null
-  const threshold = screening?.threshold ?? null
 
   return (
-    <div className="grid grid-cols-4 gap-gutter">
-      <StatPanel
-        label="Windows scanned"
-        value={scanned.toLocaleString('en-US')}
-        context={report.lines.map((line) => line.line).join(' and ')}
-        meter={1}
-      />
-      <StatPanel
-        label="Flagged"
-        value={flagged === null ? null : flagged.toLocaleString('en-US')}
-        context={screening ? `${screening.line}, by screening score` : 'No screening line last night'}
-        meter={flagged !== null && screening?.scanned ? flagged / screening.scanned : 0}
-        tone="screening"
-      />
-      <StatPanel
-        label="Night run"
-        value={String(Math.round(report.timings_s.total / 60))}
-        unit="min"
-        context="Gate, facts, scan, report"
-        meter={1}
-      />
-      <StatPanel
-        label="Screening threshold"
-        value={threshold === null ? null : String(threshold)}
-        context={screening ? `${screening.line}, report cut-off` : 'No screening line last night'}
-        meter={threshold ?? 0}
-      />
-    </div>
+    <StatPanel
+      label="Flagged"
+      value={flagged === null ? null : flagged.toLocaleString('en-US')}
+      context={
+        screening
+          ? `of ${screening.scanned.toLocaleString('en-US')} windows on ${screening.line}, by screening score`
+          : 'No screening line last night'
+      }
+      meter={flagged !== null && screening?.scanned ? flagged / screening.scanned : 0}
+      tone="screening"
+    />
   )
 }
 
@@ -144,7 +126,7 @@ function ReportBody() {
 
   return (
     <>
-      <Stats report={report.data} />
+      <FlaggedStat report={report.data} />
       {scored.map((line) => (
         <LinePanel
           key={line.line}
