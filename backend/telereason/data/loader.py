@@ -167,13 +167,14 @@ class DataStore:
         )
 
     def get_window(self, window_id: str) -> WindowDetail:
-        summaries = self._load_summaries()
-        if window_id not in summaries:
-            raise WindowNotFoundError(window_id)
+        # Details first: in fixture mode windows.json is a single page, so a report
+        # window may exist only in window_detail.json.
         detail = self._load_details().get(window_id)
         if detail is not None:
             return WindowDetail.model_validate(detail)
-        row = summaries[window_id]
+        row = self._load_summaries().get(window_id)
+        if row is None:
+            raise WindowNotFoundError(window_id)
         verdict: Verdict = "screening" if row["line"] == "AURSAD" else "closed"
         return WindowDetail(
             **row,

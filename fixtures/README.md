@@ -25,7 +25,11 @@ uv run python scripts/make_fixtures.py --results <results dir> --out ../fixtures
 | `night_run.json` | `GET /api/night-runs/{run_id}` (the stored 11 Oct night) |
 | pending (#28) | `GET /api/windows/{window_id}/signals` (needs raw time series) |
 
-`window_detail.json` holds 5 windows: 2 flagged AURSAD, 1 unflagged AURSAD, 2 FactoryWave.
+`window_detail.json` holds 21 windows: every window listed in `report_latest.json`
+plus one unflagged AURSAD window.
+By line: 10 flagged AURSAD, 1 unflagged AURSAD, 10 FactoryWave.
+`windows.json` is one page, so most of these windows are not in it; in fake mode
+`GET /api/windows/{window_id}` reads `window_detail.json` first.
 
 ## Where the values come from
 

@@ -86,7 +86,11 @@ uv run python scripts/make_fixtures.py --results <results dir> --out ../fixtures
 | `night_run.json` | `GET /api/night-runs/{{run_id}}` (the stored 11 Oct night) |
 | pending (#28) | `GET /api/windows/{{window_id}}/signals` (needs raw time series) |
 
-`window_detail.json` holds {n_detail} windows: {detail_mix}.
+`window_detail.json` holds {n_detail} windows: every window listed in `report_latest.json`
+plus one unflagged AURSAD window.
+By line: {detail_mix}.
+`windows.json` is one page, so most of these windows are not in it; in fake mode
+`GET /api/windows/{{window_id}}` reads `window_detail.json` first.
 
 ## Where the values come from
 
@@ -322,8 +326,10 @@ def build(results: Path) -> tuple[dict[str, Any], str]:
         "items": [summary(w) for w in unique[:WINDOWS_PAGE_SIZE]],
     }
 
+    # Every report window opens in fake mode; one unflagged AURSAD window is added so
+    # the UI also shows a window below the threshold. Report order, duplicates dropped.
     unflagged = next(w for w in by_line["AURSAD"] if flagged(w) is False)
-    picked = [*top["AURSAD"][:2], unflagged, *top["FactoryWave"][:2]]
+    picked = [*top["AURSAD"], *top["FactoryWave"], unflagged]
     window_detail = {w["window_id"]: detail(w, verdicts[w["line"]]) for w in picked}
 
     night_run = {
@@ -375,6 +381,14 @@ def build(results: Path) -> tuple[dict[str, Any], str]:
     return fixtures, sse
 
 
+def detail_mix(details: dict[str, dict[str, Any]]) -> str:
+    """Describe the detail windows, e.g. '10 flagged AURSAD, 1 unflagged AURSAD, 10 FactoryWave'."""
+    kinds = {True: "flagged ", False: "unflagged ", None: ""}
+    counts = Counter(f"{kinds[w['flagged']]}{w['line']}" for w in details.values())
+    order = [f"{kind}{line}" for line in ("AURSAD", "FactoryWave") for kind in kinds.values()]
+    return ", ".join(f"{counts[name]} {name}" for name in order if counts[name])
+
+
 def write(out: Path, fixtures: dict[str, Any], sse: str) -> None:
     files = {
         name: json.dumps(data, indent=2, ensure_ascii=False) + "\n"
@@ -384,7 +398,7 @@ def write(out: Path, fixtures: dict[str, Any], sse: str) -> None:
     files["README.md"] = README.format(
         page_size=WINDOWS_PAGE_SIZE,
         n_detail=len(fixtures["window_detail.json"]),
-        detail_mix="2 flagged AURSAD, 1 unflagged AURSAD, 2 FactoryWave",
+        detail_mix=detail_mix(fixtures["window_detail.json"]),
         threshold=REPORT_THRESHOLD,
     )
     out.mkdir(parents=True, exist_ok=True)

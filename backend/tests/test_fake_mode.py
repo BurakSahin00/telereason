@@ -31,6 +31,10 @@ ENDPOINT_IDS = [f"{method} {path}" for method, path, *_ in FIXTURE_ENDPOINTS]
 
 ASK_BODY = load("ask_request.json")
 
+REPORT_WINDOW_IDS = [
+    item["window_id"] for line in load("report_latest.json")["lines"] for item in line["items"]
+]
+
 
 def make_client(engine: EngineKind) -> TestClient:
     return TestClient(create_app(Settings(engine=engine, model=DEFAULT_MODEL)))
@@ -84,6 +88,14 @@ def test_vllm_mode_is_not_implemented(
 
     assert response.status_code == 501
     assert_error_shape(response.json(), "not_implemented")
+
+
+@pytest.mark.parametrize("window_id", REPORT_WINDOW_IDS)
+def test_fake_mode_opens_every_report_window(fake_client: TestClient, window_id: str) -> None:
+    response = fake_client.get(f"/api/windows/{window_id}")
+
+    assert response.status_code == 200
+    assert response.json() == load("window_detail.json")[window_id]
 
 
 def test_health_reports_fake_engine_not_fixture(fake_client: TestClient) -> None:
