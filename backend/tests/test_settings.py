@@ -23,3 +23,23 @@ def test_gpu_memory_utilization_rejects_bad_values(
 
     with pytest.raises(ValueError, match="GPU_MEMORY_UTILIZATION"):
         load_settings()
+
+
+def test_night_source_defaults_to_stored(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NIGHT_SOURCE", raising=False)
+
+    assert load_settings().night_source == "stored"
+
+
+def test_night_source_comes_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NIGHT_SOURCE", " Stored ")
+
+    assert load_settings().night_source == "stored"
+
+
+@pytest.mark.parametrize("raw", ["live", "fixtures", "db"])
+def test_night_source_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
+    monkeypatch.setenv("NIGHT_SOURCE", raw)
+
+    with pytest.raises(ValueError, match="NIGHT_SOURCE"):
+        load_settings()

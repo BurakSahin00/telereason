@@ -73,17 +73,14 @@ def test_fake_mode_serves_fixture(
     assert response.json() == load(name)
 
 
-@pytest.mark.parametrize(
-    ("method", "path", "status", "model", "name"), FIXTURE_ENDPOINTS, ids=ENDPOINT_IDS
-)
-def test_vllm_mode_is_not_implemented(
-    vllm_client: TestClient,
-    method: str,
-    path: str,
-    status: int,
-    model: type[BaseModel],
-    name: str,
-) -> None:
+# Real mode serves the stored night (report, gate, examples; see test_stored_night.py).
+NOT_IN_STORED_NIGHT = [
+    (method, path) for method, path, *_ in FIXTURE_ENDPOINTS if "night-runs" in path
+] + [("GET", "/api/system")]
+
+
+@pytest.mark.parametrize(("method", "path"), NOT_IN_STORED_NIGHT)
+def test_vllm_mode_is_not_implemented(vllm_client: TestClient, method: str, path: str) -> None:
     response = vllm_client.request(method, path, json={} if method == "POST" else None)
 
     assert response.status_code == 501

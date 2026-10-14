@@ -5,8 +5,12 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 EngineKind = Literal["fake", "vllm"]
+# Where real mode gets its night: "stored" is the 11 Oct night in fixtures/, until the real
+# night source lands (#26, #27).
+NightSource = Literal["stored"]
 
 ENGINE_KINDS: tuple[EngineKind, ...] = ("fake", "vllm")
+NIGHT_SOURCES: tuple[NightSource, ...] = ("stored",)
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GPU_MEMORY_UTILIZATION = 0.85
 
@@ -18,6 +22,7 @@ class Settings:
     data_dir: str = "./data"
     hf_dataset: str = "FactoryBench/FactoryBench"
     gpu_memory_utilization: float = DEFAULT_GPU_MEMORY_UTILIZATION
+    night_source: NightSource = "stored"
 
 
 def load_settings() -> Settings:
@@ -27,12 +32,16 @@ def load_settings() -> Settings:
     model = os.environ.get("MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
     data_dir = os.environ.get("DATA_DIR", "./data").strip() or "./data"
     hf_dataset = os.environ.get("HF_DATASET", "FactoryBench/FactoryBench").strip()
+    night_source = os.environ.get("NIGHT_SOURCE", "stored").strip().lower() or "stored"
+    if night_source not in NIGHT_SOURCES:
+        raise ValueError(f"NIGHT_SOURCE must be one of {NIGHT_SOURCES}, got {night_source!r}")
     return Settings(
         engine=cast(EngineKind, engine),
         model=model,
         data_dir=data_dir,
         hf_dataset=hf_dataset or "FactoryBench/FactoryBench",
         gpu_memory_utilization=_gpu_memory_utilization(),
+        night_source=cast(NightSource, night_source),
     )
 
 

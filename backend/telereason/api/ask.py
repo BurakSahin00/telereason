@@ -127,16 +127,16 @@ async def stream_agent(
 def agent_data(request: Request) -> AgentData:
     """Data the agent's tools read, loaded once per process.
 
-    Until the stored night run lands (#25, #26, #27, #48), the gate verdicts and the morning
-    report are the stored 11 Oct night in `fixtures/`; protocols come from the downloaded
-    knowledge graph.
+    Until the stored night run lands (#25, #26, #27, #48), the gate verdicts, the morning
+    report and the windows are the stored 11 Oct night in `fixtures/`, read through the same
+    store as `/api/windows`; protocols come from the downloaded knowledge graph.
     """
     state = request.app.state
     data: AgentData | None = getattr(state, "agent_data", None)
     if data is None:
-        root = state.data_store.fixture_root
+        root = state.night_store.fixture_root
         data = AgentData(
-            store=state.data_store,
+            store=state.night_store,
             gate=GateResponse.model_validate_json((root / "gate.json").read_text("utf-8")),
             protocols=ProtocolIndex.load(state.settings.data_dir),
             report=ReportResponse.model_validate_json(

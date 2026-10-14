@@ -74,8 +74,8 @@ def test_invalid_body_returns_error_shape(client: TestClient) -> None:
 
 
 def test_stub_returns_not_implemented() -> None:
-    # Fake mode serves fixtures; the real endpoints are still stubs.
+    # Fake mode serves fixtures; real endpoints outside the stored night are still stubs.
     client = TestClient(create_app(Settings(engine="vllm", model=DEFAULT_MODEL)))
-    response = client.get("/api/gate")
+    response = client.get("/api/system")
     assert response.status_code == 501
     assert_error_shape(response.json(), "not_implemented")

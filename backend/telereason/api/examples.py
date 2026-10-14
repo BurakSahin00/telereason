@@ -8,4 +8,6 @@ router = APIRouter()
 
 @router.get("/api/examples", response_model=ExamplesResponse)
 def examples(request: Request) -> ExamplesResponse:
-    return fixture_response(request, ExamplesResponse, "examples.json", "GET /api/examples")
+    return fixture_response(
+        request, ExamplesResponse, "examples.json", "GET /api/examples", stored_night=True
+    )

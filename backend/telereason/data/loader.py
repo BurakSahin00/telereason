@@ -82,7 +82,9 @@ class DataStore:
     ``telereason.data.paths``).  With ``use_fixtures`` (fake mode only) the
     fixture directory is used when that dataset has not been downloaded, which
     keeps tests and the laptop demo usable without network access.  Otherwise a
-    missing dataset raises ``DataNotAvailableError``.
+    missing dataset raises ``DataNotAvailableError``.  With ``fixtures_first``
+    the fixture directory is used even when the dataset has been downloaded
+    (the stored night in real mode).
     """
 
     def __init__(
@@ -91,9 +93,11 @@ class DataStore:
         *,
         use_fixtures: bool = False,
         fixture_root: str | Path | None = None,
+        fixtures_first: bool = False,
     ) -> None:
         self.data_root = factorywave_dir(data_dir)
         self.use_fixtures = use_fixtures
+        self.fixtures_first = fixtures_first
         self.fixture_root = Path(fixture_root).resolve() if fixture_root else _fixture_root()
         self._summaries: dict[str, dict[str, Any]] | None = None
         self._declared_total: int | None = None
@@ -102,6 +106,8 @@ class DataStore:
 
     @property
     def source(self) -> Path:
+        if self.fixtures_first and (self.fixture_root / "windows.json").exists():
+            return self.fixture_root
         if (self.data_root / "episodes.parquet").exists():
             return self.data_root
         if self.use_fixtures and (self.fixture_root / "windows.json").exists():

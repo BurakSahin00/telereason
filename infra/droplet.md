@@ -78,7 +78,7 @@ The app is one process: FastAPI with the vLLM engine inside it. The engine canno
 
    ```bash
    docker exec -d -w /root/telereason/backend \
-     -e ENGINE=vllm -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 rocm \
+     -e ENGINE=vllm -e NIGHT_SOURCE=stored -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 rocm \
      bash -c 'python -m uvicorn telereason.api.main:app --workers 1 --host 127.0.0.1 --port 8000 > /root/logs/app.log 2>&1'
    ```
 

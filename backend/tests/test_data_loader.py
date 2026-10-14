@@ -147,12 +147,18 @@ def client_for(engine: EngineKind, data_dir: Path) -> TestClient:
     return TestClient(create_app(settings))
 
 
-def test_api_serves_fixtures_only_in_fake_mode(tmp_path) -> None:
+def test_api_serves_fixture_windows_without_a_download(tmp_path) -> None:
+    # Real mode serves the stored night (NIGHT_SOURCE=stored), see test_stored_night.py.
     assert client_for("fake", tmp_path).get("/api/windows").status_code == 200
+    assert client_for("vllm", tmp_path).get("/api/windows").status_code == 200
 
-    response = client_for("vllm", tmp_path).get("/api/windows")
-    assert response.status_code == 503
-    assert response.json()["error"]["code"] == "engine_not_ready"
+
+def test_fixtures_first_wins_over_the_download(tmp_path) -> None:
+    write_factorywave(factorywave_dir(tmp_path))
+
+    assert DataStore(tmp_path).source == factorywave_dir(tmp_path)
+    store = DataStore(tmp_path, fixtures_first=True)
+    assert store.source == store.fixture_root
 
 
 def test_api_signals_on_real_data_wait_for_normal_band(tmp_path) -> None:

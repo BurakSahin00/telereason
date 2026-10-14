@@ -69,6 +69,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.close()
 
 
+def night_store(settings: Settings, data_store: DataStore) -> DataStore:
+    """Windows and details of the night the API serves.
+
+    Fake mode serves `data_store`. Real mode with NIGHT_SOURCE=stored serves the stored
+    11 Oct night in `fixtures/`, even when the dataset is downloaded, so every report window
+    opens; signals still come from `data_store` (#28). The real night replaces this (#26, #27).
+    """
+    if settings.engine == "fake":
+        return data_store
+    return DataStore(settings.data_dir, fixtures_first=settings.night_source == "stored")
+
+
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
@@ -77,6 +89,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.data_store = DataStore(
         app.state.settings.data_dir, use_fixtures=app.state.settings.engine == "fake"
     )
+    app.state.night_store = night_store(app.state.settings, app.state.data_store)
     install_error_handlers(app)
     for module in ROUTERS:
         app.include_router(module.router, responses=ERROR_RESPONSES)
