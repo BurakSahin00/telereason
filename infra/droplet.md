@@ -55,6 +55,63 @@ pip install --no-deps amd_xgboost-3.2.0-py3-none-linux_x86_64.whl
 
 The wheel is only rebuilt if the image's ROCm version changes; a rebuild gets a new release tag and a new checksum here, never a replaced file.
 
+## Run the app
+
+The app is one process: FastAPI with the vLLM engine inside it. The engine cannot be shared across processes, so uvicorn always runs with `--workers 1`. The app runs inside the container, listens only on the droplet itself, and is reached from your laptop through an SSH tunnel. Run these on the droplet host.
+
+1. **How the container is networked.** This decides the listen address in step 3.
+
+   ```bash
+   docker inspect -f '{{.HostConfig.NetworkMode}}' rocm
+   ```
+
+   `host`: listen on `127.0.0.1`. Anything else (a bridge with published ports): listen on `0.0.0.0` inside the container; the app is then reached through the published port 8000 on the droplet, which the `DOCKER-USER` rule closes to the outside.
+
+2. **Python packages.** The image brings FastAPI and uvicorn with vLLM. Check the rest; install only what is missing, with the image's packages as constraints so nothing there changes:
+
+   ```bash
+   docker exec rocm python -c 'import fastapi, uvicorn, pyarrow, huggingface_hub'
+   docker exec rocm bash -c 'pip install -q --root-user-action=ignore -c <(pip freeze) pyarrow'   # only if pyarrow was missing
+   ```
+
+3. **Start.** `HF_HUB_OFFLINE=1` makes vLLM load the downloaded model and fail clearly if the download is not finished.
+
+   ```bash
+   docker exec -d -w /root/telereason/backend \
+     -e ENGINE=vllm -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 rocm \
+     bash -c 'python -m uvicorn telereason.api.main:app --workers 1 --host 127.0.0.1 --port 8000 > /root/logs/app.log 2>&1'
+   ```
+
+   With a bridge network, use `--host 0.0.0.0`.
+
+4. **Follow the startup.** The API answers at once with `ready: false`; the engine loads in the background, then sends one short warm-up request.
+
+   ```bash
+   docker exec rocm tail -f /root/logs/app.log
+   docker exec rocm curl -s 127.0.0.1:8000/api/health     # in a second shell
+   ```
+
+   | Log line | Meaning |
+   |---|---|
+   | `Application startup complete` | The API answers; `/api/health` says `"ready": false` |
+   | `vllm engine started in … s` | Weights loaded; the startup time |
+   | `vllm engine ready in … s …; warm-up: … ms, … completion tokens` followed by the warm-up text | `/api/health` says `"ready": true` |
+   | `vllm engine failed to start` with a traceback | The app keeps running with `"ready": false`; fix the cause and restart |
+
+   Until the engine is ready, endpoints that need it answer `503` with `{"error": {"code": "engine_not_ready", …}}`.
+
+5. **Open it from your laptop** through an SSH tunnel, then use `http://localhost:8000/api/health` and `http://localhost:8000/docs`:
+
+   ```bash
+   ssh -N -L 8000:127.0.0.1:8000 root@<droplet-address>
+   ```
+
+6. **Stop.** A graceful stop closes the engine (`vllm engine closed` in the log). A stop during loading returns only after the weights have finished loading.
+
+   ```bash
+   docker exec rocm pkill -INT -f 'uvicorn telereason.api.main:app'
+   ```
+
 ## Check from your laptop
 
 A container port must not answer from outside:
@@ -67,7 +124,7 @@ Test-NetConnection <droplet-address> -Port 8888    # Windows: TcpTestSucceeded :
 nc -vz -w 5 <droplet-address> 8888                 # macOS/Linux: the connection fails or times out
 ```
 
-SSH (port 22) must still answer.
+SSH (port 22) must still answer. While the app runs, port 8000 must not answer from outside either; it is reached only through the SSH tunnel.
 
 ## End of session
 
@@ -75,7 +132,7 @@ Destroy the droplet in the AMD Developer Cloud panel. Powering it off is not eno
 
 ## Not covered yet
 
-- Running the app on the droplet (engine, API, demo URL) comes with the real-engine and deployment issues. Our `uv.lock` pins versions resolved on a laptop, while the container brings its own versions of shared packages such as FastAPI; those must be reconciled there, not by upgrading the container.
+- The demo URL (Cloudflare tunnel or Caddy) and a systemd service that restarts the app come with the deployment issue. Our `uv.lock` pins versions resolved on a laptop, while the container brings its own versions of shared packages such as FastAPI; those must be reconciled there, not by upgrading the container.
 - If a dataset outside FactoryBench is needed, its download is added to the script.
 
 ## Troubleshooting

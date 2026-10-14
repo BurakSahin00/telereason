@@ -1,6 +1,8 @@
 import asyncio
 import importlib
 import sys
+from collections.abc import AsyncIterator
+from types import ModuleType, SimpleNamespace
 from typing import cast
 
 import pytest
@@ -161,5 +163,118 @@ def test_engine_module_imports_without_vllm(monkeypatch: pytest.MonkeyPatch) -> 
     assert engine.ready is False
     with pytest.raises(RuntimeError, match="needs the vllm package"):
         asyncio.run(engine.start())
-    with pytest.raises(NotImplementedError, match="#14"):
+    assert engine.ready is False
+    with pytest.raises(module.EngineNotReadyError):
         asyncio.run(engine.generate("p", priority=module.Priority.LIVE, max_tokens=8))
+
+
+class StubLLM:
+    """Stands in for vllm's AsyncLLM: records requests and returns one final output."""
+
+    instances: list["StubLLM"] = []
+
+    def __init__(self, args: SimpleNamespace) -> None:
+        self.args = args
+        self.requests: list[tuple[object, SimpleNamespace, str, int]] = []
+        self.shut_down = False
+        StubLLM.instances.append(self)
+
+    @classmethod
+    def from_engine_args(cls, args: SimpleNamespace) -> "StubLLM":
+        return cls(args)
+
+    async def generate(
+        self, prompt: object, params: SimpleNamespace, request_id: str, *, priority: int
+    ) -> AsyncIterator[SimpleNamespace]:
+        self.requests.append((prompt, params, request_id, priority))
+        completion = SimpleNamespace(text="<|channel|>final<|message|>ok", token_ids=(7, 8, 9))
+        yield SimpleNamespace(prompt_token_ids=[1, 2, 3, 4], outputs=[completion])
+
+    def shutdown(self) -> None:
+        self.shut_down = True
+
+
+@pytest.fixture
+def stub_vllm(monkeypatch: pytest.MonkeyPatch) -> type[StubLLM]:
+    StubLLM.instances = []
+    vllm = ModuleType("vllm")
+    vllm.AsyncEngineArgs = SimpleNamespace  # type: ignore[attr-defined]
+    vllm.SamplingParams = SimpleNamespace  # type: ignore[attr-defined]
+    vllm.TokensPrompt = dict  # type: ignore[attr-defined]
+    sampling_params = ModuleType("vllm.sampling_params")
+    sampling_params.RequestOutputKind = SimpleNamespace(FINAL_ONLY="final_only")  # type: ignore[attr-defined]
+    async_llm = ModuleType("vllm.v1.engine.async_llm")
+    async_llm.AsyncLLM = StubLLM  # type: ignore[attr-defined]
+    for name, module in {
+        "vllm": vllm,
+        "vllm.sampling_params": sampling_params,
+        "vllm.v1": ModuleType("vllm.v1"),
+        "vllm.v1.engine": ModuleType("vllm.v1.engine"),
+        "vllm.v1.engine.async_llm": async_llm,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    return StubLLM
+
+
+def test_vllm_start_opens_one_priority_engine(stub_vllm: type[StubLLM]) -> None:
+    engine = VllmEngine(model="openai/gpt-oss-120b", gpu_memory_utilization=0.85)
+
+    asyncio.run(engine.start())
+    asyncio.run(engine.start())
+
+    assert engine.ready is True
+    assert len(stub_vllm.instances) == 1
+    args = stub_vllm.instances[0].args
+    assert args.model == "openai/gpt-oss-120b"
+    assert args.gpu_memory_utilization == 0.85
+    assert args.scheduling_policy == "priority"
+
+
+def test_vllm_generate_maps_request_and_output(stub_vllm: type[StubLLM]) -> None:
+    engine = VllmEngine(model="m")
+    asyncio.run(engine.start())
+
+    text = generate(engine, "hello", priority=Priority.NIGHT, max_tokens=64, stop=["<|call|>"])
+    tokens = generate(engine, [200006, 17360], priority=Priority.LIVE, max_tokens=8, kind="agent")
+
+    assert text == Generation(
+        text="<|channel|>final<|message|>ok",
+        token_ids=[7, 8, 9],
+        prompt_tokens=4,
+        completion_tokens=3,
+        elapsed_ms=text.elapsed_ms,
+    )
+    assert tokens.completion_tokens == 3
+    (p1, params1, id1, prio1), (p2, params2, id2, prio2) = stub_vllm.instances[0].requests
+    assert p1 == "hello"
+    assert p2 == {"prompt_token_ids": [200006, 17360]}
+    assert (prio1, prio2) == (Priority.NIGHT, Priority.LIVE)
+    assert params1.max_tokens == 64
+    assert params1.temperature == 0.0
+    assert params1.stop == ["<|call|>"]
+    assert params1.skip_special_tokens is False
+    assert params1.output_kind == "final_only"
+    assert params2.stop is None
+    assert id1 != id2
+    assert id2.startswith("agent-")
+
+
+def test_vllm_close_shuts_down_the_engine(stub_vllm: type[StubLLM]) -> None:
+    engine = VllmEngine(model="m")
+    asyncio.run(engine.start())
+
+    asyncio.run(engine.close())
+
+    assert engine.ready is False
+    assert stub_vllm.instances[0].shut_down is True
+    with pytest.raises(EngineNotReadyError):
+        generate(engine, "p")
+
+
+def test_create_engine_passes_gpu_memory_utilization() -> None:
+    settings = Settings(engine="vllm", model="m", gpu_memory_utilization=0.5)
+
+    engine = create_engine(settings)
+
+    assert isinstance(engine, VllmEngine)
+    assert engine.gpu_memory_utilization == 0.5

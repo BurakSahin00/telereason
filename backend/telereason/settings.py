@@ -8,6 +8,7 @@ EngineKind = Literal["fake", "vllm"]
 
 ENGINE_KINDS: tuple[EngineKind, ...] = ("fake", "vllm")
 DEFAULT_MODEL = "openai/gpt-oss-120b"
+DEFAULT_GPU_MEMORY_UTILIZATION = 0.85
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class Settings:
     model: str
     data_dir: str = "./data"
     hf_dataset: str = "FactoryBench/FactoryBench"
+    gpu_memory_utilization: float = DEFAULT_GPU_MEMORY_UTILIZATION
 
 
 def load_settings() -> Settings:
@@ -30,4 +32,18 @@ def load_settings() -> Settings:
         model=model,
         data_dir=data_dir,
         hf_dataset=hf_dataset or "FactoryBench/FactoryBench",
+        gpu_memory_utilization=_gpu_memory_utilization(),
     )
+
+
+def _gpu_memory_utilization() -> float:
+    raw = os.environ.get("GPU_MEMORY_UTILIZATION", "").strip()
+    if not raw:
+        return DEFAULT_GPU_MEMORY_UTILIZATION
+    try:
+        value = float(raw)
+    except ValueError:
+        value = float("nan")
+    if not 0 < value <= 1:
+        raise ValueError(f"GPU_MEMORY_UTILIZATION must be in (0, 1], got {raw!r}")
+    return value
