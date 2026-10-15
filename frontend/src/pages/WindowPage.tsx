@@ -10,6 +10,7 @@ import { Panel } from '../components/Panel.tsx'
 import { VerifiedChip } from '../components/ReportRows.tsx'
 import { SegmentMeter } from '../components/SegmentMeter.tsx'
 import { StatusChip } from '../components/StatusChip.tsx'
+import { SignalChartPanel } from '../components/SignalChartPanel.tsx'
 
 type WindowDetail = components['schemas']['WindowDetail']
 type Fact = components['schemas']['Fact']
@@ -155,20 +156,12 @@ function FactsPanel({ detail }: { detail: WindowDetail }) {
   )
 }
 
-function SignalChartPanel() {
-  return (
-    <Panel title="Signal chart" label="Window against the normal band">
-      <p className="text-muted">Signal chart is not available for this window yet.</p>
-    </Panel>
-  )
-}
-
 function WindowBody({ detail }: { detail: WindowDetail }) {
   return (
     <div className="grid gap-gutter xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
       <div className="flex min-w-0 flex-col gap-gutter">
         <ScorePanel detail={detail} />
-        <SignalChartPanel />
+        <SignalChartPanel key={detail.window_id} detail={detail} />
       </div>
       <div className="flex min-w-0 flex-col gap-gutter">
         <NotePanel detail={detail} />
@@ -190,7 +183,7 @@ function isMissingWindow(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 404 || error.status === 422)
 }
 
-// Layout from design/window.png; the robot arm and the chart come in later issues.
+// Layout from design/window.png; the robot arm comes in a later issue.
 export function WindowPage() {
   const { windowId = '' } = useParams()
   const query = useWindow(windowId)
