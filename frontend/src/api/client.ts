@@ -106,3 +106,21 @@ export async function getJson<P extends GetPath>(
   if (!response.ok) throw await toApiError(response)
   return (await response.json()) as GetResponse<P>
 }
+
+/** Start a night run using the request and accepted response from OpenAPI. */
+export async function startNightRun(
+  body: components['schemas']['NightRunRequest'],
+): Promise<components['schemas']['NightRunStarted']> {
+  let response: Response
+  try {
+    response = await fetch(apiUrl('/api/night-runs'), {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, null, "Can't reach the server.")
+  }
+  if (!response.ok) throw await toApiError(response)
+  return (await response.json()) as components['schemas']['NightRunStarted']
+}

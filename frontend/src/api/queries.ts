@@ -3,6 +3,14 @@ import { ApiError, getJson } from './client.ts'
 
 // Shared query hooks, so the app bar and the report page read one cached answer.
 
+export function useHealth() {
+  return useQuery({
+    queryKey: ['health'],
+    queryFn: ({ signal }) => getJson('/api/health', { signal }),
+    refetchInterval: 15_000,
+  })
+}
+
 export function useLatestReport() {
   return useQuery({
     queryKey: ['report', 'latest'],
