@@ -9,6 +9,7 @@ const apiProxy = { '/api': 'http://localhost:8000' }
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: { entries: ['index.html'] },
   server: { proxy: apiProxy },
   preview: { proxy: apiProxy },
 })

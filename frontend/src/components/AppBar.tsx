@@ -20,12 +20,15 @@ export function AppBar() {
   const { pathname } = useLocation()
 
   return (
-    <header className="brackets grid h-[76px] grid-cols-[1fr_auto_1fr] items-center gap-6 border border-line px-7">
+    <header className="brackets grid min-h-[76px] grid-cols-1 items-center gap-x-6 gap-y-4 border border-line px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:px-7 2xl:grid-cols-[1fr_auto_1fr]">
       <Link to="/" className="justify-self-start text-panel-title font-bold">
         TeleReason
       </Link>
 
-      <nav aria-label="Main" className="flex gap-9">
+      <nav
+        aria-label="Main"
+        className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:col-span-2 sm:row-start-2 sm:justify-self-center sm:gap-x-6 xl:col-span-1 xl:col-start-2 xl:row-start-1 2xl:gap-x-9"
+      >
         {NAV_ITEMS.map((item) => {
           const active = item.isActive(pathname)
           return (
@@ -33,7 +36,7 @@ export function AppBar() {
               key={item.to}
               to={item.to}
               aria-current={active ? 'page' : undefined}
-              className={`border-b-[1.5px] px-0.5 py-1.5 font-mono text-id tracking-[0.08em] uppercase ${
+              className={`border-b-[1.5px] px-0.5 py-1.5 font-mono text-label tracking-[0.08em] uppercase sm:text-id ${
                 active ? 'border-text text-text' : 'border-transparent text-muted hover:text-text'
               }`}
             >
@@ -43,7 +46,7 @@ export function AppBar() {
         })}
       </nav>
 
-      <div className="flex items-center justify-self-end gap-7">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3 sm:col-start-2 sm:row-start-1 sm:justify-self-end xl:col-start-3 2xl:gap-x-7">
         <LastRun />
         <EngineStatus />
       </div>

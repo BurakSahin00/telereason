@@ -6,8 +6,11 @@ import { SegmentMeter } from './SegmentMeter.tsx'
 type ReportItem = components['schemas']['ReportItem']
 
 // Shared columns: window id, look-first signal, [score], note, chip.
-const SCORE_COLUMNS = 'grid-cols-[100px_220px_200px_1fr_112px]'
-const FACTS_COLUMNS = 'grid-cols-[100px_220px_1fr_112px]'
+const SCORE_COLUMNS =
+  'grid-cols-[minmax(0,1fr)_auto] 2xl:grid-cols-[100px_220px_200px_minmax(0,1fr)_112px]'
+const FACTS_COLUMNS =
+  'grid-cols-[minmax(0,1fr)_auto] 2xl:grid-cols-[100px_220px_minmax(0,1fr)_112px]'
+const CONTENT = 'col-span-2 min-w-0 2xl:col-span-1'
 
 export function VerifiedChip({ verified }: { verified: boolean }) {
   return (
@@ -25,11 +28,13 @@ export function VerifiedChip({ verified }: { verified: boolean }) {
 function Note({ item, clamp }: { item: ReportItem; clamp: string }) {
   if (!item.verified) {
     return (
-      <span className="text-table text-muted">Facts only. Open the window for the measured values.</span>
+      <span className={`${CONTENT} text-table text-muted`}>
+        Facts only. Open the window for the measured values.
+      </span>
     )
   }
   return (
-    <span title={item.note} className={`${clamp} text-table`}>
+    <span title={item.note} className={`${CONTENT} ${clamp} text-table`}>
       {item.note}
     </span>
   )
@@ -56,14 +61,16 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
             <Link
               to={`/windows/${encodeURIComponent(item.window_id)}`}
               aria-label={`Open window ${item.window_id}`}
-              className={`grid ${withScore ? SCORE_COLUMNS : FACTS_COLUMNS} items-center gap-5 px-4 py-3.5 hover:bg-raised ${
+              className={`grid ${withScore ? SCORE_COLUMNS : FACTS_COLUMNS} items-center gap-x-4 gap-y-3 px-3 py-3.5 hover:bg-raised sm:px-4 2xl:gap-5 ${
                 first && markFirst ? 'brackets brackets-attention' : ''
               }`}
             >
               <span className="font-mono text-id text-muted">{item.window_id}</span>
-              <span className="font-mono text-id [overflow-wrap:anywhere]">{item.look_first}</span>
+              <span className={`${CONTENT} font-mono text-id [overflow-wrap:anywhere]`}>
+                {item.look_first}
+              </span>
               {withScore && (
-                <span className="flex items-center gap-3.5">
+                <span className={`${CONTENT} flex items-center gap-3.5`}>
                   <SegmentMeter value={item.score ?? 0} tone="screening" className="flex-1" />
                   <b className="text-[20px] font-semibold tabular-nums">
                     {item.score === null ? '–' : formatScore(item.score)}
@@ -71,7 +78,9 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
                 </span>
               )}
               <Note item={item} clamp={withScore ? 'line-clamp-2' : 'line-clamp-1'} />
-              <VerifiedChip verified={item.verified} />
+              <span className="col-start-2 row-start-1 justify-self-end 2xl:col-start-auto 2xl:row-start-auto">
+                <VerifiedChip verified={item.verified} />
+              </span>
             </Link>
           </li>
         )

@@ -11,8 +11,10 @@ function GateLineView({ line }: { line: GateLine }) {
   const verdict = VERDICTS[line.verdict]
   return (
     <div className="border-line py-5.5 first:pt-0 not-first:border-t">
-      <div className="flex items-center justify-between gap-4">
-        <span className="font-mono text-id tracking-[0.06em] text-muted uppercase">{line.line}</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <span className="font-mono text-id tracking-[0.06em] text-muted uppercase">
+          {line.line}
+        </span>
         <StatusChip tone={line.verdict}>{verdict.chip}</StatusChip>
       </div>
       <p className="mt-3 mb-2 text-verdict">{verdict.statement}</p>
@@ -28,7 +30,10 @@ function StatusLegend() {
       <p className="mono-label mb-3">Status legend</p>
       <ul>
         {LEGEND_ORDER.map((v) => (
-          <li key={v} className="grid grid-cols-[150px_1fr] items-center py-1 text-[15px] text-muted">
+          <li
+            key={v}
+            className="grid grid-cols-1 items-center gap-y-1 py-1 text-[15px] text-muted sm:grid-cols-[150px_minmax(0,1fr)]"
+          >
             <StatusChip tone={v} bare>
               {VERDICTS[v].chip}
             </StatusChip>

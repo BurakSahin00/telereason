@@ -10,3 +10,10 @@ const SCORE_FORMAT = new Intl.NumberFormat('en-US', {
 export function formatScore(score: number): string {
   return SCORE_FORMAT.format(score)
 }
+
+/** Measured seconds, keeping short steps visible instead of rounding to zero. */
+export function formatSeconds(value: number): string {
+  const precision = value > 0 && value < 0.001
+    ? { maximumSignificantDigits: 3 } : { maximumFractionDigits: 3 }
+  return `${value.toLocaleString('en-US', precision)} s`
+}
