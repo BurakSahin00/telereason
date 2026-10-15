@@ -12,15 +12,24 @@ type PanelProps = {
   children?: ReactNode
 }
 
-export function Panel({ title, label, action, brackets = false, className = '', children }: PanelProps) {
+export function Panel({
+  title,
+  label,
+  action,
+  brackets = false,
+  className = '',
+  children,
+}: PanelProps) {
   return (
-    <section className={`border border-line bg-panel p-6 ${brackets ? 'brackets' : ''} ${className}`}>
+    <section
+      className={`min-w-0 border border-line bg-panel p-6 ${brackets ? 'brackets' : ''} ${className}`}
+    >
       {(title || label || action) && (
-        <div className="mb-4 flex items-baseline justify-between gap-6">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3">
           {title && <h2 className="text-panel-title">{title}</h2>}
           {(label || action) && (
-            <div className="flex items-baseline gap-6">
-              {label && <span className="mono-label">{label}</span>}
+            <div className="flex min-w-0 max-w-full flex-wrap items-baseline gap-x-6 gap-y-3">
+              {label && <span className="mono-label [overflow-wrap:anywhere]">{label}</span>}
               {action}
             </div>
           )}

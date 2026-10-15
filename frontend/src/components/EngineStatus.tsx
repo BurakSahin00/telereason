@@ -15,7 +15,7 @@ export function EngineStatus() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
       {health.data.engine === 'fake' && <StatusChip>Fake data</StatusChip>}
       {health.data.ready ? (
         <StatusChip tone="open">Engine ready</StatusChip>
