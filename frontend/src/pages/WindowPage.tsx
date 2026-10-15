@@ -173,6 +173,14 @@ function WindowBody({ detail }: { detail: WindowDetail }) {
       <div className="flex min-w-0 flex-col gap-gutter">
         <NotePanel detail={detail} />
         <FactsPanel detail={detail} />
+        <Panel title="Ask about this window">
+          <Link
+            to={`/assistant?window_id=${encodeURIComponent(detail.window_id)}`}
+            className="mono-label inline-block border border-line-strong px-4 py-3 text-text hover:bg-raised"
+          >
+            Ask about {detail.window_id}
+          </Link>
+        </Panel>
       </div>
     </div>
   )

@@ -62,7 +62,7 @@ function isErrorResponse(body: unknown): body is ErrorResponse {
   )
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
+export async function toApiError(response: Response): Promise<ApiError> {
   const body: unknown = await response.json().catch(() => null)
   if (isErrorResponse(body)) {
     return new ApiError(response.status, body.error.code, body.error.message)

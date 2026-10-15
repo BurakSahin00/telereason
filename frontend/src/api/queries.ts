@@ -11,6 +11,13 @@ export function useHealth() {
   })
 }
 
+export function useExamples() {
+  return useQuery({
+    queryKey: ['examples'],
+    queryFn: ({ signal }) => getJson('/api/examples', { signal }),
+  })
+}
+
 export function useLatestReport() {
   return useQuery({
     queryKey: ['report', 'latest'],
