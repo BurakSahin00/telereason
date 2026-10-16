@@ -172,6 +172,7 @@ class ToolResult:
     # Set when the tool result is the final answer, written by code.
     answer: AnswerEvent | None = None
     ok: bool = True
+    protocol_ids: tuple[int, ...] = ()
 
 
 def tool_error(message: str) -> ToolResult:
@@ -239,7 +240,8 @@ class _Args(BaseModel):
 
 
 class ReportArgs(_Args):
-    line: Line | None = None
+    # The report always covers both lines; a `line` the model still sends is ignored.
+    model_config = ConfigDict(extra="ignore")
 
 
 class ListWindowsArgs(_Args):
@@ -266,7 +268,7 @@ def get_report(ctx: ToolContext, args: ReportArgs) -> ToolResult:
     report = ctx.data.report
     if report is None:
         return tool_error("no morning report stored")
-    rows = [row for row in report.lines if args.line in (None, row.line)]
+    rows = report.lines
     content = {
         "run_id": report.run_id,
         "lines": [
@@ -385,7 +387,8 @@ def search_protocols(ctx: ToolContext, args: ProtocolArgs) -> ToolResult:
         ]
     }
     # The summary is shown to the user before the guard runs, so it names no fault.
-    return ToolResult(content, f"{len(hits)} matching protocols")
+    ids = tuple(p.protocol_id for p in hits)
+    return ToolResult(content, f"{len(hits)} matching protocols", protocol_ids=ids)
 
 
 @dataclass(frozen=True)
@@ -402,9 +405,9 @@ TOOLS: dict[str, Tool] = {
     for tool in (
         Tool(
             "get_report",
-            "Last night's morning report: verdict, scanned and flagged counts and the top "
-            "windows per line.",
-            'line?: "FactoryWave" | "AURSAD",',
+            "Last night's morning report for both lines: verdict, scanned and flagged counts "
+            "and the top windows per line.",
+            "",
             ReportArgs,
             get_report,
         ),
@@ -457,7 +460,9 @@ def run_tool(ctx: ToolContext, name: str, arguments: dict[str, Any]) -> ToolResu
 def render_tools() -> str:
     """The `functions` namespace of the harmony developer message."""
     blocks = [
-        f"// {tool.description}\ntype {tool.name} = (_: {{\n{tool.params}\n}}) => any;"
+        f"// {tool.description}\ntype {tool.name} = "
+        + (f"(_: {{\n{tool.params}\n}})" if tool.params else "()")
+        + " => any;"
         for tool in TOOLS.values()
     ]
     return (

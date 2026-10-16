@@ -8,7 +8,8 @@ calls; the next turn is forced onto the final channel.
 The product rules are enforced here in code, not only in the prompt: action requests are
 refused before the model runs, fault questions are answered by `classify_fault` in code,
 and a model answer that names a fault on a closed or screening line is replaced by the
-verified facts.
+verified facts. A model answer that passes is completed by code: the screening sentence
+and look-first signal on a screening line, and the ids of the protocols it was given.
 
 `answer_source` is `model` when the language model wrote the answer text and `tool` when
 code wrote it: from a tool result, a refusal or the not-answerable text.
@@ -21,7 +22,7 @@ import logging
 import re
 import time
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from telereason.ai.engine import Engine, Priority
@@ -33,6 +34,7 @@ from telereason.ai.tools import (
     facts_only_answer,
     find_fault_name,
     gate_text,
+    normalize,
     render_tools,
     run_tool,
 )
@@ -81,6 +83,10 @@ refuse in one sentence and say the decision stays with the technician.
 - For any question about a fault, its cause or what went wrong, call classify_fault.
 - On a line with verdict closed, never name a fault or a cause: give verified facts only. \
 On a line with verdict screening, give only the abnormal-behaviour score, never a cause.
+- On a screening line, say that the line has screening only and no cause is named, and \
+name the look-first signal.
+- In protocol answers, name the protocol ids you used and take steps only from those \
+protocols.
 - If the tools cannot answer the question, or it is not about these robot cells, reply \
 with exactly {NOT_ANSWERABLE}.
 - Use at most {MAX_TOOL_STEPS} tool calls. Answer briefly, in the language of the question."""
@@ -221,10 +227,12 @@ class _Session:
     restricted: set[Line]
     protocol_lookup: bool = False
     window: WindowDetail | None = None
+    protocol_ids: list[int] = field(default_factory=list)
 
     def touch(self, result: ToolResult) -> None:
         self.restricted |= {line for line in result.lines if self.data.restricted(line)}
         self.window = result.window or self.window
+        self.protocol_ids += [i for i in result.protocol_ids if i not in self.protocol_ids]
 
 
 def _start_session(data: AgentData, question: str, window_id: str | None) -> _Session:
@@ -247,13 +255,58 @@ def _not_answerable() -> AnswerEvent:
     return AnswerEvent(answer=NOT_ANSWERABLE, answer_source="tool", text=NOT_ANSWERABLE_TEXT)
 
 
+# Model text uses typographic hyphens and no-break spaces in window ids and numbers.
+_PLAIN = str.maketrans({"\u2010": "-", "\u2011": "-", "\u00a0": " ", "\u202f": " ", "\u2007": " "})
+
+
+def plain_text(text: str) -> str:
+    return text.translate(_PLAIN)
+
+
+def _mentions(text: str, phrase: str) -> bool:
+    return f" {normalize(phrase)} " in f" {normalize(text)} "
+
+
+def _mentions_protocol(text: str, protocol_id: int) -> bool:
+    """`Protocol 3`, `protocol_id 3`, `ID 3` or `#3`; a bare step number does not count."""
+    pattern = rf"(?:protocol|\bid|#)\D{{0,15}}?(?<![\d.]){protocol_id}(?!\d|\.\d)"
+    return re.search(pattern, text, re.IGNORECASE) is not None
+
+
+def _completed(session: _Session, text: str) -> str:
+    """Append what a model answer must say and left out; every sentence is written by code."""
+    added: list[str] = []
+    screening = [
+        row
+        for line in sorted(session.restricted)
+        if (row := session.data.gate_line(line)) and row.verdict == "screening"
+    ]
+    if not _mentions(text, "screening"):
+        added += [gate_text(row) for row in screening]
+    window = session.window
+    if (
+        window is not None
+        and window.look_first
+        and any(row.line == window.line for row in screening)
+        and not _mentions(text, window.look_first)
+    ):
+        added.append(f"Look first at {window.look_first}.")
+    ids = session.protocol_ids
+    if ids and not any(_mentions_protocol(text, i) for i in ids):
+        added.append(f"Protocols used: {', '.join(map(str, ids))}.")
+    unique = [sentence for sentence in dict.fromkeys(added) if sentence not in text]
+    return " ".join([text, *unique])
+
+
 def _final_answer(session: _Session, text: str) -> AnswerEvent:
+    text = plain_text(text)
     if not text or text.startswith(NOT_ANSWERABLE):
         return _not_answerable()
     # Fault names are allowed only in a protocol answer that touched no closed or screening line.
     guarded = bool(session.restricted) or not session.protocol_lookup
     fault = find_fault_name(text, session.data.protocols.fault_names) if guarded else None
     if fault is None:
+        text = _completed(session, text)
         return AnswerEvent(answer="ANSWERED", answer_source="model", text=text)
     logger.warning("ask: model answer named a fault (%s); replaced by facts", fault)
     if session.window is not None:
