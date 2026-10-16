@@ -13,6 +13,7 @@ from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
 from telereason.api.rate_limit import RateLimiter
 from telereason.data.loader import DataStore, WindowSource
+from telereason.night.run import NightRunner
 from telereason.settings import Settings, load_settings
 from telereason.store.db import NightDb
 from telereason.store.night import DbNight
@@ -59,14 +60,23 @@ async def open_engine(engine: Engine) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Open the one engine of this process at startup and close it at shutdown."""
+    """Open the one engine of this process at startup and close it at shutdown.
+
+    A night run left unfinished by an earlier process is marked failed at startup; an active
+    one is cancelled (and marked failed) at shutdown, before the engine closes.
+    """
     log_to_stderr()
     engine: Engine = app.state.engine
+    runner: NightRunner | None = app.state.night_runner
+    if runner is not None:
+        runner.recover()
     # Open in the background so the app answers requests while the model loads.
     opening = asyncio.create_task(open_engine(engine))
     try:
         yield
     finally:
+        if runner is not None:
+            await runner.close()
         opening.cancel()
         with suppress(asyncio.CancelledError):
             await opening
@@ -108,6 +118,12 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.db_night = db_night(app.state.settings)
     app.state.night_store = night_store(
         app.state.settings, app.state.data_store, app.state.db_night
+    )
+    # Night runs on request are recorded in the store at DB_PATH (real mode only).
+    app.state.night_runner = (
+        None
+        if app.state.settings.engine == "fake"
+        else NightRunner(NightDb(app.state.settings.db_path), app.state.engine)
     )
     # Read once: the installed versions do not change while the process runs.
     app.state.versions = system.read_versions()

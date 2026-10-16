@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -86,9 +87,9 @@ def test_unexpected_error_returns_error_shape() -> None:
     assert "HIP" not in response.text
 
 
-def test_stub_returns_not_implemented() -> None:
-    # Fake mode serves fixtures; real endpoints outside the stored night are still stubs.
-    client = TestClient(create_app(Settings(engine="vllm", model=DEFAULT_MODEL)))
+def test_unknown_night_run_returns_not_found(tmp_path: Path) -> None:
+    settings = Settings(engine="vllm", model=DEFAULT_MODEL, db_path=str(tmp_path / "n.sqlite"))
+    client = TestClient(create_app(settings))
     response = client.get("/api/night-runs/run-20261015-1")
-    assert response.status_code == 501
-    assert_error_shape(response.json(), "not_implemented")
+    assert response.status_code == 404
+    assert_error_shape(response.json(), "not_found")

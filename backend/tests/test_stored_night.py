@@ -17,6 +17,7 @@ from tests.test_contract import assert_error_shape
 from tests.test_data_loader import write_factorywave
 from tests.test_fixtures import load
 from tests.test_lifespan import wait_until_ready
+from tests.test_night_runs import wait_for_run
 
 REPORT_WINDOW_IDS = [
     item["window_id"] for line in load("report_latest.json")["lines"] for item in line["items"]
@@ -27,7 +28,12 @@ REPORT_WINDOW_IDS = [
 def app(tmp_path: Path) -> FastAPI:
     # Downloaded data, as on the droplet: the stored night must still win over it.
     write_factorywave(factorywave_dir(tmp_path))
-    settings = Settings(engine="vllm", model=DEFAULT_MODEL, data_dir=str(tmp_path))
+    settings = Settings(
+        engine="vllm",
+        model=DEFAULT_MODEL,
+        data_dir=str(tmp_path),
+        db_path=str(tmp_path / "night.sqlite"),
+    )
     return create_app(settings, engine=FakeEngine(model=DEFAULT_MODEL))
 
 
@@ -55,20 +61,24 @@ def test_stored_night_endpoints_serve_the_11_oct_files(
     assert response.json() == load(name)
 
 
-@pytest.mark.parametrize(
-    ("method", "path"),
-    [
-        ("POST", "/api/night-runs"),
-        ("GET", "/api/night-runs/run-20261015-1"),
-    ],
-)
-def test_endpoints_without_a_stored_night_stay_not_implemented(
-    client: TestClient, method: str, path: str
-) -> None:
-    response = client.request(method, path, json={} if method == "POST" else None)
+def test_night_runs_are_recorded_in_the_store(client: TestClient, tmp_path: Path) -> None:
+    started = client.post("/api/night-runs", json={})
+    run_id = started.json()["run_id"]
+    progress = wait_for_run(client, run_id)
 
-    assert response.status_code == 501
-    assert_error_shape(response.json(), "not_implemented")
+    assert started.status_code == 202
+    assert started.json()["status"] == "queued"
+    assert progress["run_id"] == run_id
+    # The night steps are wired in #40; until then a run fails at its first step.
+    assert (progress["status"], progress["step"]) == ("failed", "gate")
+    assert (tmp_path / "night.sqlite").exists()
+
+
+def test_unknown_night_run_is_not_found(client: TestClient) -> None:
+    response = client.get("/api/night-runs/run-20261015-1")
+
+    assert response.status_code == 404
+    assert_error_shape(response.json(), "not_found")
 
 
 def test_window_list_is_the_stored_night(client: TestClient) -> None:

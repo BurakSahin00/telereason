@@ -73,19 +73,23 @@ def test_fake_mode_serves_fixture(
     assert response.json() == load(name)
 
 
-# Real mode serves the stored night (report, gate, examples; see test_stored_night.py) and
-# reads the system info itself (test_system.py).
-NOT_IN_STORED_NIGHT = [
-    (method, path) for method, path, *_ in FIXTURE_ENDPOINTS if "night-runs" in path
+# Real mode serves the stored night (report, gate, examples; see test_stored_night.py),
+# reads the system info itself (test_system.py) and runs nights itself (test_night_runs.py):
+# before the engine is ready a night cannot start, and no run is known yet.
+REAL_NIGHT_RUNS = [
+    ("POST", "/api/night-runs", 503, "engine_not_ready"),
+    ("GET", "/api/night-runs/run-20261015-1", 404, "not_found"),
 ]
 
 
-@pytest.mark.parametrize(("method", "path"), NOT_IN_STORED_NIGHT)
-def test_vllm_mode_is_not_implemented(vllm_client: TestClient, method: str, path: str) -> None:
+@pytest.mark.parametrize(("method", "path", "status", "code"), REAL_NIGHT_RUNS)
+def test_vllm_mode_runs_nights_itself(
+    vllm_client: TestClient, method: str, path: str, status: int, code: str
+) -> None:
     response = vllm_client.request(method, path, json={} if method == "POST" else None)
 
-    assert response.status_code == 501
-    assert_error_shape(response.json(), "not_implemented")
+    assert response.status_code == status
+    assert_error_shape(response.json(), code)
 
 
 @pytest.mark.parametrize("window_id", REPORT_WINDOW_IDS)
