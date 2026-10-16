@@ -124,11 +124,9 @@ def test_streams_agent_events_in_order(tmp_path: Path) -> None:
     # Written like fixtures/ask.sse.
     assert 'event: tool_call\ndata: {"turn": 1, "tool": "get_report", "args": {}}\n\n' in text
     answer, done = messages[2][1], messages[3][1]
-    assert answer == {
-        "answer": "ANSWERED",
-        "answer_source": "model",
-        "text": "Last night's report lists both lines.",
-    }
+    assert (answer["answer"], answer["answer_source"]) == ("ANSWERED", "model")
+    # The report touches the AURSAD screening line, so code adds its gate sentence.
+    assert answer["text"].startswith("Last night's report lists both lines. AURSAD has ")
     assert done["tokens"] == completion_tokens(*turns)
     assert done["tokens"] > 0
     assert done["total_ms"] >= 0
