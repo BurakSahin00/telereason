@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi",
     "huggingface-hub",
+    "numpy",
     "pyarrow",
     "uvicorn",
 ]
@@ -15,6 +16,10 @@ dev = [
     "httpx",
     "pytest",
     "ruff",
+]
+night = [
+    "scikit-learn",
+    "xgboost==3.2.0",
 ]
 
 [tool.uv]
