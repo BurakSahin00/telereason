@@ -8,11 +8,12 @@ Reads `p35_gece.json` (timings, counts), `kapi_gpu.json` (gate verdicts) and
 `gece_notlar.jsonl` (one row per window: facts, score, notes) from the first results directory
 that has each file. `--data-dir` and `--db` default to DATA_DIR and DB_PATH.
 
-The notes do not carry the FactoryBench item id, so the item is looked up in the L4-t1 items of
-the downloaded dataset by its window id. 28 window ids occur twice in the run; such a note is
-matched to its item by its line and facts (the item whose channel means round to the note's
-`window_mean`). Ids are then made unique with the #29 rule: in a collision the item id that
-sorts first keeps the plain id, every other item is re-hashed with a `#n` suffix.
+The notes do not carry the FactoryBench item id, so each note is looked up in the night pool
+(`telereason.night.windows.load_pool`, the 8,508 L4-t1 windows): a note's window id is the
+plain 11 Oct id of its item (`base_window_id`). Where more than one pool window of the note's
+line has that plain id (28 ids occur twice in the run), the note goes to the window whose channel
+means round to the note's `window_mean`. The store keeps the pool's window id, item id and group,
+so every stored window opens in `/api/windows/{window_id}/signals`.
 """
 
 from __future__ import annotations
@@ -20,13 +21,13 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import math
-import zlib
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import numpy as np
 
 from scripts.make_fixtures import (
     EXPLANATIONS,
@@ -40,6 +41,7 @@ from scripts.make_fixtures import (
 from telereason.api.schemas import Fact, GateLine, GateResponse, Line, ReportLine, StepTimings
 from telereason.data.paths import dataset_dir
 from telereason.night.report import SCORE_THRESHOLD, build_report, flagged
+from telereason.night.windows import POOL_FILE, Pool, Window, base_window_id, load_pool
 from telereason.settings import load_settings
 from telereason.store.db import NightDb, NoteRecord, RunRecord, StoredWindow, WindowRecord
 
@@ -49,42 +51,10 @@ RUN_DATE = "2026-10-11"
 NIGHT_FILE = "p35_gece.json"
 GATE_FILE = "kapi_gpu.json"
 NOTES_FILE = "gece_notlar.jsonl"
-ITEMS_FILE = "factorybench_qa/level_4.jsonl"
-TEMPLATE_ID = 1
 
 
 class NightImportError(RuntimeError):
     """The results or the dataset do not describe one consistent night."""
-
-
-# ---------------------------------------------------------------- window ids
-
-
-def base_window_id(ms_id: str) -> str:
-    """`W-` plus the last six decimal digits of the CRC-32 of the item id, as on 11 Oct."""
-    return f"W-{zlib.crc32(ms_id.encode()) % 10**6:06d}"
-
-
-def assign_window_ids(ms_ids: Iterable[str]) -> dict[str, str]:
-    """Item id -> window id, unique over the given items.
-
-    The same rule as `night/windows.py` in the facts PR (#29); this helper goes once that is
-    on main.
-    """
-    by_base: dict[str, list[str]] = {}
-    for ms_id in sorted(set(ms_ids)):
-        by_base.setdefault(base_window_id(ms_id), []).append(ms_id)
-    taken = set(by_base)
-    out: dict[str, str] = {}
-    for base, members in sorted(by_base.items()):
-        out[members[0]] = base
-        for ms_id in members[1:]:
-            n = 1
-            while (candidate := base_window_id(f"{ms_id}#{n}")) in taken:
-                n += 1
-            taken.add(candidate)
-            out[ms_id] = candidate
-    return out
 
 
 # ---------------------------------------------------------------- results
@@ -156,7 +126,7 @@ def gate_response(gate_run: dict[str, Any]) -> GateResponse:
     return GateResponse(run_id=RUN_ID, lines=lines)
 
 
-# ---------------------------------------------------------------- items
+# ---------------------------------------------------------------- pool
 
 
 def y3(value: float) -> float:
@@ -164,115 +134,50 @@ def y3(value: float) -> float:
     return 0.0 if abs(value) < 1e-3 else float(f"{value:.3g}")
 
 
-def channel_mean(item: dict[str, Any], channel: str) -> float | None:
-    """Mean of one channel over the item's `t=<ms>: acronym=value, ...` rows."""
-    context = item.get("context") or {}
-    fmt = context.get("time_series_format") or {}
-    acronyms = fmt.get("acronym_mapping") or context.get("acronym_mapping") or {}
-    key = next((short for short, long in acronyms.items() if long == channel), channel)
-    rows = context.get("time_series") or []
-    if isinstance(rows, str):
-        rows = rows.splitlines()
-    values = []
-    for row in rows:
-        _, colon, body = str(row).partition(":")
-        if not colon:
-            continue
-        for part in body.split(","):
-            name, equals, text = part.partition("=")
-            if equals and name.strip() == key:
-                try:
-                    value = float(text)
-                except ValueError:
-                    continue
-                if math.isfinite(value):
-                    values.append(value)
-    return sum(values) / len(values) if values else None
-
-
-def fact_matches(item: dict[str, Any], note: NightNote) -> int:
-    """How many of the note's deviating signals have the item's rounded channel mean."""
+def fact_matches(window: Window, note: NightNote) -> int:
+    """How many of the note's deviating signals have the window's rounded channel mean."""
     matches = 0
     for signal in note.facts.get("deviating_signals") or []:
-        mean = channel_mean(item, signal["signal"])
-        if mean is not None and y3(mean) == signal["window_mean"]:
+        column = window.column(signal["signal"])
+        if column is None or not np.isfinite(column).any():
+            continue
+        if y3(float(np.nanmean(column))) == signal["window_mean"]:
             matches += 1
     return matches
 
 
-def item_line(item: dict[str, Any]) -> Line:
-    dataset = str((item.get("provenance") or {}).get("dataset") or "").lower()
-    return "AURSAD" if dataset == "aursad" else "FactoryWave"
-
-
-def iter_items(path: Path) -> Iterator[dict[str, Any]]:
-    """L4-t1 items with an id, voraus-AD (CC BY-NC-SA 4.0) left out."""
-    with path.open(encoding="utf-8") as handle:
-        for raw in handle:
-            if not raw.strip():
-                continue
-            item = json.loads(raw)
-            if item.get("template_id") != TEMPLATE_ID or not item.get("id"):
-                continue
-            if "voraus" in json.dumps(item.get("provenance") or {}).lower():
-                continue
-            yield item
-
-
-def resolve_items(notes: Sequence[NightNote], items_path: Path) -> tuple[list[str], Counter[str]]:
-    """The item id of every note, in note order, and counts for the log.
-
-    A first pass collects the items behind each window id; a second pass compares facts only
-    where a note has more than one item of its line to choose from.
-    """
-    notes_by_id: dict[str, list[NightNote]] = defaultdict(list)
-    for note in notes:
-        notes_by_id[note.window_id].append(note)
-    found: dict[tuple[str, Line], list[str]] = defaultdict(list)
-    for item in iter_items(items_path):
-        ms_id = str(item["id"])
-        window_id = base_window_id(ms_id)
-        if window_id in notes_by_id:
-            found[window_id, item_line(item)].append(ms_id)
-
-    ambiguous = {note.seq: note for note in notes if len(found[note.window_id, note.line]) > 1}
-    matches: dict[tuple[int, str], int] = {}
-    if ambiguous:
-        wanted = {ms_id for n in ambiguous.values() for ms_id in found[n.window_id, n.line]}
-        for item in iter_items(items_path):
-            ms_id = str(item["id"])
-            if ms_id not in wanted:
-                continue
-            for note in notes_by_id[base_window_id(ms_id)]:
-                if note.seq in ambiguous and ms_id in found[note.window_id, note.line]:
-                    matches[note.seq, ms_id] = fact_matches(item, note)
+def resolve_windows(notes: Sequence[NightNote], pool: Pool) -> tuple[list[Window], Counter[str]]:
+    """The pool window of every note, in note order, and counts for the log."""
+    by_plain_id: dict[tuple[str, Line], list[Window]] = defaultdict(list)
+    for window in pool.windows:
+        by_plain_id[base_window_id(window.ms_id), window.line].append(window)
 
     counts: Counter[str] = Counter()
-    ms_ids = []
+    resolved = []
     for note in notes:
-        options = found[note.window_id, note.line]
+        options = by_plain_id[note.window_id, note.line]
         if not options:
-            raise NightImportError(f"{note.window_id} ({note.line}): no L4-t1 item in {items_path}")
-        if note.seq in ambiguous:
+            raise NightImportError(f"{note.window_id} ({note.line}): not in the night pool")
+        if len(options) > 1:
             counts["matched_by_facts"] += 1
-            ranked = sorted(options, key=lambda ms_id: -matches.get((note.seq, ms_id), 0))
-            best, runner_up = (matches.get((note.seq, ms_id), 0) for ms_id in ranked[:2])
+            scored = sorted(((fact_matches(w, note), w) for w in options), key=lambda x: -x[0])
+            (best, window), (runner_up, _) = scored[0], scored[1]
             if best == runner_up:
-                raise NightImportError(f"{note.window_id}: two items fit the note's facts equally")
+                raise NightImportError(f"{note.window_id}: two pool windows fit the note's facts")
             if best < len(note.facts.get("deviating_signals") or []):
                 counts["partial_fact_match"] += 1
-            ms_ids.append(ranked[0])
         else:
-            ms_ids.append(options[0])
-    if len(set(ms_ids)) != len(ms_ids):
-        raise NightImportError("two notes resolved to the same item")
-    return ms_ids, counts
+            window = options[0]
+        resolved.append(window)
+    if len({w.window_id for w in resolved}) != len(resolved):
+        raise NightImportError("two notes resolved to the same pool window")
+    return resolved, counts
 
 
 # ---------------------------------------------------------------- run
 
 
-def window_record(note: NightNote, window_id: str, ms_id: str) -> WindowRecord:
+def window_record(note: NightNote, window: Window) -> WindowRecord:
     facts = tuple(
         Fact(
             signal=signal["signal"],
@@ -285,11 +190,12 @@ def window_record(note: NightNote, window_id: str, ms_id: str) -> WindowRecord:
         for signal in note.facts.get("deviating_signals") or []
     )
     return WindowRecord(
-        window_id=window_id,
+        window_id=window.window_id,
         line=note.line,
         task=str(note.facts.get("task") or "unknown"),
         seq=note.seq,
-        ms_id=ms_id,
+        ms_id=window.ms_id,
+        group_id=window.group,
         score=note.score,
         flagged=flagged(note.score),
         max_abs_z=note.max_abs_z,
@@ -335,13 +241,13 @@ def build(results: Sequence[Path], data_dir: str | Path) -> ImportedNight:
     if len(rows) != night["N"]:
         raise NightImportError(f"{NOTES_FILE} has {len(rows)} rows, {NIGHT_FILE} N={night['N']}")
 
-    items_path = dataset_dir(data_dir) / ITEMS_FILE
-    if not items_path.is_file():
-        raise NightImportError(f"{items_path} is missing; download the dataset first")
-    ms_ids, counts = resolve_items(rows, items_path)
-    window_ids = assign_window_ids(ms_ids)
+    pool_path = dataset_dir(data_dir) / POOL_FILE
+    if not pool_path.is_file():
+        raise NightImportError(f"{pool_path} is missing; download the dataset first")
+    pool = load_pool(data_dir)
+    resolved, counts = resolve_windows(rows, pool)
 
-    windows = [window_record(r, window_ids[m], m) for r, m in zip(rows, ms_ids, strict=True)]
+    windows = [window_record(r, w) for r, w in zip(rows, resolved, strict=True)]
     notes = [n for r, w in zip(rows, windows, strict=True) for n in note_records(r, w.window_id)]
 
     n_flagged = sum(bool(w.flagged) for w in windows if w.line == "AURSAD")
@@ -371,6 +277,7 @@ def build(results: Sequence[Path], data_dir: str | Path) -> ImportedNight:
         windows=len(windows),
         attempts=len(notes),
         repeated_ids=sum(1 for n in repeated.values() if n > 1),
+        pool=len(pool.windows),
         renamed=sum(1 for w in windows if w.window_id != base_window_id(w.ms_id or "")),
         flagged=n_flagged,
     )
@@ -401,11 +308,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         raise SystemExit(str(exc)) from exc
     counts = imported.counts
     logger.info(
-        "run %s: %d notes, %d windows, %d note attempts; %d repeated ids, %d notes matched "
-        "to their item by facts, %d ids re-hashed; %d AURSAD windows flagged; written to %s",
+        "run %s: %d notes, %d windows from a pool of %d, %d note attempts; %d repeated ids, "
+        "%d notes matched to their window by facts, %d ids differ from the plain 11 Oct id; "
+        "%d AURSAD windows flagged; written to %s",
         imported.run.run_id,
         counts["notes"],
         counts["windows"],
+        counts["pool"],
         counts["attempts"],
         counts["repeated_ids"],
         counts.get("matched_by_facts", 0),

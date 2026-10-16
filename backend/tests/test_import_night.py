@@ -1,52 +1,44 @@
-"""scripts/import_night.py on a tiny synthetic 11 Oct-shaped night (#48)."""
+"""scripts/import_night.py on a tiny synthetic 11 Oct-shaped night and pool (#48, #29)."""
 
 import json
 import re
-import zlib
+from collections.abc import Sequence
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
-from scripts.import_night import (
-    NightImportError,
-    assign_window_ids,
-    base_window_id,
-    import_night,
-    main,
-)
+from scripts.import_night import NightImportError, import_night, main
 from telereason.api.schemas import WINDOW_ID_PATTERN
 from telereason.data.paths import dataset_dir
+from telereason.night.windows import base_window_id
 from telereason.store.db import NightDb
+from tests.test_night_windows import _item, _write_jsonl
 
 RUN_ID = "2026-10-11-amd"
+SIGNAL = "feedback_pos_0"  # acronym fpo0 in tests.test_night_windows
 
 
 @cache
-def colliding_ids() -> tuple[str, str]:
-    """Two item ids with the same window id, in sorted order."""
-    seen: dict[str, str] = {}
-    for n in range(1_000_000):
+def colliding_ids(count: int = 2) -> tuple[str, ...]:
+    """Item ids with the same plain window id, in sorted order."""
+    seen: dict[str, list[str]] = {}
+    for n in range(10_000_000):
         ms_id = f"item-{n}"
-        window_id = base_window_id(ms_id)
-        if window_id in seen:
-            first, second = sorted((seen[window_id], ms_id))
-            return first, second
-        seen[window_id] = ms_id
+        group = seen.setdefault(base_window_id(ms_id), [])
+        group.append(ms_id)
+        if len(group) == count:
+            return tuple(sorted(group))
     raise AssertionError("no collision found")
 
 
-def item(ms_id: str, dataset: str, values: list[float], template_id: int = 1) -> dict[str, Any]:
-    return {
-        "id": ms_id,
-        "template_id": template_id,
-        "provenance": {"dataset": dataset, "episode": f"ep-{ms_id}"},
-        "context": {
-            "time_series_format": {"acronym_mapping": {"sa5": "setpoint_acc_5"}},
-            "time_series": [f"t={i * 100}: sa5={v}, tp=1" for i, v in enumerate(values)],
-        },
-    }
+def pool_item(ms_id: str, dataset: str, episode: str, values: list[float]) -> dict[str, Any]:
+    rows = [f"t={i * 100}: fpo0={v}, spo0=0.0" for i, v in enumerate(values)]
+    return _item(ms_id, dataset, episode, rows=rows)
 
 
 def note_row(
@@ -59,14 +51,14 @@ def note_row(
         "task": "aursad" if line == "AURSAD" else "screwing",
         "deviating_signals": [
             {
-                "signal": "setpoint_acc_5",
+                "signal": SIGNAL,
                 "window_mean": window_mean,
                 "normal_mean": 0.0,
                 "z": 3.5,
                 "difference": window_mean,
             }
         ],
-        "look_first": "setpoint_acc_5",
+        "look_first": SIGNAL,
     }
     return {
         "pencere": window_id,
@@ -79,11 +71,15 @@ def note_row(
     }
 
 
-def write_night(tmp_path: Path, rows: list[dict[str, Any]] | None = None) -> tuple[Path, Path]:
-    """Write results and a dataset; return (results dir, data dir).
+def write_night(
+    tmp_path: Path,
+    rows: list[dict[str, Any]] | None = None,
+    extra_items: Sequence[dict[str, Any]] = (),
+) -> tuple[Path, Path]:
+    """Write results and a dataset with a night pool; return (results dir, data dir).
 
     Night order: the AURSAD item that sorts second, a FactoryWave item, then the AURSAD item
-    that sorts first. Both AURSAD items have the same window id.
+    that sorts first. Both AURSAD items have the same plain window id.
     """
     first, second = colliding_ids()
     results, data = tmp_path / "results", tmp_path / "data"
@@ -112,16 +108,30 @@ def write_night(tmp_path: Path, rows: list[dict[str, Any]] | None = None) -> tup
     }
     (results / "kapi_gpu.json").write_text(json.dumps(gate), encoding="utf-8")
 
-    items_path = dataset_dir(data) / "factorybench_qa" / "level_4.jsonl"
-    items_path.parent.mkdir(parents=True)
+    root = dataset_dir(data)
     items = [
-        item(first, "aursad", [1.0, 2.0, 3.0]),
-        item(second, "aursad", [4.0, 5.0, 6.0]),
-        item("fw-1", "factorywave", [7.0, 7.0]),
-        item("fw-1-voraus", "vorausad", [7.0]),
-        item("fw-1-other-template", "factorywave", [7.0], template_id=2),
+        pool_item(first, "aursad", "experiment_1_1", [1.0, 2.0, 3.0]),
+        pool_item(second, "aursad", "experiment_2_2", [4.0, 5.0, 6.0]),
+        pool_item("fw-1", "factorywave", "ep-a", [7.0, 7.0]),
+        pool_item("fw-voraus", "vorausad", "vo-1", [7.0]),
+        pool_item("fw-in-lite", "factorywave", "ep-lite", [7.0]),
+        _item("fw-other-template", "factorywave", "ep-a", template_id=2),
+        *extra_items,
     ]
-    items_path.write_text("".join(json.dumps(i) + "\n" for i in items), encoding="utf-8")
+    _write_jsonl(root / "factorybench_qa" / "level_4.jsonl", items)
+    lite = [{"id": "lite-1", "provenance": {"episode": "ep-lite"}}]
+    _write_jsonl(root / "factorybench_lite" / "level_1.jsonl", lite)
+    for level in (2, 3, 4):
+        _write_jsonl(root / "factorybench_lite" / f"level_{level}.jsonl", [])
+    episodes = pa.table(
+        {
+            "id": ["ep-a", "ep-b", "ep-lite"],
+            "created_at": [datetime(2026, 4, 7, 9)] * 3,
+            "episode_metadata": ["{'task': 'screwing'}"] * 3,
+        }
+    )
+    (root / "factorywave").mkdir(parents=True)
+    pq.write_table(episodes, root / "factorywave" / "episodes.parquet")
     return results, data
 
 
@@ -237,16 +247,41 @@ def test_note_count_must_match_the_night(tmp_path: Path, db: NightDb) -> None:
         import_night([results], data, db)
 
 
-def test_assign_window_ids_keeps_unique_ids() -> None:
-    first, second = colliding_ids()
+def test_a_pool_window_outside_the_night_can_keep_the_plain_id(tmp_path: Path, db: NightDb) -> None:
+    # The pool-wide rule: an item that is in the pool but not in the night sorts first and keeps
+    # the plain id, so the night's window is re-hashed (three such ids on 11 Oct).
+    _, first, second = colliding_ids(3)
+    rows = [note_row(second, "AURSAD", 5.0, 0.95, "Night item.")]
+    extra = [
+        pool_item(first, "factorywave", "ep-b", [9.0]),
+        pool_item(second, "aursad", "experiment_3_3", [4.0, 5.0, 6.0]),
+    ]
+    results, data = write_night(tmp_path, rows, extra)
 
-    ids = assign_window_ids(["fw-1", second, first, "fw-1"])
+    import_night([results], data, db)
+    (stored,) = db.windows(RUN_ID)
 
-    assert ids["fw-1"] == base_window_id("fw-1")
-    assert ids[first] == base_window_id(first)
-    assert ids[second] != ids[first]
-    assert len(set(ids.values())) == 3
-    assert ids[second] == f"W-{zlib.crc32(f'{second}#1'.encode()) % 10**6:06d}"
+    assert stored.window.ms_id == second
+    assert stored.window.window_id == base_window_id(f"{second}#1")
+
+
+def test_a_note_outside_the_pool_stops_the_import(tmp_path: Path, db: NightDb) -> None:
+    rows = [note_row("fw-in-lite", "FactoryWave", 7.0, None, "Lite item.")]
+    results, data = write_night(tmp_path, rows)
+
+    with pytest.raises(NightImportError, match="not in the night pool"):
+        import_night([results], data, db)
+
+
+def test_windows_keep_the_pools_item_id_and_group(tmp_path: Path, db: NightDb) -> None:
+    results, data = write_night(tmp_path)
+
+    import_night([results], data, db)
+    stored = db.window(RUN_ID, base_window_id("fw-1"))
+
+    assert stored is not None
+    assert (stored.window.ms_id, stored.window.group_id) == ("fw-1", "gun:2026-04-07")
+    assert all(w.window.ms_id and w.window.group_id for w in db.windows(RUN_ID))
 
 
 def test_main_reads_data_dir_and_db_path_from_settings(
