@@ -17,7 +17,15 @@ from telereason.ai.agent import (
     warm_up_prompt,
 )
 from telereason.ai.engine import FakeEngine, Priority
-from telereason.ai.tools import TOOLS, AgentData, ProtocolIndex
+from telereason.ai.tools import (
+    TOOLS,
+    AgentData,
+    ProtocolIndex,
+    ToolContext,
+    gate_text,
+    render_tools,
+    run_tool,
+)
 from telereason.api.schemas import AnswerEvent, GateResponse, ReportResponse
 from telereason.data.loader import DataStore
 
@@ -124,6 +132,12 @@ def answer_of(messages: list[AgentMessage]) -> AnswerEvent:
     return data
 
 
+def screening_text(data: AgentData) -> str:
+    row = data.gate_line("AURSAD")
+    assert row is not None and row.verdict == "screening"
+    return gate_text(row)
+
+
 def test_five_narrow_tools() -> None:
     assert set(TOOLS) == {
         "get_report",
@@ -168,9 +182,9 @@ def test_tool_call_then_model_answer(data: AgentData) -> None:
     tool_call, tool_result = messages[0].data, messages[1].data
     assert (tool_call.turn, tool_call.tool, tool_call.args) == (1, "get_window", {})
     assert tool_result.summary == "W-AU1: 1 facts, look first at vibration_1"
-    assert answer_of(messages) == AnswerEvent(
-        answer="ANSWERED", answer_source="model", text="Check vibration_1 first."
-    )
+    # W-AU1 is on the screening line, so code adds the gate sentence the model left out.
+    text = f"Check vibration_1 first. {screening_text(data)}"
+    assert answer_of(messages) == AnswerEvent(answer="ANSWERED", answer_source="model", text=text)
     assert all(HIDDEN not in m.model_dump_json() for m in messages)
 
     assert [c.priority for c in engine.calls] == [Priority.LIVE, Priority.LIVE]
@@ -198,7 +212,7 @@ def test_tool_steps_are_capped_and_the_last_turn_is_forced(data: AgentData) -> N
 def test_forced_turn_text_is_the_answer(data: AgentData) -> None:
     turns = [call("get_report", {})] * MAX_TOOL_STEPS + ["Two lines were scanned.<|return|>"]
     messages, _ = run(data, "Summarise the report.", *turns)
-    assert answer_of(messages).text == "Two lines were scanned."
+    assert answer_of(messages).text.startswith("Two lines were scanned. ")
 
 
 @pytest.mark.parametrize(
@@ -372,3 +386,85 @@ def test_warm_up_prompt_is_a_first_agent_turn() -> None:
     prompt = warm_up_prompt()
     assert "# Tools" in prompt
     assert prompt.endswith("<|end|><|start|>assistant")
+
+
+def test_model_text_is_normalised(data: AgentData) -> None:
+    text = "W‑657587 and W‐574006: 1 879 windows, scored twice."
+    messages, _ = run(data, "Which windows?", final(text))
+    assert answer_of(messages).text == "W-657587 and W-574006: 1 879 windows, scored twice."
+
+
+def test_fault_guard_reads_the_normalised_text(data: AgentData) -> None:
+    messages, _ = run(
+        data,
+        "Explain this window.",
+        call("get_window", {}),
+        final("Gripper slip‑detected."),
+        window_id="W-AU1",
+    )
+    assert answer_of(messages).answer == "FACTS_ONLY"
+
+
+def test_report_always_covers_both_lines(data: AgentData) -> None:
+    ctx = ToolContext(data, None, restricted=False)
+    result = run_tool(ctx, "get_report", {"line": "FactoryWave"})
+    assert result.ok
+    assert [row["line"] for row in result.content["lines"]] == ["AURSAD", "FactoryWave"]
+    assert result.lines == {"FactoryWave", "AURSAD"}
+    assert "type get_report = () => any;" in render_tools()
+
+
+def test_screening_answer_gets_gate_sentence_and_look_first(data: AgentData) -> None:
+    messages, _ = run(
+        data,
+        "What is the score?",
+        call("get_window", {}),
+        final("The score is 1.0."),
+        window_id="W-AU1",
+    )
+    answer = answer_of(messages)
+    assert (answer.answer, answer.answer_source) == ("ANSWERED", "model")
+    expected = f"The score is 1.0. {screening_text(data)} Look first at vibration_1."
+    assert answer.text == expected
+
+
+def test_screening_answer_that_says_both_is_unchanged(data: AgentData) -> None:
+    text = "AURSAD has screening only and no cause is named. Look first at vibration_1."
+    messages, _ = run(data, "What now?", call("get_window", {}), final(text), window_id="W-AU1")
+    assert answer_of(messages).text == text
+
+
+def test_closed_line_answer_gets_no_screening_sentence(data: AgentData) -> None:
+    text = "One signal is off normal."
+    messages, _ = run(data, "What now?", call("get_window", {}), final(text), window_id="W-FW1")
+    assert answer_of(messages).text == text
+
+
+@pytest.mark.parametrize(
+    ("query", "text", "expected"),
+    [
+        (
+            "gripper collision",
+            "Tighten the finger screws, then clear the work area.",
+            "Tighten the finger screws, then clear the work area. Protocols used: 1, 2.",
+        ),
+        (
+            "gripper slip",
+            "Protocol 1: lock out the cell and tighten the finger screws.",
+            "Protocol 1: lock out the cell and tighten the finger screws.",
+        ),
+    ],
+)
+def test_protocol_answer_names_the_protocol_ids(
+    data: AgentData, query: str, text: str, expected: str
+) -> None:
+    messages, _ = run(
+        data, "Which protocol?", call("search_protocols", {"query": query}), final(text)
+    )
+    assert answer_of(messages).text == expected
+
+
+def test_answer_without_protocol_lookup_gets_no_protocol_ids(data: AgentData) -> None:
+    text = "Step 1: lock out the cell."
+    messages, _ = run(data, "How do I start?", final(text))
+    assert answer_of(messages).text == text
