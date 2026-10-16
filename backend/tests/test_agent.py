@@ -257,7 +257,9 @@ def test_fault_question_on_closed_line_is_answered_by_code(data: AgentData) -> N
     answer = answer_of(messages)
     assert (answer.answer, answer.answer_source) == ("DIAGNOSIS_CLOSED", "tool")
     assert answer.text.startswith("Diagnosis is closed on FactoryWave.")
-    assert "AUROC 0.529, interval 0.323 to 0.706" in answer.text
+    closed = next(line for line in data.gate.lines if line.line == "FactoryWave")
+    low, high = closed.auroc_ci
+    assert f"AUROC {closed.auroc:.3f}, interval {low:.3f} to {high:.3f}" in answer.text
     assert "Only verified facts are reported for W-FW1." in answer.text
 
 

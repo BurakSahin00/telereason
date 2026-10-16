@@ -1,4 +1,4 @@
-"""The morning report (#39): ranking rules, and the stored 11 Oct night rebuilt from fixtures."""
+"""The morning report (#39): ranking rules, and the fixture night rebuilt in the store."""
 
 import os
 from pathlib import Path
@@ -27,13 +27,13 @@ from telereason.store.db import NightDb, NoteRecord, RunRecord, StoredWindow, Wi
 from telereason.store.night import DbNight
 from tests.test_fixtures import load
 
-RUN_ID = "2026-10-11-amd"
+IMPORTED_RUN = "2026-10-11-amd"
 # Opt-in check against the real 11 Oct results: directories separated by os.pathsep.
 RESULTS_ENV = "TELEREASON_11OCT_RESULTS"
 
 
 def fixture_night(db: NightDb) -> None:
-    """Store a night shaped like 11 Oct: the fixture windows plus filler windows.
+    """Store a night shaped like the fixture night: its windows plus filler windows.
 
     The fixture windows come first in night order, AURSAD by report rank and FactoryWave with
     decreasing deviations; the fillers bring the line counts and the AURSAD flagged count to the
@@ -79,7 +79,7 @@ def fixture_night(db: NightDb) -> None:
     t = report.timings_s
     db.init().replace_run(
         RunRecord(
-            run_id=RUN_ID,
+            run_id=report.run_id,
             status="done",
             source="import",
             step="report",
@@ -93,7 +93,7 @@ def fixture_night(db: NightDb) -> None:
         windows,
         notes,
     )
-    write_report(db, RUN_ID)
+    write_report(db, report.run_id)
 
 
 def gate_line(line: Line, verdict: Verdict) -> GateLine:
@@ -206,9 +206,11 @@ def test_imported_11_oct_report_is_the_stored_report(tmp_path: Path) -> None:
     results = [Path(p) for p in os.environ[RESULTS_ENV].split(os.pathsep)]
 
     import_night(results, os.environ["DATA_DIR"], db)
-    night = DbNight(db)
+    report = DbNight(db).report()
 
-    assert night.report().model_dump(mode="json") == load("report_latest.json")
-    assert night.gate().model_dump(mode="json") == load("gate.json")
-    for window_id, detail in load("window_detail.json").items():
-        assert night.get_window(window_id).model_dump(mode="json") == detail
+    # The fixtures come from a later night, so the 11 Oct run is checked against its own counts.
+    assert report.run_id == IMPORTED_RUN
+    assert [(line.line, line.verdict, line.scanned, line.flagged) for line in report.lines] == [
+        ("AURSAD", "screening", 4068, 1879),
+        ("FactoryWave", "closed", 3354, None),
+    ]

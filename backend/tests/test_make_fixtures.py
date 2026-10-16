@@ -221,11 +221,12 @@ def test_missing_store_stops(tmp_path: Path, out: Path) -> None:
     assert not (tmp_path / "absent.sqlite").exists()
 
 
-def test_stored_11_oct_night_gives_back_the_fixtures(tmp_path: Path, out: Path) -> None:
+def test_fixture_night_gives_back_the_fixtures(tmp_path: Path, out: Path) -> None:
     db = NightDb(tmp_path / "night.sqlite")
     fixture_night(db)
 
-    make(db, out)
+    # The fixture `ask.sse` is a recorded answer; given back, it keeps its window.
+    make(db, out, "--ask-sse", str(FIXTURES / "ask.sse"))
 
     # The rebuilt night keeps the fixture windows but not the night's order of the others.
     changed = {"windows.json", "README.md"}
