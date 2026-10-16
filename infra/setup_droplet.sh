@@ -197,8 +197,11 @@ if [[ "$SKIP_DATA" == "0" ]]; then
   if running data; then ok "dataset download already running"; else
     # only the files the data loader reads: DEFAULT_PATTERNS in backend/telereason/data/download.py
     nohup hf download "$DATASET_ID" --repo-type dataset --revision "$DATASET_REVISION" \
+      --include "factorybench_qa/level_4.jsonl" \
+      --include "factorybench_lite/level_1.jsonl" --include "factorybench_lite/level_2.jsonl" \
+      --include "factorybench_lite/level_3.jsonl" --include "factorybench_lite/level_4.jsonl" \
       --include "factorywave/episodes.parquet" --include "factorywave/flow.parquet" \
-      --include "factorywave/*_signals.parquet" --include "knowledge_graph/knowledge_graph.json" \
+      --include "knowledge_graph/knowledge_graph.json" \
       --local-dir /root/data/factorybench </dev/null > /root/logs/data.log 2>&1 &
     echo $! > /root/logs/data.pid
     ok "dataset download started ($DATASET_ID) -> /root/data/factorybench, /root/logs/data.log"
