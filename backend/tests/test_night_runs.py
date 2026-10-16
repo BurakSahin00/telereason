@@ -1,4 +1,8 @@
-"""POST/GET /api/night-runs in real mode with stand-in night steps (#49)."""
+"""POST/GET /api/night-runs in real mode with stand-in night steps (#49).
+
+The app's runner has no steps until #40, so real mode answers POST with 501; these tests give
+it stand-in steps to follow a run through the endpoints.
+"""
 
 import asyncio
 import re
@@ -14,12 +18,13 @@ from fastapi.testclient import TestClient
 
 from telereason.ai.engine import FakeEngine
 from telereason.api.main import create_app
+from telereason.api.night_runs import UNAVAILABLE_MESSAGE
 from telereason.api.schemas import GateResponse, StepTimings
 from telereason.night.run import (
     INTERRUPTED_MESSAGE,
     PROGRESS_INTERVAL_S,
     NightRunner,
-    PendingSteps,
+    NightRunsUnavailableError,
     RunContext,
 )
 from telereason.settings import DEFAULT_MODEL, Settings
@@ -180,6 +185,7 @@ def test_unknown_run_is_not_found(client: TestClient) -> None:
 def test_no_run_starts_before_the_engine_is_ready(tmp_path: Path) -> None:
     engine = SlowEngine()
     app = create_app(settings(tmp_path), engine=engine)
+    app.state.night_runner.steps = HeldSteps()
 
     with TestClient(app) as client:
         response = client.post("/api/night-runs", json={})
@@ -217,18 +223,26 @@ def test_shutdown_fails_the_active_run(tmp_path: Path, steps: HeldSteps) -> None
     assert (run.status, run.step, run.error) == ("failed", "gate", INTERRUPTED_MESSAGE)
 
 
-def test_pending_steps_fail_at_the_gate(tmp_path: Path) -> None:
-    async def run() -> RunRecord | None:
-        runner = NightRunner(NightDb(tmp_path / "night.sqlite"), FakeEngine(), PendingSteps())
-        started = runner.start(300)
-        await runner.wait()
-        return runner.get(started.run_id)
+def test_real_mode_starts_no_run_until_the_steps_are_wired(tmp_path: Path) -> None:
+    app = create_app(settings(tmp_path), engine=FakeEngine(model=DEFAULT_MODEL))
 
-    finished = asyncio.run(run())
+    with TestClient(app) as client:
+        wait_until_ready(client)
+        response = client.post("/api/night-runs", json={})
 
-    assert finished is not None
-    assert (finished.status, finished.step) == ("failed", "gate")
-    assert finished.error is not None and "#40" in finished.error
+    assert response.status_code == 501
+    assert response.json() == {"error": {"code": "not_implemented", "message": UNAVAILABLE_MESSAGE}}
+    assert UNAVAILABLE_MESSAGE == "Night runs are not available in real mode yet."
+    assert not (tmp_path / "night.sqlite").exists()
+
+
+def test_a_runner_without_steps_refuses_to_start(tmp_path: Path) -> None:
+    async def start() -> None:
+        NightRunner(NightDb(tmp_path / "night.sqlite"), FakeEngine()).start(300)
+
+    with pytest.raises(NightRunsUnavailableError):
+        asyncio.run(start())
+    assert not (tmp_path / "night.sqlite").exists()
 
 
 class CountingDb(NightDb):

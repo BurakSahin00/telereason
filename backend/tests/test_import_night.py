@@ -14,6 +14,7 @@ from scripts.import_night import (
     assign_window_ids,
     base_window_id,
     import_night,
+    main,
 )
 from telereason.api.schemas import WINDOW_ID_PATTERN
 from telereason.data.paths import dataset_dir
@@ -246,3 +247,27 @@ def test_assign_window_ids_keeps_unique_ids() -> None:
     assert ids[second] != ids[first]
     assert len(set(ids.values())) == 3
     assert ids[second] == f"W-{zlib.crc32(f'{second}#1'.encode()) % 10**6:06d}"
+
+
+def test_main_reads_data_dir_and_db_path_from_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    results, data = write_night(tmp_path)
+    monkeypatch.setenv("DATA_DIR", str(data))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "from-env.sqlite"))
+
+    main(["--results", str(results)])
+
+    assert NightDb(tmp_path / "from-env.sqlite").count_windows(RUN_ID) == 3
+
+
+def test_main_prefers_the_command_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    results, data = write_night(tmp_path)
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "nowhere"))
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "from-env.sqlite"))
+    db_path = tmp_path / "from-args.sqlite"
+
+    main(["--results", str(results), "--data-dir", str(data), "--db", str(db_path)])
+
+    assert NightDb(db_path).count_windows(RUN_ID) == 3
+    assert not (tmp_path / "from-env.sqlite").exists()

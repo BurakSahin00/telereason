@@ -6,7 +6,8 @@ a `NightSteps` object, so the runner only orders the steps, times them, keeps th
 the store and marks the run done or failed. The runner never opens the engine; it receives the
 one the app opened (`ai/engine.py`).
 
-Until the real steps are wired (#40), `PendingSteps` fails a run at its first step.
+Until the real steps are wired (#40), the app's runner has no steps and refuses to start a
+run (`NightRunsUnavailableError`); tests give it stand-in steps.
 """
 
 from __future__ import annotations
@@ -33,6 +34,10 @@ INTERRUPTED_MESSAGE = "The server stopped during this night run."
 
 class RunnerBusyError(RuntimeError):
     """A night run is already queued or running."""
+
+
+class NightRunsUnavailableError(RuntimeError):
+    """The runner has no night steps to run."""
 
 
 @dataclass
@@ -71,15 +76,6 @@ class NightSteps(Protocol):
     async def report(self, ctx: RunContext) -> None: ...
 
 
-class PendingSteps:
-    """Placeholder until the real steps are wired (#40): every step refuses to run."""
-
-    async def _pending(self, ctx: RunContext) -> None:
-        raise NotImplementedError("the night steps are not wired yet (#40)")
-
-    gate = facts = scan = report = _pending
-
-
 def run_id_prefix(now: datetime | None = None) -> str:
     return f"run-{(now or datetime.now(UTC)):%Y%m%d}-"
 
@@ -88,8 +84,13 @@ class NightRunner:
     def __init__(self, db: NightDb, engine: Engine, steps: NightSteps | None = None) -> None:
         self.db = db
         self.engine = engine
-        self.steps: NightSteps = steps or PendingSteps()
+        self.steps = steps
         self.task: asyncio.Task[None] | None = None
+
+    @property
+    def available(self) -> bool:
+        """False until the night steps are wired (#40)."""
+        return self.steps is not None
 
     @property
     def active(self) -> bool:
@@ -114,6 +115,9 @@ class NightRunner:
         No await between the check and the task: on one event loop two requests cannot both
         pass the check.
         """
+        if self.steps is None:
+            raise NightRunsUnavailableError("The night steps are not wired yet.")
+        steps = self.steps
         self.db.init()
         if self.active or self.db.active_run() is not None:
             raise RunnerBusyError("A night run is already active.")
@@ -125,7 +129,7 @@ class NightRunner:
             max_windows=max_windows,
         )
         self.db.create_run(run)
-        self.task = asyncio.create_task(self._run(run), name=f"night-run {run.run_id}")
+        self.task = asyncio.create_task(self._run(run, steps), name=f"night-run {run.run_id}")
         logger.info("night run %s queued (max_windows=%d)", run.run_id, max_windows)
         return run
 
@@ -149,7 +153,7 @@ class NightRunner:
         ]
         return f"{prefix}{max(numbers, default=0) + 1}"
 
-    async def _run(self, run: RunRecord) -> None:
+    async def _run(self, run: RunRecord, steps: NightSteps) -> None:
         ctx = RunContext(
             run_id=run.run_id,
             max_windows=run.max_windows or run.total,
@@ -164,7 +168,7 @@ class NightRunner:
             for step in STEPS:
                 self.db.update_run(run.run_id, step=step)
                 step_started = time.perf_counter()
-                await getattr(self.steps, step)(ctx)
+                await getattr(steps, step)(ctx)
                 setattr(timings, step, time.perf_counter() - step_started)
                 ctx.progress(ctx.done, flush=True)
                 self.db.update_run(run.run_id, timings=timings)

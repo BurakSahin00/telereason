@@ -17,7 +17,6 @@ from tests.test_contract import assert_error_shape
 from tests.test_data_loader import write_factorywave
 from tests.test_fixtures import load
 from tests.test_lifespan import wait_until_ready
-from tests.test_night_runs import wait_for_run
 
 REPORT_WINDOW_IDS = [
     item["window_id"] for line in load("report_latest.json")["lines"] for item in line["items"]
@@ -61,17 +60,14 @@ def test_stored_night_endpoints_serve_the_11_oct_files(
     assert response.json() == load(name)
 
 
-def test_night_runs_are_recorded_in_the_store(client: TestClient, tmp_path: Path) -> None:
-    started = client.post("/api/night-runs", json={})
-    run_id = started.json()["run_id"]
-    progress = wait_for_run(client, run_id)
+def test_night_runs_do_not_start_in_real_mode_yet(client: TestClient, tmp_path: Path) -> None:
+    # The night steps are wired in #40.
+    response = client.post("/api/night-runs", json={})
 
-    assert started.status_code == 202
-    assert started.json()["status"] == "queued"
-    assert progress["run_id"] == run_id
-    # The night steps are wired in #40; until then a run fails at its first step.
-    assert (progress["status"], progress["step"]) == ("failed", "gate")
-    assert (tmp_path / "night.sqlite").exists()
+    assert response.status_code == 501
+    assert_error_shape(response.json(), "not_implemented")
+    assert response.json()["error"]["message"] == "Night runs are not available in real mode yet."
+    assert not (tmp_path / "night.sqlite").exists()
 
 
 def test_unknown_night_run_is_not_found(client: TestClient) -> None:

@@ -2,7 +2,7 @@
 
 Contract between the backend (FastAPI) and the frontend. Until the real endpoints are ready, the backend's fake mode (`ENGINE=fake`) serves `fixtures/` as the responses, so the frontend always talks to the same backend; `GET /api/health` reports the real engine setting, not a fixture.
 
-In real mode (`ENGINE=vllm`) with `NIGHT_SOURCE=db`, `/api/report/latest`, `/api/gate`, `/api/windows` and `/api/windows/{window_id}` serve the night run that finished last in the SQLite store at `DB_PATH` (the 11 Oct night is loaded into it with `scripts/import_night.py`), `last_night` in `/api/system` is that run's timings, and the live assistant's tools read the same run; without a finished run these endpoints answer `503`. With `NIGHT_SOURCE=stored`, the default, they serve the stored 11 Oct night from `fixtures/` instead, and the tools read the same files. In both, `/api/examples` serves `fixtures/`, `/api/windows/{window_id}/signals` reads the downloaded dataset and `/api/system` reads the GPU from `rocm-smi` and the installed versions; `/api/night-runs` starts and follows night runs, recorded in the store at `DB_PATH` (with `NIGHT_SOURCE=stored` the endpoints above keep serving the stored night).
+In real mode (`ENGINE=vllm`) with `NIGHT_SOURCE=db`, `/api/report/latest`, `/api/gate`, `/api/windows` and `/api/windows/{window_id}` serve the night run that finished last in the SQLite store at `DB_PATH` (the 11 Oct night is loaded into it with `scripts/import_night.py`), `last_night` in `/api/system` is that run's timings, and the live assistant's tools read the same run; without a finished run these endpoints answer `503`. With `NIGHT_SOURCE=stored`, the default, they serve the stored 11 Oct night from `fixtures/` instead, and the tools read the same files. In both, `/api/examples` serves `fixtures/`, `/api/windows/{window_id}/signals` reads the downloaded dataset and `/api/system` reads the GPU from `rocm-smi` and the installed versions; `POST /api/night-runs` answers `501` until the night steps are built, and `GET /api/night-runs/{run_id}` reads runs from the store at `DB_PATH`.
 
 Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds responses generated from the real 11 Oct MI300X run (see `fixtures/README.md`).
 
@@ -240,7 +240,7 @@ Request: `{"max_windows": 300}`. Response `202`:
 {"run_id": "run-20261015-1", "status": "queued"}
 ```
 
-Only one run at a time: while one is queued or running, the response is `409` with code `busy`. While the model engine loads, the response is `503` with code `engine_not_ready`. Fake mode answers with `fixtures/night_run_started.json`.
+Only one run at a time: while one is queued or running, the response is `409` with code `busy`. While the model engine loads, the response is `503` with code `engine_not_ready`. Fake mode answers with `fixtures/night_run_started.json`; real mode answers `501` until the night steps are built.
 
 ### GET /api/night-runs/{run_id}
 

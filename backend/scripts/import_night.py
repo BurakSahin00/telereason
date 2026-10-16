@@ -383,14 +383,18 @@ def import_night(results: Sequence[Path], data_dir: str | Path, db: NightDb) -> 
     return imported
 
 
-def main() -> None:
-    settings = load_settings()
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--results", type=Path, action="append", required=True)
-    parser.add_argument("--data-dir", default=settings.data_dir)
-    parser.add_argument("--db", default=settings.db_path)
-    args = parser.parse_args()
+    parser.add_argument("--data-dir", help="default: DATA_DIR")
+    parser.add_argument("--db", help="default: DB_PATH")
+    args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    # Settings are read only for what the command line leaves out.
+    if args.data_dir is None or args.db is None:
+        settings = load_settings()
+        args.data_dir = args.data_dir or settings.data_dir
+        args.db = args.db or settings.db_path
     try:
         imported = import_night(args.results, args.data_dir, NightDb(args.db))
     except NightImportError as exc:

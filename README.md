@@ -148,7 +148,7 @@ This is a hackathon build. A real factory deployment will add:
 
 - **SSO:** technicians will sign in with the plant's single sign-on instead of reaching an open demo URL.
 - **Audit log:** every question, answer, tool call and refused action request will be written to an append-only audit log.
-- **Postgres:** night runs, notes and reports will be stored in Postgres; this build serves a stored night from files.
+- **Postgres:** night runs, notes and reports move from this build's SQLite file (`DB_PATH`) to Postgres, so several API instances can share them.
 - **Separate model server:** the engine will move to its own model server so the API and the model can be restarted and scaled independently.
 - **Monitoring:** engine health, answer latency, night-run duration and failures will be monitored, with alerts to the maintenance team.
 
