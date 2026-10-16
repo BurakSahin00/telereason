@@ -12,6 +12,7 @@ from telereason.ai.engine import (
     FAKE_AGENT_TURN,
     FAKE_DEFAULT,
     FAKE_NOTE,
+    FAKE_NOTE_TURN,
     Engine,
     EngineCall,
     EngineNotReadyError,
@@ -32,7 +33,7 @@ def started_fake(**kwargs: object) -> FakeEngine:
 
 def generate(engine: Engine, prompt: str | list[int], **kwargs: object) -> Generation:
     kwargs.setdefault("priority", Priority.NIGHT)
-    kwargs.setdefault("max_tokens", 512)
+    kwargs.setdefault("max_tokens", 1024)
     return asyncio.run(engine.generate(prompt, **kwargs))  # type: ignore[arg-type]
 
 
@@ -57,7 +58,7 @@ def test_fake_output_is_deterministic() -> None:
     first = generate(started_fake(), "note prompt", kind="note")
     second = generate(started_fake(), "note prompt", kind="note")
 
-    assert first.text == second.text == FAKE_NOTE
+    assert first.text == second.text == FAKE_NOTE_TURN
     assert first.token_ids == second.token_ids
     assert first.prompt_tokens == second.prompt_tokens == len(b"note prompt")
     assert first.completion_tokens == len(first.token_ids) > 0
@@ -71,7 +72,8 @@ def test_fake_returns_canned_text_per_kind() -> None:
     turn = generate(engine, "p", kind="agent")
     other = generate(engine, "p")
 
-    assert note.text == FAKE_NOTE
+    assert note.text == FAKE_NOTE_TURN
+    assert FAKE_NOTE in note.text
     assert "\n" not in note.text
     assert turn.text == FAKE_AGENT_TURN
     assert other.text == FAKE_DEFAULT
@@ -90,7 +92,7 @@ def test_scripted_replies_come_in_order_then_default() -> None:
 
     texts = [generate(engine, "p", kind="note").text for _ in range(4)]
 
-    assert texts == ["first", "second", "third", FAKE_NOTE]
+    assert texts == ["first", "second", "third", FAKE_NOTE_TURN]
 
 
 def test_fake_applies_stop_and_max_tokens() -> None:
@@ -107,13 +109,20 @@ def test_fake_applies_stop_and_max_tokens() -> None:
 def test_fake_records_prompt_priority_and_kind() -> None:
     engine = started_fake()
 
-    generate(engine, "night", priority=Priority.NIGHT, kind="note")
+    generate(engine, "night", priority=Priority.NIGHT, kind="note", seed=11)
     generate(engine, [1, 2, 3], priority=Priority.LIVE, kind="agent")
 
     assert engine.calls == [
-        EngineCall(prompt="night", priority=Priority.NIGHT, kind="note"),
+        EngineCall(prompt="night", priority=Priority.NIGHT, kind="note", seed=11),
         EngineCall(prompt=[1, 2, 3], priority=Priority.LIVE, kind="agent"),
     ]
+
+
+def test_fake_output_does_not_depend_on_the_seed() -> None:
+    first = generate(started_fake(), "p", kind="note", seed=1, temperature=1.0)
+    second = generate(started_fake(), "p", kind="note", seed=2, temperature=1.0)
+
+    assert first.text == second.text
 
 
 def test_fake_ready_follows_start_and_close() -> None:
@@ -235,7 +244,9 @@ def test_vllm_generate_maps_request_and_output(stub_vllm: type[StubLLM]) -> None
     asyncio.run(engine.start())
 
     text = generate(engine, "hello", priority=Priority.NIGHT, max_tokens=64, stop=["<|call|>"])
-    tokens = generate(engine, [200006, 17360], priority=Priority.LIVE, max_tokens=8, kind="agent")
+    tokens = generate(
+        engine, [200006, 17360], priority=Priority.LIVE, max_tokens=8, kind="agent", seed=7
+    )
 
     assert text == Generation(
         text="<|channel|>final<|message|>ok",
@@ -254,6 +265,8 @@ def test_vllm_generate_maps_request_and_output(stub_vllm: type[StubLLM]) -> None
     assert params1.stop == ["<|call|>"]
     assert params1.skip_special_tokens is False
     assert params1.output_kind == "final_only"
+    assert params1.seed is None
+    assert params2.seed == 7
     assert params2.stop is None
     assert id1 != id2
     assert id2.startswith("agent-")
