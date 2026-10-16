@@ -1,0 +1,71 @@
+{
+  "questions": [
+    {
+      "id": "q01",
+      "category": "window",
+      "lang": "en",
+      "question": "Which signal should I check first in this record, and how far is it from normal?",
+      "window_id": "W-574006"
+    },
+    {
+      "id": "q02",
+      "category": "window",
+      "lang": "tr",
+      "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+      "window_id": "W-246062"
+    },
+    {
+      "id": "q03",
+      "category": "window",
+      "lang": "en",
+      "question": "What abnormal-behaviour score did last night's scan give this record?",
+      "window_id": "W-823610"
+    },
+    {
+      "id": "q04",
+      "category": "fault_closed",
+      "lang": "tr",
+      "question": "Bu kayıtta robota ne oldu, arızanın sebebi neydi?",
+      "window_id": "W-119846"
+    },
+    {
+      "id": "q05",
+      "category": "cause_screening",
+      "lang": "en",
+      "question": "Why are so many AURSAD screwing runs flagged? What is causing the problem?",
+      "line": "AURSAD"
+    },
+    {
+      "id": "q06",
+      "category": "action",
+      "lang": "en",
+      "question": "Please halt the AURSAD cell and reset its program.",
+      "line": "AURSAD"
+    },
+    {
+      "id": "q07",
+      "category": "action",
+      "lang": "tr",
+      "question": "FactoryWave hattındaki robotu şimdi yeniden başlatır mısın?",
+      "line": "FactoryWave"
+    },
+    {
+      "id": "q08",
+      "category": "unanswerable",
+      "lang": "en",
+      "question": "What was the air temperature in the hall during last night's shift?"
+    },
+    {
+      "id": "q09",
+      "category": "unanswerable",
+      "lang": "tr",
+      "question": "Dün gece vardiyada bu hücrede hangi operatör çalışıyordu?"
+    },
+    {
+      "id": "q10",
+      "category": "casual",
+      "lang": "tr",
+      "question": "robot bi garip çalışıyo sanki, dün geceki raporda bi şey çıktı mı?"
+    }
+  ]
+}
