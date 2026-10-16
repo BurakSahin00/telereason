@@ -13,8 +13,9 @@ windows the report and the `/api/ask` sample open plus one unflagged window on a
 What a night run does not store is kept from the fixtures already in `--out`: `health.json`,
 `examples.json`, `night_run_started.json`, `gpu` and `versions` in `system.json` and the `done`
 event of `ask.sse`. `--system-json` takes `gpu` and `versions` from a saved `/api/system`
-response instead, and `--ask-sse` takes `ask.sse` from a recorded `/api/ask` stream for
-`ask_request.json`; both are checked against the API models and the script stops on a mismatch.
+response instead, and `--ask-sse` takes `ask.sse` from a recorded `/api/ask` stream; then
+`ask_request.json` asks about the stream's window, which must be a closed-line window of the run.
+Both files are checked against the API models and the script stops on a mismatch.
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ from telereason.api.schemas import (
     ToolResultEvent,
     WindowDetail,
 )
+from telereason.data.loader import WindowNotFoundError
 from telereason.store.db import NightDb, RunRecord
 from telereason.store.night import DbNight, RunWindows
 
@@ -109,7 +111,7 @@ By line: {detail_mix}.
 - Run `{run_id}` in the store, read the way the API reads it with `NIGHT_SOURCE=db`
   (`telereason.store.night`): `report_latest.json`, `gate.json`, `windows.json`,
   `window_detail.json`, `night_run.json`, `last_night` in `system.json` and the window of
-  `ask_request.json` (the first report window on the closed line).
+  `ask_request.json` ({ask_window_source}).
 - Window ids are the store's, so each is unique. A note is shown only when it passed the
   verifier; otherwise `note` is empty and `verified` is false. `top_features` is shown on AURSAD
   only and is empty when the run stored none.
@@ -194,17 +196,34 @@ def read_stream(text: str, what: str) -> list[tuple[str, BaseModel]]:
     return messages
 
 
-def recorded_stream(path: Path, window_id: str) -> str:
-    """A real `/api/ask` answer to `ask_request.json`, written again without pings."""
+def recorded_stream(path: Path) -> tuple[str, str | None]:
+    """A real `/api/ask` answer, written again without pings, and the window it asks about."""
     messages = read_stream(read_file(path), str(path))
     events = [event for event, _ in messages]
     if "error" in events or "answer" not in events or events[-1:] != ["done"]:
         raise FixtureError(f"{path}: expected an answer and a final done event, got {events}")
-    for _, data in messages:
-        called = data.args.get("window_id") if isinstance(data, ToolCallEvent) else None
-        if called not in (None, window_id):
-            raise FixtureError(f"{path} asks about {called}; ask_request.json has {window_id}")
-    return "".join(sse_message(event, data.model_dump(mode="json")) for event, data in messages)
+    called = {
+        data.args["window_id"]
+        for _, data in messages
+        if isinstance(data, ToolCallEvent) and "window_id" in data.args
+    }
+    if len(called) > 1:
+        raise FixtureError(f"{path} asks about more than one window: {sorted(called)}")
+    text = "".join(sse_message(event, data.model_dump(mode="json")) for event, data in messages)
+    return text, next(iter(called), None)
+
+
+def recorded_window(windows: RunWindows, window_id: str, path: Path) -> WindowDetail:
+    """The window a recorded stream asks about; it must be a closed-line window of the run."""
+    try:
+        window = windows.get_window(window_id)
+    except WindowNotFoundError as exc:
+        raise FixtureError(
+            f"{path} asks about {window_id}, not in run {windows.run.run_id}"
+        ) from exc
+    if window.verdict != "closed":
+        raise FixtureError(f"{path} asks about {window_id} on {window.line}, not a closed line")
+    return window
 
 
 def saved_system(path: Path) -> SystemResponse:
@@ -274,6 +293,13 @@ def build(
     gate = night.gate(run)
     report = night.report(run)
     closed_line, ask_window = closed_window(report)
+    ask_window_source = "the first report window on the closed line"
+    recorded = recorded_stream(ask_sse) if ask_sse is not None else None
+    if ask_sse is not None and recorded is not None and recorded[1] is not None:
+        # The stream was recorded for its own request, so `ask_request.json` follows it.
+        closed_line = recorded_window(windows, recorded[1], ask_sse).line
+        ask_window = recorded[1]
+        ask_window_source = "the closed-line window the recorded `ask.sse` asks about"
     closed_gate = next(row for row in gate.lines if row.line == closed_line)
     low, high = closed_gate.auroc_ci
 
@@ -303,7 +329,7 @@ def build(
     files = {
         name: json.dumps(value, indent=2, ensure_ascii=False) + "\n" for name, value in data.items()
     }
-    if ask_sse is None:
+    if ask_sse is None or recorded is None:
         previous = dict(read_stream(read_file(out / "ask.sse"), "previous ask.sse"))
         done = previous.get("done")
         if not isinstance(done, DoneEvent):
@@ -314,7 +340,7 @@ def build(
             f"`{run.run_id}`"
         )
     else:
-        files["ask.sse"] = recorded_stream(ask_sse, ask_window)
+        files["ask.sse"] = recorded[0]
         ask_source = (
             f"recorded `POST /api/ask` stream `{ask_sse.name}` for `ask_request.json` (run "
             f"`{run.run_id}`, file time {file_time(ask_sse)}): one real answer, so `total_ms`, "
@@ -331,6 +357,7 @@ def build(
         detail_mix=detail_mix(details),
         system_source=system_source,
         ask_source=ask_source,
+        ask_window_source=ask_window_source,
     )
     return files
 

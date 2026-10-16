@@ -275,6 +275,20 @@ def test_recorded_stream_becomes_ask_sse(tmp_path: Path, db: NightDb, out: Path)
     ) in readme.replace("\n  ", " ")
 
 
+def test_ask_request_follows_the_recorded_window(tmp_path: Path, db: NightDb, out: Path) -> None:
+    # A closed-line window of the run that is not first in the report.
+    db.put_windows(NEW_RUN, [WindowRecord("W-100004", "FactoryWave", "screwing", 3, max_abs_z=2.0)])
+    recorded = broken(RECORDED, 0, {"args": {"window_id": "W-100004"}})
+    ask_sse = saved(tmp_path, "droplet_ask.sse", stream(recorded))
+
+    make(db, out, "--ask-sse", str(ask_sse))
+
+    readme = (out / "README.md").read_text(encoding="utf-8").replace("\n  ", " ")
+    assert read(out, "ask_request.json")["window_id"] == "W-100004"
+    assert read(out, "window_detail.json")["W-100004"]["verdict"] == "closed"
+    assert "(the closed-line window the recorded `ask.sse` asks about)" in readme
+
+
 def test_readme_says_what_was_kept(db: NightDb, out: Path) -> None:
     make(db, out)
 
@@ -297,6 +311,14 @@ def broken(messages: list[tuple[str, Any]], index: int, change: dict[str, Any]) 
         stream(broken(RECORDED, 3, {"total_ms": "2875"})),
         stream(broken(RECORDED, 3, {"cost": 1})),
         stream(broken(RECORDED, 0, {"args": {"window_id": "W-100001"}})),
+        stream(broken(RECORDED, 0, {"args": {"window_id": "W-999999"}})),
+        stream(
+            [
+                RECORDED[0],
+                broken(RECORDED, 0, {"args": {"window_id": "W-100001"}})[0],
+                *RECORDED[1:],
+            ]
+        ),
         stream([*RECORDED[:3], ("error", {"error": {"code": "busy", "message": "Busy."}})]),
         stream(RECORDED[:3]),
         stream(RECORDED).replace('data: {"total_ms"', "data: {total_ms"),
@@ -307,7 +329,9 @@ def broken(messages: list[tuple[str, Any]], index: int, change: dict[str, Any]) 
         "missing field",
         "coerced value",
         "extra field",
-        "other window",
+        "scored-line window",
+        "window not in run",
+        "two windows",
         "error event",
         "no done",
         "not json",
