@@ -106,7 +106,8 @@ def test_agent_store_opens_every_report_window(app: FastAPI) -> None:
 
 
 def test_signals_still_read_the_downloaded_data(client: TestClient) -> None:
-    response = client.get("/api/windows/episode-1/signals")
+    # The stored night has no signals; they come from the downloaded pool, absent here.
+    response = client.get("/api/windows/W-574006/signals")
 
     assert response.status_code == 503
-    assert "normal band not computed yet" in response.json()["error"]["message"]
+    assert "No night pool" in response.json()["error"]["message"]

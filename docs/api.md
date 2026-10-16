@@ -169,7 +169,7 @@ Query: `line` (`FactoryWave` | `AURSAD`), `flagged` (`true` | `false`), `sort` (
 
 ### GET /api/windows/{window_id}/signals
 
-Query: `channels` (comma-separated; default: `look_first` plus the two next largest deviations).
+Query: `channels` (comma-separated; default: `look_first` plus the two next largest deviations; when `look_first` is a plan-versus-measured pair, both of its channels).
 
 ```json
 {
@@ -180,6 +180,11 @@ Query: `channels` (comma-separated; default: `look_first` plus the two next larg
   ]
 }
 ```
+
+- `t_s` counts from the window's first sample.
+- The band comes from the same normal windows as the facts: at each step, median ± 2 robust spreads (2 is where `plain` turns to "Slightly off normal"). A channel without enough normal windows is left out.
+- A pair name as written in the facts (`feedback_pos_5 vs setpoint_pos_5`) returns one channel: measured minus planned.
+- Unknown channel names are ignored. `503` only when the dataset has not been downloaded.
 
 ### POST /api/ask
 

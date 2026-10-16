@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
-import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
 from telereason.api.schemas import (
@@ -19,6 +18,7 @@ from telereason.api.schemas import (
     WindowSummary,
 )
 from telereason.data.paths import factorywave_dir
+from telereason.night.band import NightSignals, PoolNotAvailableError, UnknownWindowError
 
 
 class WindowSource(Protocol):
@@ -119,6 +119,7 @@ class DataStore:
         self._declared_total: int | None = None
         self._details: dict[str, dict[str, Any]] | None = None
         self._signals: dict[str, dict[str, Any]] | None = None
+        self.night_signals = NightSignals(data_dir)
 
     @property
     def source(self) -> Path:
@@ -207,14 +208,22 @@ class DataStore:
         )
 
     def get_signals(self, window_id: str, channels: str | None = None) -> SignalsResponse:
-        if window_id not in self._load_summaries():
-            raise WindowNotFoundError(window_id)
-        payload = self._load_signals().get(window_id)
+        """Series and normal band of one window.
+
+        A fixture ``signals.json`` is served when the fixture source carries the window;
+        otherwise the window is read from the downloaded L4-t1 pool (``telereason.night.band``).
+        """
+        wanted = (
+            [name.strip() for name in channels.split(",") if name.strip()] if channels else None
+        )
+        payload = self._fixture_signals(window_id)
         if payload is None:
-            payload = self._read_parquet_signals(window_id)
-        if payload is None:
-            raise DataNotAvailableError(f"No signal data found for window {window_id}.")
-        wanted = [name.strip() for name in channels.split(",")] if channels else None
+            try:
+                return self.night_signals.get(window_id, wanted)
+            except PoolNotAvailableError as exc:
+                raise DataNotAvailableError(str(exc)) from exc
+            except UnknownWindowError as exc:
+                raise WindowNotFoundError(window_id) from exc
         channel_rows = payload.get("channels", payload)
         if isinstance(channel_rows, dict):
             channel_rows = [dict(value, name=name) for name, value in channel_rows.items()]
@@ -228,48 +237,11 @@ class DataStore:
             {"window_id": window_id, "t_s": payload.get("t_s", []), "channels": channel_rows}
         )
 
-    def _read_parquet_signals(self, window_id: str) -> dict[str, Any] | None:
-        """Read one episode from a FactoryBench wide signal parquet file.
-
-        Channels carry values only: the normal band comes from normal windows
-        and is not computed yet, so ``get_signals`` refuses these payloads.
-        """
-        if not self.data_root.exists():
+    def _fixture_signals(self, window_id: str) -> dict[str, Any] | None:
+        try:
+            source = self.source
+        except DataNotAvailableError:
             return None
-        for path in sorted(self.data_root.glob("*_signals.parquet")):
-            dataset = ds.dataset(path, format="parquet")
-            names = set(dataset.schema.names)
-            id_name = next(
-                (name for name in ("episode_id", "id", "episode", "episode_uuid") if name in names),
-                None,
-            )
-            if id_name is None:
-                continue
-            table = dataset.to_table(filter=ds.field(id_name) == window_id)
-            if table.num_rows == 0:
-                continue
-            rows = table.to_pylist()
-            time_name = next(
-                (
-                    name
-                    for name in ("timestamp_ms", "timestamp", "time_s", "time", "t_s")
-                    if name in names
-                ),
-                None,
-            )
-            numeric_names = [
-                name
-                for name in table.column_names
-                if name not in {id_name, time_name}
-                and all(isinstance(row.get(name), (int, float)) for row in rows)
-            ]
-            time_values = [float(row[time_name]) for row in rows] if time_name else []
-            if time_name == "timestamp_ms":
-                time_values = [value / 1000 for value in time_values]
-            channels = []
-            for name in numeric_names:
-                values = [float(row[name]) for row in rows]
-                if values:
-                    channels.append({"name": name, "values": values})
-            return {"t_s": time_values, "channels": channels}
-        return None
+        if source != self.fixture_root:
+            return None
+        return self._load_signals().get(window_id)

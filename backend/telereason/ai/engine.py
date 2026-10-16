@@ -63,6 +63,7 @@ class Engine(Protocol):
         temperature: float = 0.0,
         stop: Sequence[str] | None = None,
         kind: GenerationKind | None = None,
+        seed: int | None = None,
     ) -> Generation: ...
 
 
@@ -74,6 +75,7 @@ FAKE_NOTE = (
     "reports only the verified facts; a technician should compare the next cycles with the "
     "cell's maintenance protocol before the morning shift."
 )
+FAKE_NOTE_TURN = f"<|channel|>final<|message|>{FAKE_NOTE}<|return|>"
 FAKE_AGENT_TURN = (
     "<|channel|>final<|message|>I can answer questions about last night's report, the "
     "scanned windows and the maintenance protocols. I cannot start, stop or change any "
@@ -101,6 +103,7 @@ class EngineCall:
     prompt: Prompt
     priority: Priority
     kind: GenerationKind | None
+    seed: int | None = None
 
 
 class FakeEngine:
@@ -108,7 +111,8 @@ class FakeEngine:
 
     Tokens are UTF-8 bytes, so token counts are stable and need no tokenizer. Scripted
     replies are returned in order; once the queue is empty the canned text for `kind`
-    is returned. Every call is recorded in `calls`.
+    is returned. `temperature` and `seed` do not change the output. Every call is
+    recorded in `calls`.
     """
 
     name: Literal["fake", "vllm"] = "fake"
@@ -144,13 +148,14 @@ class FakeEngine:
         temperature: float = 0.0,
         stop: Sequence[str] | None = None,
         kind: GenerationKind | None = None,
+        seed: int | None = None,
     ) -> Generation:
         if not self._ready:
             raise EngineNotReadyError("engine is not ready")
         if max_tokens < 1:
             raise ValueError("max_tokens must be at least 1")
         started = time.perf_counter()
-        self.calls.append(EngineCall(prompt=prompt, priority=priority, kind=kind))
+        self.calls.append(EngineCall(prompt=prompt, priority=priority, kind=kind, seed=seed))
 
         text = self._scripted.popleft() if self._scripted else _canned(kind)
         for marker in stop or ():
@@ -172,7 +177,7 @@ class FakeEngine:
 
 def _canned(kind: GenerationKind | None) -> str:
     if kind == "note":
-        return FAKE_NOTE
+        return FAKE_NOTE_TURN
     if kind == "agent":
         return FAKE_AGENT_TURN
     return FAKE_DEFAULT
@@ -246,6 +251,7 @@ class VllmEngine:
         temperature: float = 0.0,
         stop: Sequence[str] | None = None,
         kind: GenerationKind | None = None,
+        seed: int | None = None,
     ) -> Generation:
         if not self._ready or self._llm is None:
             raise EngineNotReadyError("engine is not ready")
@@ -258,6 +264,7 @@ class VllmEngine:
             max_tokens=max_tokens,
             temperature=temperature,
             stop=list(stop) if stop else None,
+            seed=seed,
             skip_special_tokens=False,
             output_kind=RequestOutputKind.FINAL_ONLY,
         )

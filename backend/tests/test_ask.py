@@ -46,6 +46,7 @@ class HangingEngine(FakeEngine):
         temperature: float = 0.0,
         stop: Sequence[str] | None = None,
         kind: GenerationKind | None = None,
+        seed: int | None = None,
     ) -> Generation:
         if self.error:
             raise RuntimeError("HIP out of memory")
