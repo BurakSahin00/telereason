@@ -33,6 +33,18 @@ BYTES_PER_GIB = 2**30
 # Keys are compared lower-case: rocm-smi releases differ in spelling ("Card Series",
 # "Card series") and in which product name they print. Best name first.
 NAME_KEYS = ("card series", "device name", "marketing name", "card model")
+MODEL_KEY = "card model"
+VENDOR_KEY = "card vendor"
+GFX_KEY = "gfx version"
+# Product names of AMD PCI device ids, used when rocm-smi prints no readable name. A device id
+# means something only for its vendor, so the table is read only for an AMD card. 0x74b5 is
+# the MI300X virtual function: it matches what amd-smi and rocm-smi read from the same card
+# (subsystem 0x74a1, gfx942, 304 compute units, 191.7 GiB VRAM) on the AMD Developer Cloud
+# MI300X droplet on 17 Oct.
+KNOWN_DEVICES = {
+    "0x74a1": "AMD Instinct MI300X",
+    "0x74b5": "AMD Instinct MI300X VF",
+}
 MEMORY_TOTAL_KEY = "vram total memory (b)"
 MEMORY_USED_KEY = "vram total used memory (b)"
 CARD_KEY = re.compile(r"card(\d+)", re.IGNORECASE)
@@ -100,7 +112,7 @@ def parse_rocm_smi(output: str) -> GpuInfo | None:
 def _card(fields: dict[Any, Any]) -> GpuInfo | None:
     by_key = {str(key).strip().lower(): value for key, value in fields.items()}
     names = (_name(by_key.get(key)) for key in NAME_KEYS)
-    name = next((candidate for candidate in names if candidate), None)
+    name = next((candidate for candidate in names if candidate), None) or _fallback_name(by_key)
     total = _bytes(by_key.get(MEMORY_TOTAL_KEY))
     used = _bytes(by_key.get(MEMORY_USED_KEY))
     if name is None or not total or used is None:
@@ -110,6 +122,23 @@ def _card(fields: dict[Any, Any]) -> GpuInfo | None:
         memory_total_gib=total / BYTES_PER_GIB,
         memory_used_gib=used / BYTES_PER_GIB,
     )
+
+
+def _fallback_name(by_key: dict[str, Any]) -> str | None:
+    """The name of a known AMD device id, else "AMD <gfx version>", else None."""
+    vendor = by_key.get(VENDOR_KEY)
+    model = by_key.get(MODEL_KEY)
+    if isinstance(vendor, str) and _is_amd(vendor) and isinstance(model, str):
+        if known := KNOWN_DEVICES.get(model.strip().lower()):
+            return known
+    gfx = by_key.get(GFX_KEY)
+    if isinstance(gfx, str) and re.fullmatch(r"gfx[0-9a-f]+", gfx.strip(), re.IGNORECASE):
+        return f"AMD {gfx.strip().lower()}"
+    return None
+
+
+def _is_amd(vendor: str) -> bool:
+    return "advanced micro devices" in vendor.lower() or "amd" in re.split(r"\W+", vendor.lower())
 
 
 def _name(value: object) -> str | None:
@@ -138,7 +167,8 @@ def read_versions() -> Versions:
     return Versions(
         rocm=_rocm_version(),
         vllm=_package_version("vllm"),
-        xgboost=_package_version("xgboost"),
+        # Our ROCm build is installed under its own distribution name.
+        xgboost=_package_version("xgboost", "amd_xgboost"),
         python=".".join(platform.python_version_tuple()[:2]),
     )
 
@@ -152,11 +182,14 @@ def _rocm_version() -> str | None:
     return version or None
 
 
-def _package_version(name: str) -> str | None:
-    try:
-        return metadata.version(name)
-    except metadata.PackageNotFoundError:
-        return None
+def _package_version(*names: str) -> str | None:
+    """The version of the first of `names` that is installed."""
+    for name in names:
+        try:
+            return metadata.version(name)
+        except metadata.PackageNotFoundError:
+            continue
+    return None
 
 
 def stored_last_night(request: Request) -> LastNight | None:
