@@ -14,7 +14,7 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from telereason.ai.agent import AgentMessage
@@ -22,6 +22,7 @@ from telereason.ai.agent import ask as run_agent
 from telereason.ai.engine import Engine, EngineNotReadyError
 from telereason.ai.tools import AgentData, ProtocolIndex
 from telereason.api.fake import fixture_path, is_fake, replay_sse
+from telereason.api.rate_limit import limit
 from telereason.api.schemas import (
     AskRequest,
     AskStreamMessage,
@@ -149,6 +150,7 @@ def agent_data(request: Request) -> AgentData:
 
 @router.post(
     "/api/ask",
+    dependencies=[Depends(limit("ask"))],
     response_model=AskStreamMessage,
     response_class=EventStreamSchema,
     responses={

@@ -1,12 +1,18 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
 from telereason.api.fake import fixture_response
+from telereason.api.rate_limit import limit
 from telereason.api.schemas import NightRunProgress, NightRunRequest, NightRunStarted
 
 router = APIRouter()
 
 
-@router.post("/api/night-runs", response_model=NightRunStarted, status_code=202)
+@router.post(
+    "/api/night-runs",
+    dependencies=[Depends(limit("night_runs"))],
+    response_model=NightRunStarted,
+    status_code=202,
+)
 def start_night_run(request: Request, body: NightRunRequest) -> NightRunStarted:
     return fixture_response(
         request, NightRunStarted, "night_run_started.json", "POST /api/night-runs"

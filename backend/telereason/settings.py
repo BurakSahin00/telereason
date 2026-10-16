@@ -25,6 +25,12 @@ class Settings:
     night_source: NightSource = "stored"
     # Built frontend served from the same origin; empty means the API only.
     frontend_dist: str = ""
+    # Requests per client per minute; 0 turns the limit off.
+    rate_limit_ask_per_min: int = 10
+    rate_limit_night_per_min: int = 2
+    # Behind the Cloudflare tunnel every request comes from 127.0.0.1, so the client is
+    # read from CF-Connecting-IP or X-Forwarded-For instead.
+    trust_proxy_headers: bool = False
 
 
 def load_settings() -> Settings:
@@ -45,7 +51,17 @@ def load_settings() -> Settings:
         gpu_memory_utilization=_gpu_memory_utilization(),
         night_source=cast(NightSource, night_source),
         frontend_dist=os.environ.get("FRONTEND_DIST", "").strip(),
+        rate_limit_ask_per_min=_per_min("RATE_LIMIT_ASK_PER_MIN", 10),
+        rate_limit_night_per_min=_per_min("RATE_LIMIT_NIGHT_PER_MIN", 2),
+        trust_proxy_headers=os.environ.get("TRUST_PROXY_HEADERS", "").strip() == "1",
     )
+
+
+def _per_min(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip() or str(default)
+    if not (raw.isascii() and raw.isdigit()):
+        raise ValueError(f"{name} must be a whole number >= 0, got {raw!r}")
+    return int(raw)
 
 
 def _gpu_memory_utilization() -> float:
