@@ -53,8 +53,6 @@ All tests run in fake mode.
 
 ## How to run
 
-Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 (`frontend/package.json`'s `engines`) for the frontend.
-
 ### One command (fake mode)
 
 Needs Docker with Compose, on Windows, macOS or Linux.
@@ -66,6 +64,8 @@ docker compose up --build
 Then open `http://localhost:8000`. The container serves the API and the built frontend; `http://localhost:8000/docs` lists the endpoints.
 
 ### Development (two processes)
+
+Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 for the frontend (`frontend/.nvmrc`).
 
 Settings come from environment variables; `.env.example` lists them. `ENGINE` defaults to `fake`, so this mode needs no setup.
 
@@ -131,7 +131,7 @@ cd backend
 uv run python -m telereason.data.download
 ```
 
-The destination is `DATA_DIR/factorybench` (`DATA_DIR` defaults to `./data`). Existing Hugging Face files are reused, and `HF_TOKEN` may be set for authenticated Hub access. Without downloaded data the API serves `fixtures/` only when `ENGINE=fake`.
+The destination is `DATA_DIR/factorybench` (`DATA_DIR` defaults to `./data`). Existing Hugging Face files are reused, and `HF_TOKEN` may be set for authenticated Hub access. Without downloaded data the API serves `fixtures/` only when `ENGINE=fake`. Downloads are pinned to FactoryBench revision `2561c2c9`.
 
 Data and model used:
 

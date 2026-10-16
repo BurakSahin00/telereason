@@ -112,7 +112,7 @@ By line: {detail_mix}.
   single-question p90 alone on the card (`p35_amd.json`); `tokens` is the mean tokens per
   question with one user (`kapasite_k1.json`); `ms` is `null` because tool time was not measured.
 
-Contains small samples derived from FactoryBench (CC BY 4.0); see `DATA_NOTICE.md`.
+Contains small samples derived from FactoryBench (license: see `DATA_NOTICE.md`).
 """
 
 

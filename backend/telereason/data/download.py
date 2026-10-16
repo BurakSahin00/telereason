@@ -17,6 +17,7 @@ from huggingface_hub import snapshot_download
 from telereason.data.paths import dataset_dir
 
 DEFAULT_DATASET = "FactoryBench/FactoryBench"
+DEFAULT_REVISION = "2561c2c90560ae3df90ef8136f774faa5fb4b4e3"
 DEFAULT_PATTERNS = (
     "factorywave/episodes.parquet",
     "factorywave/flow.parquet",
@@ -30,13 +31,14 @@ def download_dataset(
     *,
     dataset: str = DEFAULT_DATASET,
     token: str | None = None,
-    revision: str = "main",
+    revision: str = DEFAULT_REVISION,
 ) -> Path:
     """Download the files needed by the data loader and return the dataset folder.
 
     ``snapshot_download`` handles resumable downloads and its local directory
     metadata makes repeated setup calls cheap.  The dataset is public, so a
     token is optional; ``HF_TOKEN`` is used when supplied by the environment.
+    The license statement on the dataset card was read at ``DEFAULT_REVISION``.
     """
 
     root = dataset_dir(data_dir)
@@ -65,7 +67,11 @@ def main() -> None:
         default=os.environ.get("HF_DATASET", DEFAULT_DATASET),
         help=f"Hugging Face dataset id (default: {DEFAULT_DATASET})",
     )
-    parser.add_argument("--revision", default="main")
+    parser.add_argument(
+        "--revision",
+        default=DEFAULT_REVISION,
+        help=f"Dataset revision (default: {DEFAULT_REVISION})",
+    )
     args = parser.parse_args()
     root = download_dataset(args.data_dir, dataset=args.dataset, revision=args.revision)
     print(f"Downloaded {args.dataset} into {root}")
