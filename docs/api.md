@@ -28,7 +28,9 @@ Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds
 | 503 | `engine_not_ready` | The model engine is still loading |
 | 501 | `not_implemented` | Endpoint stub not built yet (development only; none remain at v1.0) |
 | – | `timeout` | `error` event only: a `/api/ask` answer took longer than 60 s |
-| – | `internal_error` | `error` event only: `/api/ask` failed after the stream started |
+| 500 / – | `internal_error` | Unexpected server error; as an `error` event, `/api/ask` failed after the stream started |
+
+`429` comes with a `Retry-After` header (seconds). The limit is per client and per minute: `RATE_LIMIT_ASK_PER_MIN` (default 10) for `POST /api/ask` and `RATE_LIMIT_NIGHT_PER_MIN` (default 2) for `POST /api/night-runs`; `0` turns a limit off. The client is the connecting address, or with `TRUST_PROXY_HEADERS=1` the `CF-Connecting-IP` header, else the last `X-Forwarded-For` value.
 
 A change to any schema goes in one PR together with the matching `fixtures/` files and carries the `api-change` label.
 

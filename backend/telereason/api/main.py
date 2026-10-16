@@ -11,6 +11,7 @@ from telereason.ai.engine import Engine, create_engine, warm_up
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
+from telereason.api.rate_limit import RateLimiter
 from telereason.data.loader import DataStore
 from telereason.settings import Settings, load_settings
 
@@ -93,6 +94,10 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.night_store = night_store(app.state.settings, app.state.data_store)
     # Read once: the installed versions do not change while the process runs.
     app.state.versions = system.read_versions()
+    app.state.rate_limiters = {
+        "ask": RateLimiter(app.state.settings.rate_limit_ask_per_min),
+        "night_runs": RateLimiter(app.state.settings.rate_limit_night_per_min),
+    }
     install_error_handlers(app)
     for module in ROUTERS:
         app.include_router(module.router, responses=ERROR_RESPONSES)

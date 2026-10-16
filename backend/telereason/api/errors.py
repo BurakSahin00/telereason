@@ -24,6 +24,7 @@ ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
 }
 
 ENGINE_NOT_READY_MESSAGE = "The model engine is still loading; try again in a few minutes."
+INTERNAL_ERROR_MESSAGE = "The server failed while answering; try again."
 
 
 class ApiError(Exception):
@@ -73,8 +74,14 @@ async def _validation_error(_: Request, exc: Exception) -> JSONResponse:
     return error_response(422, "bad_request", "; ".join(parts) or "Invalid request.")
 
 
+async def _unexpected_error(_: Request, exc: Exception) -> JSONResponse:
+    # Starlette re-raises the exception after sending this response, so uvicorn logs it.
+    return error_response(500, "internal_error", INTERNAL_ERROR_MESSAGE)
+
+
 def install_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ApiError, _api_error)
     app.add_exception_handler(StarletteHTTPException, _http_error)
     app.add_exception_handler(EngineNotReadyError, _engine_not_ready)
     app.add_exception_handler(RequestValidationError, _validation_error)
+    app.add_exception_handler(Exception, _unexpected_error)

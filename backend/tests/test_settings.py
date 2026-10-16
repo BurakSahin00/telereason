@@ -37,6 +37,14 @@ def test_night_source_comes_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert load_settings().night_source == "stored"
 
 
+@pytest.mark.parametrize("raw", ["-1", "1.5", "ten"])
+def test_rate_limits_reject_bad_values(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
+    monkeypatch.setenv("RATE_LIMIT_ASK_PER_MIN", raw)
+
+    with pytest.raises(ValueError, match="RATE_LIMIT_ASK_PER_MIN"):
+        load_settings()
+
+
 @pytest.mark.parametrize("raw", ["live", "fixtures", "db"])
 def test_night_source_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
     monkeypatch.setenv("NIGHT_SOURCE", raw)

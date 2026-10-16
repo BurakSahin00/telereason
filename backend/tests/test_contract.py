@@ -73,6 +73,19 @@ def test_invalid_body_returns_error_shape(client: TestClient) -> None:
     assert_error_shape(response.json(), "bad_request")
 
 
+def test_unexpected_error_returns_error_shape() -> None:
+    app = create_app(Settings(engine="fake", model=DEFAULT_MODEL))
+
+    @app.get("/test/crash")
+    def crash() -> None:
+        raise RuntimeError("HIP out of memory")
+
+    response = TestClient(app, raise_server_exceptions=False).get("/test/crash")
+    assert response.status_code == 500
+    assert_error_shape(response.json(), "internal_error")
+    assert "HIP" not in response.text
+
+
 def test_stub_returns_not_implemented() -> None:
     # Fake mode serves fixtures; real endpoints outside the stored night are still stubs.
     client = TestClient(create_app(Settings(engine="vllm", model=DEFAULT_MODEL)))
