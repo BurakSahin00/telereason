@@ -18,10 +18,17 @@ from telereason.data.paths import dataset_dir
 
 DEFAULT_DATASET = "FactoryBench/FactoryBench"
 DEFAULT_REVISION = "2561c2c90560ae3df90ef8136f774faa5fb4b4e3"
+# The night's windows and their telemetry are the L4-t1 items of the QA pool; the Lite files
+# name the episodes the pool must leave out (telereason.night.windows).  The wide
+# factorywave/*_signals.parquet files are not needed.
 DEFAULT_PATTERNS = (
+    "factorybench_qa/level_4.jsonl",
+    "factorybench_lite/level_1.jsonl",
+    "factorybench_lite/level_2.jsonl",
+    "factorybench_lite/level_3.jsonl",
+    "factorybench_lite/level_4.jsonl",
     "factorywave/episodes.parquet",
     "factorywave/flow.parquet",
-    "factorywave/*_signals.parquet",
     "knowledge_graph/knowledge_graph.json",
 )
 
