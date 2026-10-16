@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import time
+import zlib
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
@@ -110,8 +111,28 @@ def note_records(result: NoteResult) -> list[NoteRecord]:
 
 
 def pick_windows(windows: Sequence[Window], max_windows: int, run_id: str) -> list[Window]:
-    """The windows a run scans, in night order (#41 picks a small night)."""
-    return list(windows[:max_windows])
+    """The windows a run scans (#41), in night order.
+
+    A night of `max_windows` (the demo button asks for 300) keeps the lines in the proportion
+    the gate tested them; within a line the windows are drawn in the order of
+    `crc32(run_id + window_id)`, so one run id always picks the same windows and the next run
+    picks others. A line with too few windows leaves its share to the other line.
+    """
+    if max_windows >= len(windows):
+        return list(windows)
+    by_line: dict[str, list[Window]] = {}
+    for window in windows:
+        by_line.setdefault(window.line, []).append(window)
+    shares = {line: max_windows * len(ws) // len(windows) for line, ws in by_line.items()}
+    # Hand out what the rounding left, largest line first.
+    for line in sorted(by_line, key=lambda line: -len(by_line[line])):
+        free = max_windows - sum(shares.values())
+        shares[line] = min(len(by_line[line]), shares[line] + max(free, 0))
+    picked: set[str] = set()
+    for line, line_windows in by_line.items():
+        ranked = sorted(line_windows, key=lambda w: zlib.crc32(f"{run_id}{w.window_id}".encode()))
+        picked.update(w.window_id for w in ranked[: shares[line]])
+    return [w for w in windows if w.window_id in picked]
 
 
 class NightPipeline:
