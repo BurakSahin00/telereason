@@ -34,6 +34,8 @@ LINES: tuple[Line, ...] = ("FactoryWave", "AURSAD")
 KNOWLEDGE_GRAPH = Path("knowledge_graph") / "knowledge_graph.json"
 REPORT_TOP = 5
 PROTOCOL_HITS = 3
+# Scores reach the model with three decimals; the store keeps the full value.
+SCORE_DECIMALS = 3
 
 # Fault words that name a cause even when the model paraphrases a root cause. Full root
 # cause and error names come from the knowledge graph (`ProtocolIndex.fault_names`).
@@ -187,6 +189,12 @@ def _auroc(row: GateLine) -> str:
     return f"AUROC {row.auroc:.3f}, interval {low:.3f} to {high:.3f}"
 
 
+def model_score(score: float | None) -> float | None:
+    """A score as the model sees it, in tool results and sentences. Thresholds and flags are
+    decided on the stored, unrounded score."""
+    return None if score is None else round(score, SCORE_DECIMALS)
+
+
 def gate_text(row: GateLine) -> str:
     if row.verdict == "closed":
         return f"Diagnosis is closed on {row.line}. {row.explanation} ({_auroc(row)})."
@@ -205,7 +213,8 @@ def window_text(window: WindowDetail, row: GateLine | None) -> str:
     elif window.score is not None:
         flagged = " It is flagged for review." if window.flagged else ""
         parts.append(
-            f"The abnormal-behaviour score for {window.window_id} is {window.score}.{flagged}"
+            f"The abnormal-behaviour score for {window.window_id} is "
+            f"{model_score(window.score)}.{flagged}"
         )
     if window.look_first:
         parts.append(f"Look first at {window.look_first}.")
@@ -281,7 +290,7 @@ def get_report(ctx: ToolContext, args: ReportArgs) -> ToolResult:
                 "top_windows": [
                     {
                         "window_id": item.window_id,
-                        "score": item.score,
+                        "score": model_score(item.score),
                         "look_first": item.look_first,
                     }
                     for item in row.items[:REPORT_TOP]
@@ -304,7 +313,7 @@ def list_windows(ctx: ToolContext, args: ListWindowsArgs) -> ToolResult:
         {
             "window_id": item.window_id,
             "line": item.line,
-            "score": item.score if _shows_score(ctx.data, item.line) else None,
+            "score": model_score(item.score) if _shows_score(ctx.data, item.line) else None,
             "flagged": item.flagged,
             "look_first": item.look_first,
         }
@@ -324,7 +333,7 @@ def get_window(ctx: ToolContext, args: WindowArgs) -> ToolResult:
         "window_id": window.window_id,
         "line": window.line,
         "verdict": row.verdict if row else "closed",
-        "score": window.score if _shows_score(ctx.data, window.line) else None,
+        "score": model_score(window.score) if _shows_score(ctx.data, window.line) else None,
         "flagged": window.flagged,
         "look_first": window.look_first,
         "facts": [
