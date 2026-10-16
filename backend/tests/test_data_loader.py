@@ -110,14 +110,12 @@ def test_store_opens_detail_missing_from_summaries(tmp_path) -> None:
     assert store.get_window("W-2").model_dump(mode="json") == detail
 
 
-def test_store_reads_factorybench_signal_parquet_without_band(tmp_path) -> None:
+def test_store_without_the_night_pool_has_no_signals(tmp_path) -> None:
     write_factorywave(tmp_path / "factorybench" / "factorywave")
     store = DataStore(tmp_path)
 
-    payload = store._read_parquet_signals("episode-1")
-    assert payload == {"t_s": [0.0, 0.1], "channels": [{"name": "signal_a", "values": [1.0, 2.0]}]}
-    with pytest.raises(DataNotAvailableError, match="normal band not computed yet"):
-        store.get_signals("episode-1", "signal_a")
+    with pytest.raises(DataNotAvailableError, match="No night pool"):
+        store.get_signals("W-000001", "signal_a")
 
 
 def test_downloaded_layout_is_read_instead_of_fixtures(monkeypatch, tmp_path) -> None:
@@ -161,10 +159,10 @@ def test_fixtures_first_wins_over_the_download(tmp_path) -> None:
     assert store.source == store.fixture_root
 
 
-def test_api_signals_on_real_data_wait_for_normal_band(tmp_path) -> None:
+def test_api_signals_without_the_night_pool_answer_503(tmp_path) -> None:
     write_factorywave(factorywave_dir(tmp_path))
 
-    response = client_for("vllm", tmp_path).get("/api/windows/episode-1/signals")
+    response = client_for("vllm", tmp_path).get("/api/windows/W-000001/signals")
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "engine_not_ready"
-    assert "normal band not computed yet" in response.json()["error"]["message"]
+    assert "No night pool" in response.json()["error"]["message"]
