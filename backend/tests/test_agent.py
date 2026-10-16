@@ -1,5 +1,7 @@
 import asyncio
 import json
+import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -86,6 +88,11 @@ def data(tmp_path: Path) -> AgentData:
         "W-FW1": window("W-FW1", "FactoryWave", "closed", None),
         "W-AU1": window("W-AU1", "AURSAD", "screening", 0.97),
     }
+    return make_data(tmp_path, details)
+
+
+def make_data(tmp_path: Path, details: dict[str, dict[str, Any]]) -> AgentData:
+    """The windows in `details` as fixture files, the fixture gate and report."""
     keys = ("window_id", "line", "task", "score", "flagged", "look_first", "verified")
     items = [{key: row[key] for key in keys} for row in details.values()]
     (tmp_path / "windows.json").write_text(json.dumps({"items": items}), encoding="utf-8")
@@ -414,6 +421,41 @@ def test_report_always_covers_both_lines(data: AgentData) -> None:
     assert [row["line"] for row in result.content["lines"]] == ["AURSAD", "FactoryWave"]
     assert result.lines == {"FactoryWave", "AURSAD"}
     assert "type get_report = () => any;" in render_tools()
+
+
+def test_scores_reach_the_model_with_three_decimals(tmp_path: Path) -> None:
+    # Scores as the gate writes them; W-AU2 is under the 0.9 threshold but shows as 0.9.
+    details = {
+        "W-AU1": window("W-AU1", "AURSAD", "screening", 0.9999578654278594),
+        "W-AU2": window("W-AU2", "AURSAD", "screening", 0.8999578654278594),
+    }
+    report = json.loads((FIXTURES / "report_latest.json").read_text("utf-8"))
+    aursad = next(row for row in report["lines"] if row["line"] == "AURSAD")
+    aursad["items"][0]["score"] = 0.6719934940338135
+    data = replace(make_data(tmp_path, details), report=ReportResponse.model_validate(report))
+    ctx = ToolContext(data, None, restricted=True)
+
+    reported = run_tool(ctx, "get_report", {}).content
+    listed = run_tool(ctx, "list_windows", {"line": "AURSAD"}).content
+    flagged = run_tool(ctx, "list_windows", {"line": "AURSAD", "flagged": True}).content
+    detail = run_tool(ctx, "get_window", {"window_id": "W-AU2"}).content
+    classified = run_tool(ctx, "classify_fault", {"window_id": "W-AU1"})
+
+    top = next(row for row in reported["lines"] if row["line"] == "AURSAD")["top_windows"]
+    assert top[0]["score"] == 0.672
+    assert [(i["window_id"], i["score"], i["flagged"]) for i in listed["items"]] == [
+        ("W-AU1", 1.0, True),
+        ("W-AU2", 0.9, False),
+    ]
+    # Flags and filters use the stored score, not the rounded one.
+    assert [i["window_id"] for i in flagged["items"]] == ["W-AU1"]
+    assert (detail["score"], detail["flagged"]) == (0.9, False)
+    assert classified.answer is not None
+    assert "The abnormal-behaviour score for W-AU1 is 1.0. It is flagged" in classified.answer.text
+    assert classified.window is not None and classified.window.score == 0.9999578654278594
+    for content in (reported, listed, detail, classified.answer.text):
+        text = content if isinstance(content, str) else json.dumps(content)
+        assert not re.search(r"\d\.\d{4,}", text), text
 
 
 def test_screening_answer_gets_gate_sentence_and_look_first(data: AgentData) -> None:

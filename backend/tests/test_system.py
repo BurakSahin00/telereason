@@ -189,6 +189,42 @@ def test_parse_rejects_unreadable_output(output: str) -> None:
     assert system.parse_rocm_smi(output) is None
 
 
+# rocm-smi on the MI300X droplet (a virtual function): no product name, only a device id.
+DROPLET_OUTPUT = (
+    '{"card0": {"VRAM Total Memory (B)": "205822885888", "VRAM Total Used Memory (B)": '
+    '"169652703232", "Card Series": "N/A", "Card Model": "0x74b5", "Card Vendor": '
+    '"Advanced Micro Devices, Inc. [AMD/ATI]", "Card SKU": "M3000100", "Subsystem ID": '
+    '"0x74a1", "Device Rev": "0x00", "Node ID": "1", "GUID": "21947", "GFX Version": "gfx942"}}'
+)
+
+
+def test_parse_names_the_droplet_card_by_its_device_id() -> None:
+    gpu = system.parse_rocm_smi(DROPLET_OUTPUT)
+
+    assert gpu is not None
+    assert gpu.name == "AMD Instinct MI300X VF"
+    assert gpu.memory_total_gib == pytest.approx(191.69, abs=0.01)
+    assert gpu.memory_used_gib == pytest.approx(158.0, abs=0.01)
+
+
+def test_parse_names_an_unknown_device_by_its_gfx_version() -> None:
+    output = DROPLET_OUTPUT.replace('"Card Model": "0x74b5"', '"Card Model": "0x1234"')
+
+    gpu = system.parse_rocm_smi(output)
+
+    assert gpu is not None
+    assert gpu.name == "AMD gfx942"
+
+
+def test_parse_reads_device_ids_only_for_an_amd_card() -> None:
+    card = json.loads(DROPLET_OUTPUT)["card0"]
+    del card["GFX Version"]
+
+    assert system.parse_rocm_smi(json.dumps({"card0": card})) is not None
+    card["Card Vendor"] = "Other Vendor Inc."
+    assert system.parse_rocm_smi(json.dumps({"card0": card})) is None
+
+
 # Running rocm-smi
 
 
@@ -258,6 +294,18 @@ def test_versions_when_installed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert system.read_versions() == Versions(
         rocm="7.2.3", vllm="0.27.1", xgboost="3.2.0", python=PYTHON
     )
+
+
+def test_xgboost_version_from_the_rocm_wheel(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # Our ROCm wheel is installed as the distribution "amd_xgboost".
+    looked_up = set_versions(
+        monkeypatch, tmp_path, "7.2.3\n", {"vllm": "0.27.1", "amd_xgboost": "3.2.0"}
+    )
+
+    assert system.read_versions().xgboost == "3.2.0"
+    assert looked_up.index("xgboost") < looked_up.index("amd_xgboost")
 
 
 def test_versions_when_missing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
