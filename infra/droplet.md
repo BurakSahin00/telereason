@@ -135,6 +135,112 @@ In real mode the app keeps running in the existing `rocm` container (the vLLM RO
 
 Repeat the three steps after the repository in the container moves to another ref.
 
+## Night runs and measurements
+
+In this mode the app runs nights on request and serves the run that finished last from the SQLite store. The store and each run's gate output live under `/root/data` in the container: `telereason.sqlite` (with its `-wal` and `-shm` files while the app runs) and `runs/<run_id>/` (`gate.json`, `scores.jsonl`, `gate.log`).
+
+1. **Start** the app with the store, instead of step 4 of [Run the app](#run-the-app). `GATE_DEVICE=auto` trains the gate on the GPU when a short test training works there and on the CPU otherwise. `RATE_LIMIT_ASK_PER_MIN=0` turns the question limit off so the measurement scripts below are not rate limited; leave it out when the app serves the demo.
+
+   ```bash
+   docker exec -d -w /root/telereason/backend \
+     -e ENGINE=vllm -e NIGHT_SOURCE=db -e DB_PATH=/root/data/telereason.sqlite -e GATE_DEVICE=auto \
+     -e RATE_LIMIT_ASK_PER_MIN=0 -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 \
+     -e FRONTEND_DIST=/root/telereason/frontend/dist rocm \
+     bash -c 'python -m uvicorn telereason.api.main:app --workers 1 --host 127.0.0.1 --port 8000 > /root/logs/app.log 2>&1'
+   ```
+
+   Until a night has finished in the store (or a store is restored, below), `/api/report/latest`, `/api/gate`, `/api/windows` and the assistant answer `503`.
+
+2. **First full night.** Wait for `"ready": true` in `/api/health`, then ask for more windows than the gate tests, so the gate runs and every window it tests is scanned (a smaller night reuses the latest stored gate):
+
+   ```bash
+   docker exec rocm curl -s -X POST 127.0.0.1:8000/api/night-runs \
+     -H 'Content-Type: application/json' -d '{"max_windows": 100000}'
+   # {"run_id": "run-YYYYMMDD-N", "status": "queued"}
+   ```
+
+3. **Follow the night.** The progress shows the step (`gate`, `facts`, `scan`, `report`), the windows done and each finished step's seconds; the gate writes its own log into the run directory.
+
+   ```bash
+   watch -n 10 "docker exec rocm curl -s 127.0.0.1:8000/api/night-runs/<run_id>"
+   docker exec rocm tail -f /root/data/runs/<run_id>/gate.log
+   docker exec rocm tail -f /root/logs/app.log
+   ```
+
+   The run ends with `"status": "done"`, or `"failed"` with the step it failed in; the reason is in `app.log`.
+
+4. **Check where the gate trained.** Only a night that ran the gate has a `gate.json`:
+
+   ```bash
+   docker exec rocm python3 -c "import json; d = json.load(open('/root/data/runs/<run_id>/gate.json')); print(d['device_requested'], d['device_used'])"
+   ```
+
+   `auto ['cuda:0']` means the gate trained on the GPU. `['cpu']` means it fell back to the CPU: check the `xgboost … on cuda:0` line of `setup_droplet.sh` and the start of `gate.log`.
+
+### Measurement scripts
+
+`backend/scripts/measure_ask.py` (latency of live questions at several concurrency levels, optionally during a night) and `backend/scripts/smoke_ask.py` (ten fixed questions and their checks, with `smoke_questions.json`) use only the Python standard library, so they run in the container as they are. When the repository in the container is already at a ref that has them, run them from `/root/telereason/backend/scripts/`. To try them from a branch, copy them from your laptop (in `backend/scripts/`) to the droplet host and from there into the container:
+
+```bash
+mkdir -p /root/bench                                                                       # on the droplet host
+scp measure_ask.py smoke_ask.py smoke_questions.json root@<droplet-address>:/root/bench/   # on your laptop
+docker exec rocm mkdir -p /root/bench                                                      # on the droplet host
+docker cp /root/bench/. rocm:/root/bench/
+```
+
+Run them inside the container while the app runs (started as in step 1 above, with `RATE_LIMIT_ASK_PER_MIN=0`):
+
+```bash
+docker exec rocm python3 /root/bench/smoke_ask.py --out /root/bench/smoke.json \
+  --data-dir /root/data --gate-json /root/data/runs/<run_id>/gate.json
+docker exec rocm python3 /root/bench/measure_ask.py --out /root/bench/measure.json --levels 1,4,8 --requests 8
+docker exec rocm python3 /root/bench/measure_ask.py --out /root/bench/measure_night.json \
+  --during-night --max-windows 300 --db /root/data/telereason.sqlite
+```
+
+- `smoke_ask.py` logs one summary line and exits 1 when a check fails. `--gate-json` adds the gate's class labels to the fault names it looks for; use a run that ran the gate.
+- `measure_ask.py --during-night` starts a night of `--max-windows` windows and measures while it is in its scan step. Each level records the night's step before and after it, so a level that outlasted the scan shows it. `--db` adds how many notes passed the verifier on the first attempt and in the end.
+- The windows in `smoke_questions.json` are from the stored 11 Oct night; they are in the store after a full night, not always after a small one.
+
+Copy the results to your laptop:
+
+```bash
+docker cp rocm:/root/bench/. /root/bench/                     # on the droplet host
+scp 'root@<droplet-address>:/root/bench/*.json' .             # on your laptop
+```
+
+### Back up the store and restore it on a new droplet
+
+The store holds the finished nights, so a new droplet serves them without running a night again. At the end of a session, on the droplet host:
+
+1. Stop the app (step 7 of [Run the app](#run-the-app)), so no night is writing.
+2. Fold the write-ahead log into the database file; the output should start with `0` (not busy):
+
+   ```bash
+   docker exec rocm python3 -c "import sqlite3; c = sqlite3.connect('/root/data/telereason.sqlite'); print(c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()); c.close()"
+   ```
+
+3. Copy the store and the run directories out of the container, then to your laptop:
+
+   ```bash
+   mkdir -p /root/backup
+   docker cp rocm:/root/data/telereason.sqlite /root/backup/
+   docker cp rocm:/root/data/runs /root/backup/
+   scp -r root@<droplet-address>:/root/backup ./telereason-backup    # on your laptop
+   ```
+
+Keep the backup on your laptop only; the store file is never added to the repository.
+
+To restore on a new droplet, after `setup_droplet.sh` and before starting the app:
+
+```bash
+scp -r ./telereason-backup root@<droplet-address>:/root/backup   # on your laptop
+docker cp /root/backup/telereason.sqlite rocm:/root/data/         # on the droplet host
+docker cp /root/backup/runs rocm:/root/data/
+```
+
+Then start the app as in step 1 above. The run that finished last is served at once, and a small night reuses its gate.
+
 ## Check from your laptop
 
 A container port must not answer from outside:
@@ -151,7 +257,7 @@ SSH (port 22) must still answer. While the app runs, port 8000 must not answer f
 
 ## End of session
 
-Destroy the droplet in the AMD Developer Cloud panel. Powering it off is not enough: it keeps its resources reserved. Model and data are downloaded again next time. Before destroying it, copy any results that must be kept to your laptop (`scp`) and add them to `results/` through a pull request.
+Destroy the droplet in the AMD Developer Cloud panel. Powering it off is not enough: it keeps its resources reserved. Model and data are downloaded again next time. Before destroying it, back up the night store ([Back up the store](#back-up-the-store-and-restore-it-on-a-new-droplet)), and copy any results that must be kept to your laptop (`scp`) and add them to `results/` through a pull request.
 
 ## Not covered yet
 
