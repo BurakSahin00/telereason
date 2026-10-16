@@ -1,7 +1,9 @@
 """scripts/make_fixtures.py: fixtures from a night run in the store, equal to the API's answers."""
 
 import json
+import os
 import shutil
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +33,23 @@ OLD_RUN = "run-20261015-1"
 NEW_RUN = "run-20261016-1"
 # Files a night run does not store; the script keeps them as they are.
 KEPT = ("health.json", "examples.json", "night_run_started.json")
+NEW_RUN_TIMINGS = {"gate": 1.0, "facts": 2.0, "scan": 3.0, "report": 0.5, "total": 7.0}
+SAVED_AT = datetime(2026, 10, 17, 21, 5, tzinfo=UTC)
+SAVED_SYSTEM = {
+    "gpu": {"name": "AMD Instinct MI300X", "memory_total_gib": 191.5, "memory_used_gib": 150.25},
+    "versions": {"rocm": "7.2.3", "vllm": "0.27.1", "xgboost": "3.2.0", "python": "3.12"},
+    "last_night": {"run_id": NEW_RUN, "timings_s": NEW_RUN_TIMINGS},
+}
+# A recorded answer for the closed-line window of the synthetic run, with keep-alive pings.
+RECORDED: list[tuple[str, dict[str, Any]]] = [
+    ("tool_call", {"turn": 1, "tool": "classify_fault", "args": {"window_id": "W-100003"}}),
+    (
+        "tool_result",
+        {"turn": 1, "tool": "classify_fault", "summary": "diagnosis closed on this line", "ms": 41},
+    ),
+    ("answer", {"answer": "DIAGNOSIS_CLOSED", "answer_source": "tool", "text": "Closed."}),
+    ("done", {"total_ms": 2875, "tokens": 231}),
+]
 
 
 def add_run(db: NightDb, run_id: str, finished_at: str, status: str = "done") -> None:
@@ -101,8 +120,8 @@ def read(out: Path, name: str) -> Any:
     return json.loads((out / name).read_text(encoding="utf-8"))
 
 
-def make(db: NightDb, out: Path, *run: str) -> None:
-    main(["--db", str(db.path), "--out", str(out), *(["--run", *run] if run else [])])
+def make(db: NightDb, out: Path, *args: str) -> None:
+    main(["--db", str(db.path), "--out", str(out), *args])
 
 
 def test_fixtures_match_the_schemas(db: NightDb, out: Path) -> None:
@@ -179,7 +198,7 @@ def test_readme_names_the_run_its_date_and_source(db: NightDb, out: Path) -> Non
 
 
 def test_run_option_picks_an_earlier_run(db: NightDb, out: Path) -> None:
-    make(db, out, OLD_RUN)
+    make(db, out, "--run", OLD_RUN)
 
     assert read(out, "report_latest.json")["run_id"] == OLD_RUN
     assert read(out, "night_run.json")["run_id"] == OLD_RUN
@@ -192,7 +211,7 @@ def test_unknown_or_unfinished_run_stops(db: NightDb, out: Path, run_id: str) ->
     add_run(db, "run-20261017-2", "", status="running")
 
     with pytest.raises(SystemExit, match=run_id):
-        make(db, out, run_id)
+        make(db, out, "--run", run_id)
     assert read(out, "report_latest.json") == load("report_latest.json")
 
 
@@ -213,3 +232,114 @@ def test_stored_11_oct_night_gives_back_the_fixtures(tmp_path: Path, out: Path) 
     for path in FIXTURES.iterdir():
         if path.name not in changed:
             assert (out / path.name).read_bytes() == path.read_bytes(), path.name
+
+
+def stream(messages: list[tuple[str, Any]], ping: str = ": ping\n\n") -> str:
+    blocks = [f"event: {event}\ndata: {json.dumps(data)}\n\n" for event, data in messages]
+    return ping + ping.join(blocks)
+
+
+def saved(tmp_path: Path, name: str, text: str) -> Path:
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    os.utime(path, (SAVED_AT.timestamp(), SAVED_AT.timestamp()))
+    return path
+
+
+def test_saved_system_gives_gpu_and_versions(tmp_path: Path, db: NightDb, out: Path) -> None:
+    system_json = saved(tmp_path, "droplet_system.json", json.dumps(SAVED_SYSTEM))
+
+    make(db, out, "--system-json", str(system_json))
+
+    system = read(out, "system.json")
+    readme = (out / "README.md").read_text(encoding="utf-8")
+    assert (system["gpu"], system["versions"]) == (SAVED_SYSTEM["gpu"], SAVED_SYSTEM["versions"])
+    assert system["last_night"] == {"run_id": NEW_RUN, "timings_s": NEW_RUN_TIMINGS}
+    assert (
+        "- `gpu` and `versions` in `system.json`: saved `GET /api/system` response "
+        f"`droplet_system.json` (run `{NEW_RUN}`, file time 2026-10-17 21:05 UTC)"
+    ) in readme.replace("\n  ", " ")
+
+
+def test_recorded_stream_becomes_ask_sse(tmp_path: Path, db: NightDb, out: Path) -> None:
+    ask_sse = saved(tmp_path, "droplet_ask.sse", stream(RECORDED))
+
+    make(db, out, "--ask-sse", str(ask_sse))
+
+    readme = (out / "README.md").read_text(encoding="utf-8")
+    assert (out / "ask.sse").read_text(encoding="utf-8") == stream(RECORDED, ping="")
+    assert read(out, "ask_request.json")["window_id"] == "W-100003"
+    assert (
+        "- `ask.sse`: recorded `POST /api/ask` stream `droplet_ask.sse` for `ask_request.json` "
+        f"(run `{NEW_RUN}`, file time 2026-10-17 21:05 UTC)"
+    ) in readme.replace("\n  ", " ")
+
+
+def test_readme_says_what_was_kept(db: NightDb, out: Path) -> None:
+    make(db, out)
+
+    readme = (out / "README.md").read_text(encoding="utf-8").replace("\n  ", " ")
+
+    assert "- `gpu` and `versions` in `system.json`: kept from the previous fixtures." in readme
+    assert "- `ask.sse`: the `done` event kept from the previous fixtures;" in readme
+
+
+def broken(messages: list[tuple[str, Any]], index: int, change: dict[str, Any]) -> list[Any]:
+    event, data = messages[index]
+    return [*messages[:index], (event, {**data, **change}), *messages[index + 1 :]]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        stream([("progress", {"turn": 1}), *RECORDED]),
+        stream(broken(RECORDED, 3, {"tokens": None})),
+        stream(broken(RECORDED, 3, {"total_ms": "2875"})),
+        stream(broken(RECORDED, 3, {"cost": 1})),
+        stream(broken(RECORDED, 0, {"args": {"window_id": "W-100001"}})),
+        stream([*RECORDED[:3], ("error", {"error": {"code": "busy", "message": "Busy."}})]),
+        stream(RECORDED[:3]),
+        stream(RECORDED).replace('data: {"total_ms"', "data: {total_ms"),
+        stream(RECORDED).replace("event: answer\n", "event: answer\nid: 3\n"),
+    ],
+    ids=[
+        "unknown event",
+        "missing field",
+        "coerced value",
+        "extra field",
+        "other window",
+        "error event",
+        "no done",
+        "not json",
+        "other sse field",
+    ],
+)
+def test_recorded_stream_off_the_schema_stops(
+    tmp_path: Path, db: NightDb, out: Path, text: str
+) -> None:
+    ask_sse = saved(tmp_path, "droplet_ask.sse", text)
+
+    with pytest.raises(SystemExit, match="droplet_ask.sse"):
+        make(db, out, "--ask-sse", str(ask_sse))
+    assert (out / "ask.sse").read_bytes() == (FIXTURES / "ask.sse").read_bytes()
+    assert read(out, "report_latest.json") == load("report_latest.json")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        json.dumps({**SAVED_SYSTEM, "gpu": None}),
+        json.dumps({k: v for k, v in SAVED_SYSTEM.items() if k != "versions"}),
+        json.dumps({**SAVED_SYSTEM, "uptime_s": 10}),
+        "<html>502 Bad Gateway</html>",
+    ],
+    ids=["no gpu", "missing versions", "extra field", "not json"],
+)
+def test_saved_system_off_the_schema_stops(
+    tmp_path: Path, db: NightDb, out: Path, text: str
+) -> None:
+    system_json = saved(tmp_path, "droplet_system.json", text)
+
+    with pytest.raises(SystemExit, match="droplet_system.json"):
+        make(db, out, "--system-json", str(system_json))
+    assert read(out, "system.json") == load("system.json")

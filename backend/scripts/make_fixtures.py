@@ -1,7 +1,8 @@
 """Regenerate fixtures/ from a finished night run in the SQLite store.
 
 Run from backend/:
-    uv run python -m scripts.make_fixtures --db <DB_PATH> [--run <run_id>] --out ../fixtures
+    uv run python -m scripts.make_fixtures --db <DB_PATH> [--run <run_id>] --out ../fixtures \
+        [--system-json <saved GET /api/system>] [--ask-sse <recorded POST /api/ask stream>]
 
 Without `--run` the run that finished last is used, as the API does. The night's responses are
 read with the code the API serves them with (`telereason.store.night`, NIGHT_SOURCE=db), so a
@@ -11,7 +12,9 @@ windows the report and the `/api/ask` sample open plus one unflagged window on a
 
 What a night run does not store is kept from the fixtures already in `--out`: `health.json`,
 `examples.json`, `night_run_started.json`, `gpu` and `versions` in `system.json` and the `done`
-event of `ask.sse`.
+event of `ask.sse`. `--system-json` takes `gpu` and `versions` from a saved `/api/system`
+response instead, and `--ask-sse` takes `ask.sse` from a recorded `/api/ask` stream for
+`ask_request.json`; both are checked against the API models and the script stops on a mismatch.
 """
 
 from __future__ import annotations
@@ -21,13 +24,23 @@ import json
 import logging
 from collections import Counter
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from telereason.api.night_runs import progress
-from telereason.api.schemas import DoneEvent, ReportResponse, SystemResponse, WindowDetail
+from telereason.api.schemas import (
+    AnswerEvent,
+    DoneEvent,
+    ErrorResponse,
+    ReportResponse,
+    SystemResponse,
+    ToolCallEvent,
+    ToolResultEvent,
+    WindowDetail,
+)
 from telereason.store.db import NightDb, RunRecord
 from telereason.store.night import DbNight, RunWindows
 
@@ -38,6 +51,14 @@ WINDOWS_PAGE_SIZE = 20
 ASK_QUESTION = "What went wrong in this record?"
 ASK_TOOL = "classify_fault"
 ASK_SUMMARY = "diagnosis closed on this line"
+SSE_EVENTS: dict[str, type[BaseModel]] = {
+    "tool_call": ToolCallEvent,
+    "tool_result": ToolResultEvent,
+    "answer": AnswerEvent,
+    "done": DoneEvent,
+    "error": ErrorResponse,
+}
+KEPT = "kept from the previous fixtures"
 
 SOURCES = {
     "import": "imported from the results of the 11 Oct MI300X night (`scripts.import_night`)",
@@ -87,23 +108,22 @@ By line: {detail_mix}.
 
 - Run `{run_id}` in the store, read the way the API reads it with `NIGHT_SOURCE=db`
   (`telereason.store.night`): `report_latest.json`, `gate.json`, `windows.json`,
-  `window_detail.json`, `night_run.json`, `last_night` in `system.json`, the window of
-  `ask_request.json` and `ask.sse` (the first report window on the closed line) and the AUROC
-  interval in the `ask.sse` answer.
+  `window_detail.json`, `night_run.json`, `last_night` in `system.json` and the window of
+  `ask_request.json` (the first report window on the closed line).
 - Window ids are the store's, so each is unique. A note is shown only when it passed the
   verifier; otherwise `note` is empty and `verified` is false. `top_features` is shown on AURSAD
   only and is empty when the run stored none.
 - `plain`: |z| < 2 within the normal range, 2 to 3 slightly off normal, 3 or more clearly off
   normal.
-- Kept from the previous fixtures, because a night run does not store them: `health.json`,
-  `examples.json`, `night_run_started.json`, `gpu` and `versions` in `system.json` and the `done`
-  event of `ask.sse`. They come from the 11 Oct MI300X run: the model, the gate's XGBoost
-  version, `memory_total_gib` (the card's memory), `memory_used_gib` (card peak in the load test
-  while the engine was loaded, MiB / 1024), `total_ms` (single-question p90 alone on the card)
-  and `tokens` (mean tokens per question with one user). `ms` is `null` because tool time was
-  not measured.
-- Version strings other than `xgboost`, labels, explanations and example questions:
-  `docs/api.md`.
+- `health.json`, `examples.json` and `night_run_started.json`: kept from the previous fixtures,
+  because a night run does not store them. Example questions: `docs/api.md`.
+- `gpu` and `versions` in `system.json`: {system_source}.
+- `ask.sse`: {ask_source}.
+- The first fixtures took the kept values from the 11 Oct MI300X run: the model, the gate's
+  XGBoost version, `memory_total_gib` (the card's memory), `memory_used_gib` (card peak in the
+  load test while the engine was loaded, MiB / 1024), `total_ms` (single-question p90 alone on
+  the card) and `tokens` (mean tokens per question with one user); `ms` was `null` because tool
+  time was not measured. Their other version strings: `docs/api.md`.
 
 Contains small samples derived from FactoryBench (license: see `DATA_NOTICE.md`).
 """
@@ -126,13 +146,76 @@ def pick_run(db: NightDb, run_id: str | None) -> RunRecord:
     return run
 
 
-def read_sse(text: str) -> dict[str, Any]:
-    """The data of each event in a recorded SSE stream, by event name."""
-    events = {}
-    for block in text.strip().split("\n\n"):
-        fields = dict(line.split(": ", 1) for line in block.splitlines() if ": " in line)
-        events[fields["event"]] = json.loads(fields["data"])
-    return events
+def read_file(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise FixtureError(str(exc)) from exc
+
+
+def file_time(path: Path) -> str:
+    return datetime.fromtimestamp(path.stat().st_mtime, UTC).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def checked[M: BaseModel](model: type[M], data: Any, what: str) -> M:
+    """`data` as `model`; extra, missing or coerced fields are a mismatch, as in the API tests."""
+    try:
+        parsed = model.model_validate(data)
+    except ValidationError as exc:
+        raise FixtureError(f"{what} does not match {model.__name__}: {exc}") from exc
+    if parsed.model_dump(mode="json") != data:
+        raise FixtureError(f"{what} has fields or values that {model.__name__} does not")
+    return parsed
+
+
+def read_stream(text: str, what: str) -> list[tuple[str, BaseModel]]:
+    """The messages of an `/api/ask` SSE stream, checked against the event models; `: ping`
+    comments are dropped."""
+    messages: list[tuple[str, BaseModel]] = []
+    for block in text.replace("\r\n", "\n").strip().split("\n\n"):
+        fields: dict[str, str] = {}
+        for line in block.split("\n"):
+            if not line or line.startswith(":"):
+                continue
+            name, sep, value = line.partition(": ")
+            if not sep or name not in ("event", "data") or name in fields:
+                raise FixtureError(f"{what}: not an SSE message: {block!r}")
+            fields[name] = value
+        if not fields:
+            continue
+        if set(fields) != {"event", "data"} or fields["event"] not in SSE_EVENTS:
+            raise FixtureError(f"{what}: not an /api/ask event: {block!r}")
+        event = fields["event"]
+        try:
+            data = json.loads(fields["data"])
+        except json.JSONDecodeError as exc:
+            raise FixtureError(f"{what}: {event} data is not JSON: {exc}") from exc
+        messages.append((event, checked(SSE_EVENTS[event], data, f"{what}: {event}")))
+    return messages
+
+
+def recorded_stream(path: Path, window_id: str) -> str:
+    """A real `/api/ask` answer to `ask_request.json`, written again without pings."""
+    messages = read_stream(read_file(path), str(path))
+    events = [event for event, _ in messages]
+    if "error" in events or "answer" not in events or events[-1:] != ["done"]:
+        raise FixtureError(f"{path}: expected an answer and a final done event, got {events}")
+    for _, data in messages:
+        called = data.args.get("window_id") if isinstance(data, ToolCallEvent) else None
+        if called not in (None, window_id):
+            raise FixtureError(f"{path} asks about {called}; ask_request.json has {window_id}")
+    return "".join(sse_message(event, data.model_dump(mode="json")) for event, data in messages)
+
+
+def saved_system(path: Path) -> SystemResponse:
+    try:
+        data = json.loads(read_file(path))
+    except json.JSONDecodeError as exc:
+        raise FixtureError(f"{path} is not JSON: {exc}") from exc
+    system = checked(SystemResponse, data, str(path))
+    if system.gpu is None:
+        raise FixtureError(f"{path} has no GPU")
+    return system
 
 
 def sse_message(event: str, data: dict[str, Any]) -> str:
@@ -164,16 +247,27 @@ def closed_window(report: ReportResponse) -> tuple[str, str]:
     raise FixtureError(f"run {report.run_id} reports no window on a closed line")
 
 
-def build(db: NightDb, run: RunRecord, out: Path) -> dict[str, str]:
+def build(
+    db: NightDb,
+    run: RunRecord,
+    out: Path,
+    system_json: Path | None = None,
+    ask_sse: Path | None = None,
+) -> dict[str, str]:
     """The text of every file to write, by name."""
-    try:
-        system = SystemResponse.model_validate_json(
-            (out / "system.json").read_text(encoding="utf-8")
+    if system_json is None:
+        system = SystemResponse.model_validate_json(read_file(out / "system.json"))
+        system_source = KEPT
+    else:
+        system = saved_system(system_json)
+        served = system.last_night.run_id if system.last_night else "none"
+        if served != run.run_id:
+            logger.warning("%s was saved while run %s was served", system_json, served)
+        system_source = (
+            f"saved `GET /api/system` response `{system_json.name}` (run `{served}`, file time "
+            f"{file_time(system_json)}): the GPU as `rocm-smi` reported it and the installed "
+            "versions"
         )
-        stream = read_sse((out / "ask.sse").read_text(encoding="utf-8"))
-        done = DoneEvent.model_validate(stream["done"])
-    except (OSError, KeyError) as exc:
-        raise FixtureError(f"{out} needs the previous system.json and ask.sse: {exc}") from exc
 
     night = DbNight(db)
     windows = RunWindows(db, run)
@@ -209,7 +303,23 @@ def build(db: NightDb, run: RunRecord, out: Path) -> dict[str, str]:
     files = {
         name: json.dumps(value, indent=2, ensure_ascii=False) + "\n" for name, value in data.items()
     }
-    files["ask.sse"] = ask_stream(closed_gate.auroc, low, high, ask_window, done)
+    if ask_sse is None:
+        previous = dict(read_stream(read_file(out / "ask.sse"), "previous ask.sse"))
+        done = previous.get("done")
+        if not isinstance(done, DoneEvent):
+            raise FixtureError("the previous ask.sse has no done event")
+        files["ask.sse"] = ask_stream(closed_gate.auroc, low, high, ask_window, done)
+        ask_source = (
+            f"the `done` event {KEPT}; the window and the AUROC interval in the answer from run "
+            f"`{run.run_id}`"
+        )
+    else:
+        files["ask.sse"] = recorded_stream(ask_sse, ask_window)
+        ask_source = (
+            f"recorded `POST /api/ask` stream `{ask_sse.name}` for `ask_request.json` (run "
+            f"`{run.run_id}`, file time {file_time(ask_sse)}): one real answer, so `total_ms`, "
+            "`tokens` and `ms` are that answer's"
+        )
     files["README.md"] = README.format(
         run_id=run.run_id,
         date=(run.finished_at or "")[:10],
@@ -219,6 +329,8 @@ def build(db: NightDb, run: RunRecord, out: Path) -> dict[str, str]:
         n_detail=len(details),
         unflagged=unflagged,
         detail_mix=detail_mix(details),
+        system_source=system_source,
+        ask_source=ask_source,
     )
     return files
 
@@ -231,9 +343,16 @@ def detail_mix(details: dict[str, WindowDetail]) -> str:
     return ", ".join(f"{counts[name]} {name}" for name in order if counts[name])
 
 
-def make_fixtures(db: NightDb, run_id: str | None, out: Path) -> RunRecord:
+def make_fixtures(
+    db: NightDb,
+    run_id: str | None,
+    out: Path,
+    system_json: Path | None = None,
+    ask_sse: Path | None = None,
+) -> RunRecord:
     run = pick_run(db, run_id)
-    files = build(db, run, out)
+    # Every input is read and checked before the first file is written.
+    files = build(db, run, out, system_json, ask_sse)
     for name, text in files.items():
         (out / name).write_text(text, encoding="utf-8", newline="\n")
     logger.info("Wrote %d files of run %s to %s", len(files), run.run_id, out)
@@ -245,10 +364,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--db", type=Path, required=True, help="SQLite store of night runs")
     parser.add_argument("--run", help="run id; default: the run that finished last")
     parser.add_argument("--out", type=Path, required=True, help="fixtures directory to update")
+    parser.add_argument("--system-json", type=Path, help="saved GET /api/system response")
+    parser.add_argument("--ask-sse", type=Path, help="recorded POST /api/ask stream")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
-        make_fixtures(NightDb(args.db), args.run, args.out)
+        make_fixtures(NightDb(args.db), args.run, args.out, args.system_json, args.ask_sse)
     except FixtureError as exc:
         raise SystemExit(str(exc)) from exc
 
