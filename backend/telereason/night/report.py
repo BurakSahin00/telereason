@@ -1,6 +1,6 @@
 """The morning report of a night run (#39), built from its stored windows and notes.
 
-Ported from the 11 Oct report (`p35_gece.py::sabah_raporu`): on a line with a score (AURSAD,
+The 11 Oct morning report rules: on a line with a score (AURSAD,
 `screening`) the windows scoring at least `SCORE_THRESHOLD` are listed by score, highest
 first; on a `closed` line (FactoryWave) the windows with the largest |z| are listed. Ties keep
 the night's order. Each line lists at most `ITEMS_PER_LINE` windows, and only a verified note

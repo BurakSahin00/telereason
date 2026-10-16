@@ -1,7 +1,7 @@
 """The night run on request (#49): one run at a time, its steps in the fixed order.
 
 `NightRunner.start` records a queued run and runs it in a task on the app's event loop:
-gate, facts, scan, report, as on 11 Oct (`p35_gece.py::kip_gece`). Each step is a method of
+gate, facts, scan, report, as in the 11 Oct night. Each step is a method of
 a `NightSteps` object, so the runner only orders the steps, times them, keeps the progress in
 the store and marks the run done or failed. The runner never opens the engine; it receives the
 one the app opened (`ai/engine.py`).
