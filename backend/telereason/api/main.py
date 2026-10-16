@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import threading
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
@@ -8,12 +9,15 @@ from fastapi import FastAPI
 
 from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import Engine, create_engine, warm_up
+from telereason.ai.tools import ProtocolIndex
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
 from telereason.api.rate_limit import RateLimiter
 from telereason.data.loader import DataStore, WindowSource
+from telereason.night.band import NightSignals, PoolNotAvailableError
 from telereason.night.run import NightRunner
+from telereason.night.steps import NightPipeline
 from telereason.settings import Settings, load_settings
 from telereason.store.db import NightDb
 from telereason.store.night import DbNight
@@ -58,18 +62,44 @@ async def open_engine(engine: Engine) -> None:
     )
 
 
+def load_pool_in_background(signals: NightSignals) -> threading.Thread:
+    """Build the night pool and its facts in a daemon thread, so the first `/signals` request
+    and the first night run do not wait for it. A missing dataset is logged, not raised; a
+    request then gets the same 503 it would get without this."""
+
+    def load() -> None:
+        started = time.perf_counter()
+        try:
+            signals.load()
+        except PoolNotAvailableError as exc:
+            logger.warning("night pool not loaded: %s", exc)
+            return
+        except Exception:
+            logger.exception("night pool failed to load; /signals will retry on request")
+            return
+        logger.info("night pool loaded in %.1f s", time.perf_counter() - started)
+
+    # A daemon thread: shutting down does not wait for a load that is still running.
+    thread = threading.Thread(target=load, name="night-pool", daemon=True)
+    thread.start()
+    return thread
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Open the one engine of this process at startup and close it at shutdown.
 
     A night run left unfinished by an earlier process is marked failed at startup; an active
-    one is cancelled (and marked failed) at shutdown, before the engine closes.
+    one is cancelled (and marked failed) at shutdown, before the engine closes. Real mode also
+    starts building the night pool at startup; fake mode serves fixtures and builds nothing.
     """
     log_to_stderr()
     engine: Engine = app.state.engine
     runner: NightRunner | None = app.state.night_runner
     if runner is not None:
         runner.recover()
+    if app.state.settings.engine != "fake":
+        app.state.pool_loading = load_pool_in_background(app.state.data_store.night_signals)
     # Open in the background so the app answers requests while the model loads.
     opening = asyncio.create_task(open_engine(engine))
     try:
@@ -107,6 +137,20 @@ def night_store(
     return DataStore(settings.data_dir, fixtures_first=settings.night_source == "stored")
 
 
+def night_runner(app: FastAPI) -> NightRunner | None:
+    """Night runs on request, recorded in the store at DB_PATH (real mode only). The steps
+    read the same pool as `/signals`, so the pool is built once per process."""
+    settings: Settings = app.state.settings
+    if settings.engine == "fake":
+        return None
+    steps = NightPipeline(
+        app.state.data_store.night_signals,
+        protocols=lambda: ProtocolIndex.load(settings.data_dir),
+        gate_mode=settings.gate_mode,
+    )
+    return NightRunner(NightDb(settings.db_path), app.state.engine, steps)
+
+
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
@@ -119,12 +163,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.night_store = night_store(
         app.state.settings, app.state.data_store, app.state.db_night
     )
-    # Night runs on request are recorded in the store at DB_PATH (real mode only).
-    app.state.night_runner = (
-        None
-        if app.state.settings.engine == "fake"
-        else NightRunner(NightDb(app.state.settings.db_path), app.state.engine)
-    )
+    app.state.night_runner = night_runner(app)
     # Read once: the installed versions do not change while the process runs.
     app.state.versions = system.read_versions()
     app.state.rate_limiters = {

@@ -9,7 +9,11 @@ EngineKind = Literal["fake", "vllm"]
 # DB_PATH (#48); "stored" is the 11 Oct night in fixtures/, kept as the fallback.
 NightSource = Literal["stored", "db"]
 
+# "auto": a small night reuses the latest stored gate; "full": every night runs the gate.
+GateMode = Literal["auto", "full"]
+
 ENGINE_KINDS: tuple[EngineKind, ...] = ("fake", "vllm")
+GATE_MODES: tuple[GateMode, ...] = ("auto", "full")
 NIGHT_SOURCES: tuple[NightSource, ...] = ("stored", "db")
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GPU_MEMORY_UTILIZATION = 0.85
@@ -26,6 +30,7 @@ class Settings:
     night_source: NightSource = "stored"
     # SQLite store of night runs, windows, notes and reports.
     db_path: str = DEFAULT_DB_PATH
+    gate_mode: GateMode = "auto"
     # Built frontend served from the same origin; empty means the API only.
     frontend_dist: str = ""
     # Requests per client per minute; 0 turns the limit off.
@@ -54,11 +59,19 @@ def load_settings() -> Settings:
         gpu_memory_utilization=_gpu_memory_utilization(),
         night_source=cast(NightSource, night_source),
         db_path=os.environ.get("DB_PATH", "").strip() or DEFAULT_DB_PATH,
+        gate_mode=_gate_mode(),
         frontend_dist=os.environ.get("FRONTEND_DIST", "").strip(),
         rate_limit_ask_per_min=_per_min("RATE_LIMIT_ASK_PER_MIN", 10),
         rate_limit_night_per_min=_per_min("RATE_LIMIT_NIGHT_PER_MIN", 2),
         trust_proxy_headers=os.environ.get("TRUST_PROXY_HEADERS", "").strip() == "1",
     )
+
+
+def _gate_mode() -> GateMode:
+    mode = os.environ.get("GATE_MODE", "").strip().lower() or "auto"
+    if mode not in GATE_MODES:
+        raise ValueError(f"GATE_MODE must be one of {GATE_MODES}, got {mode!r}")
+    return cast(GateMode, mode)
 
 
 def _per_min(name: str, default: int) -> int:

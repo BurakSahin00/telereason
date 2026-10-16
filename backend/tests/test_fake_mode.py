@@ -74,8 +74,8 @@ def test_fake_mode_serves_fixture(
 
 
 # Real mode serves the stored night (report, gate, examples; see test_stored_night.py) and
-# reads the system info itself (test_system.py). It starts no night run until the night steps
-# are wired (#40), and no run is known yet (test_night_runs.py).
+# reads the system info itself (test_system.py). It starts a night run only with
+# NIGHT_SOURCE=db, and no run is known yet (test_night_runs.py).
 REAL_NIGHT_RUNS = [
     ("POST", "/api/night-runs", 501, "not_implemented"),
     ("GET", "/api/night-runs/run-20261015-1", 404, "not_found"),

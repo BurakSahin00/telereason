@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from telereason.api.schemas import Fact
-from telereason.night.facts import compute_facts, mean_std, plain_reading, y3
+from telereason.night.facts import WindowFacts, compute_facts, mean_std, plain_reading, y3
 from telereason.night.windows import Pool, Window
 
 PAIR = ("setpoint_pos_0", "feedback_pos_0")
@@ -154,6 +154,51 @@ def test_note_input_keeps_the_11_oct_shape() -> None:
     assert list(screening)[:3] == ["window", "abnormal_score", "abnormal_score_note"]
     assert screening["abnormal_score"] == 0.845
     assert closed["reference"] == "normal windows, other experiment blocks"
+
+
+def test_note_input_copies_the_rounded_facts() -> None:
+    deviating = {
+        "signal": "setpoint_acc_5",
+        "window_mean": -0.0208,
+        "normal_mean": -0.00139,
+        "z": -8.36,
+        "difference": -0.0194,
+    }
+    gap = {
+        "pair": "feedback_pos_5 vs setpoint_pos_5",
+        "max_abs_gap": 0.07,
+        "normal_typical": 0.0237,
+        "z": 9.5,
+        "excess_over_typical": 0.0463,
+    }
+    facts = WindowFacts(
+        window_id="W-123456",
+        ms_id="item-1",
+        line="AURSAD",
+        task="aursad",
+        reference="other experiment blocks",
+        deviating=[deviating],
+        gap=gap,
+        missing_signals=1,
+        look_first=gap["pair"],
+    )
+
+    screening = json.loads(json.dumps(facts.note_input(score=0.912)))
+    closed = facts.note_input()
+
+    assert screening == {
+        "window": "W-123456",
+        "abnormal_score": 0.912,
+        "abnormal_score_note": "screening model, 0 = normal-like, 1 = abnormal-like",
+        "line": "AURSAD",
+        "task": "aursad",
+        "reference": "normal windows, other experiment blocks",
+        "deviating_signals": [deviating],
+        "largest_plan_vs_measured_gap": gap,
+        "missing_signals": 1,
+        "look_first": "feedback_pos_5 vs setpoint_pos_5",
+    }
+    assert "abnormal_score" not in closed and "abnormal_score_note" not in closed
 
 
 def test_facts_never_carry_the_fault_label() -> None:

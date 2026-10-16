@@ -60,13 +60,13 @@ def test_stored_night_endpoints_serve_the_11_oct_files(
     assert response.json() == load(name)
 
 
-def test_night_runs_do_not_start_in_real_mode_yet(client: TestClient, tmp_path: Path) -> None:
-    # The night steps are wired in #40.
+def test_night_runs_need_the_store(client: TestClient, tmp_path: Path) -> None:
+    # The stored night is files; a run's report is served only with NIGHT_SOURCE=db.
     response = client.post("/api/night-runs", json={})
 
     assert response.status_code == 501
     assert_error_shape(response.json(), "not_implemented")
-    assert response.json()["error"]["message"] == "Night runs are not available in real mode yet."
+    assert response.json()["error"]["message"] == "Set NIGHT_SOURCE=db to run a night."
     assert not (tmp_path / "night.sqlite").exists()
 
 

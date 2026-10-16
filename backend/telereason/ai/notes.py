@@ -1,18 +1,16 @@
 """Night notes: two or three sentences per window, written by the LLM from code facts.
 
-The night run builds the facts with code and passes them as one JSON object (the 11 Oct
-input format). The model gets fixed instructions for the line's gate mode, writes on
-the final channel, and the verifier checks the cleaned text. A note that does not pass
-is written once more with another seed; if that one fails too, the window keeps its
-facts and shows no note.
+The night run builds the facts with code and passes them as one JSON object, the 11 Oct
+input format (`json.dumps` of `telereason.night.facts.WindowFacts.note_input`). The model
+gets fixed instructions for the line's gate mode, writes on the final channel, and the
+verifier checks the cleaned text. A note that does not pass is written once more with
+another seed; if that one fails too, the window keeps its facts and shows no note.
 """
 
-import json
 import logging
-import math
 import zlib
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal
 
 from telereason.ai.agent import parse_harmony
 from telereason.ai.engine import HARMONY_SYSTEM, Engine, Generation, Priority
@@ -28,8 +26,6 @@ NOTE_MAX_TOKENS = 1024
 NOTE_TEMPERATURE = 1.0
 NOTE_ATTEMPTS = 2
 NOTE_STOP = ("<|call|>", "<|return|>")
-
-SCORE_NOTE = "screening model, 0 = normal-like, 1 = abnormal-like"
 
 # Instructions from the 11 Oct night (v2), unchanged: the verifier pass rate was measured
 # with exactly these texts.
@@ -63,84 +59,6 @@ INSTRUCTIONS: dict[NoteMode, str] = {
 def note_mode(verdict: Verdict) -> NoteMode:
     """`closed` lines get facts only; `screening` and `open` lines also get the score."""
     return "closed" if verdict == "closed" else "screening"
-
-
-# Facts JSON
-
-
-def round3(value: float | None) -> float | None:
-    """Three significant digits; values below 0.001 in size become 0."""
-    if value is None or not math.isfinite(value):
-        return None
-    return 0.0 if abs(value) < 1e-3 else float(f"{value:.3g}")
-
-
-class DeviatingSignal(TypedDict):
-    signal: str
-    window_mean: float | None
-    normal_mean: float | None
-    z: float | None
-
-
-class PlanGap(TypedDict):
-    pair: str
-    max_abs_gap: float | None
-    normal_typical: float | None
-    z: float | None
-
-
-@dataclass(frozen=True)
-class NoteFacts:
-    """Code facts for one window, already rounded with `round3`."""
-
-    window_id: str
-    line: str
-    task: str
-    reference: str
-    deviating_signals: list[DeviatingSignal]
-    plan_gap: PlanGap | None
-    missing_signals: int
-    score: float | None = None
-
-
-def note_input(facts: NoteFacts, mode: NoteMode) -> str:
-    """The user message: the 11 Oct facts JSON, keys in the same order.
-
-    Differences come from the rounded values, so every number in the JSON is one the note
-    may copy. `look_first` is the signal or pair with the largest |z|.
-    """
-    data: dict[str, object] = {"window": facts.window_id}
-    if mode == "screening" and facts.score is not None:
-        data["abnormal_score"] = round(facts.score, 3)
-        data["abnormal_score_note"] = SCORE_NOTE
-
-    signals = []
-    for s in facts.deviating_signals:
-        item: dict[str, object] = dict(s)
-        if s["window_mean"] is not None and s["normal_mean"] is not None:
-            item["difference"] = round3(s["window_mean"] - s["normal_mean"])
-        signals.append(item)
-    gap: dict[str, object] | None = None
-    if facts.plan_gap is not None:
-        p = facts.plan_gap
-        gap = dict(p)
-        if p["max_abs_gap"] is not None and p["normal_typical"] is not None:
-            gap["excess_over_typical"] = round3(p["max_abs_gap"] - p["normal_typical"])
-
-    candidates = [(abs(s["z"]), s["signal"]) for s in facts.deviating_signals if s["z"] is not None]
-    if facts.plan_gap is not None and facts.plan_gap["z"] is not None:
-        candidates.append((abs(facts.plan_gap["z"]), facts.plan_gap["pair"]))
-
-    data.update(
-        line=facts.line,
-        task=facts.task,
-        reference=facts.reference,
-        deviating_signals=signals,
-        largest_plan_vs_measured_gap=gap,
-        missing_signals=facts.missing_signals,
-        look_first=max(candidates)[1] if candidates else None,
-    )
-    return json.dumps(data, ensure_ascii=False)
 
 
 # Generation

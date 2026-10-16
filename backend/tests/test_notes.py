@@ -1,6 +1,5 @@
 import asyncio
 import json
-from dataclasses import replace
 
 import pytest
 
@@ -8,37 +7,55 @@ from telereason.ai.engine import FAKE_NOTE, FakeEngine, Priority
 from telereason.ai.notes import (
     INSTRUCTIONS,
     NOTE_MAX_TOKENS,
-    NoteFacts,
     NoteResult,
-    note_input,
     note_mode,
     note_prompt,
     note_seed,
-    round3,
     write_note,
 )
 from telereason.ai.verifier import forbidden_terms
+from telereason.night.facts import WindowFacts
 
 TERMS = forbidden_terms(["normal", "missing_screw", "damaged_plate_thread"])
 
-FACTS = NoteFacts(
+FACTS = WindowFacts(
     window_id="W-123456",
+    ms_id="item-1",
     line="AURSAD",
     task="aursad",
-    reference="normal windows, other experiment blocks",
-    deviating_signals=[
-        {"signal": "setpoint_acc_5", "window_mean": -0.0208, "normal_mean": -0.00139, "z": -8.36},
-        {"signal": "vibration_1", "window_mean": 2.5, "normal_mean": 1.25, "z": 3.1},
+    reference="other experiment blocks",
+    deviating=[
+        {
+            "signal": "setpoint_acc_5",
+            "window_mean": -0.0208,
+            "normal_mean": -0.00139,
+            "z": -8.36,
+            "difference": -0.0194,
+        },
+        {
+            "signal": "vibration_1",
+            "window_mean": 2.5,
+            "normal_mean": 1.25,
+            "z": 3.1,
+            "difference": 1.25,
+        },
     ],
-    plan_gap={
+    gap={
         "pair": "feedback_pos_5 vs setpoint_pos_5",
         "max_abs_gap": 0.07,
         "normal_typical": 0.0237,
         "z": 9.5,
+        "excess_over_typical": 0.0463,
     },
     missing_signals=1,
-    score=0.9124,
+    look_first="feedback_pos_5 vs setpoint_pos_5",
 )
+SCORE = 0.912
+
+
+def facts_json(mode: str) -> str:
+    return json.dumps(FACTS.note_input(SCORE if mode == "screening" else None))
+
 
 PASSING = (
     "The abnormal-behaviour score is **0.912**. setpoint_acc_5 deviates most "
@@ -57,79 +74,12 @@ def final(text: str) -> str:
 
 def run_note(engine: FakeEngine, mode: str = "screening") -> NoteResult:
     asyncio.run(engine.start())
-    facts_json = note_input(FACTS, mode)  # type: ignore[arg-type]
     return asyncio.run(
-        write_note(engine, facts_json, window_id=FACTS.window_id, mode=mode, terms=TERMS)  # type: ignore[arg-type]
+        write_note(engine, facts_json(mode), window_id=FACTS.window_id, mode=mode, terms=TERMS)  # type: ignore[arg-type]
     )
 
 
-# Facts JSON
-
-
-def test_note_input_follows_the_11_oct_format() -> None:
-    data = json.loads(note_input(FACTS, "screening"))
-
-    assert list(data) == [
-        "window",
-        "abnormal_score",
-        "abnormal_score_note",
-        "line",
-        "task",
-        "reference",
-        "deviating_signals",
-        "largest_plan_vs_measured_gap",
-        "missing_signals",
-        "look_first",
-    ]
-    assert data["abnormal_score"] == 0.912
-    assert data["deviating_signals"][0] == {
-        "signal": "setpoint_acc_5",
-        "window_mean": -0.0208,
-        "normal_mean": -0.00139,
-        "z": -8.36,
-        "difference": -0.0194,
-    }
-    assert data["deviating_signals"][1]["difference"] == 1.25
-    assert data["largest_plan_vs_measured_gap"]["excess_over_typical"] == 0.0463
-    assert data["look_first"] == "feedback_pos_5 vs setpoint_pos_5"
-
-
-def test_closed_mode_has_no_score() -> None:
-    data = json.loads(note_input(FACTS, "closed"))
-
-    assert "abnormal_score" not in data
-    assert "abnormal_score_note" not in data
-
-
-def test_look_first_is_the_signal_with_the_largest_abs_z() -> None:
-    facts = replace(FACTS, plan_gap=None)
-
-    assert json.loads(note_input(facts, "closed"))["look_first"] == "setpoint_acc_5"
-
-
-def test_look_first_is_null_without_z_values() -> None:
-    facts = NoteFacts(
-        window_id="W-000001",
-        line="FactoryWave",
-        task="screwing",
-        reference="normal windows, same task, other days",
-        deviating_signals=[],
-        plan_gap=None,
-        missing_signals=0,
-    )
-
-    data = json.loads(note_input(facts, "closed"))
-
-    assert data["look_first"] is None
-    assert data["largest_plan_vs_measured_gap"] is None
-
-
-@pytest.mark.parametrize(
-    ("value", "rounded"),
-    [(0.123456, 0.123), (-1234.5, -1230.0), (0.0004, 0.0), (None, None), (float("nan"), None)],
-)
-def test_round3(value: float | None, rounded: float | None) -> None:
-    assert round3(value) == rounded
+# Prompt
 
 
 @pytest.mark.parametrize(
@@ -140,14 +90,14 @@ def test_note_mode_follows_the_gate_verdict(verdict: str, mode: str) -> None:
 
 
 def test_prompt_holds_the_mode_instructions_and_the_facts() -> None:
-    facts_json = note_input(FACTS, "closed")
+    closed_json = facts_json("closed")
 
-    prompt = note_prompt(facts_json, "closed")
+    prompt = note_prompt(closed_json, "closed")
 
     assert INSTRUCTIONS["closed"] in prompt
     assert INSTRUCTIONS["screening"] not in prompt
     assert "CLOSED" in INSTRUCTIONS["closed"]
-    assert f"<|start|>user<|message|>{facts_json}<|end|>" in prompt
+    assert f"<|start|>user<|message|>{closed_json}<|end|>" in prompt
     assert prompt.endswith("<|start|>assistant")
 
 

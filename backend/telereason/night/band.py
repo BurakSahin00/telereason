@@ -83,7 +83,7 @@ def default_channels(facts: WindowFacts) -> list[str]:
 
 
 @dataclass
-class _Night:
+class NightData:
     pool: Pool
     feats: Features
     facts: dict[str, WindowFacts]
@@ -99,10 +99,10 @@ class NightSignals:
     def __init__(self, data_dir: str | Path) -> None:
         self.pool_path = dataset_dir(data_dir) / POOL_FILE
         self.data_dir = data_dir
-        self._night: _Night | None = None
+        self._night: NightData | None = None
         self._lock = threading.Lock()
 
-    def _load(self) -> _Night:
+    def _load(self) -> NightData:
         with self._lock:
             if self._night is None:
                 if not self.pool_path.exists():
@@ -112,7 +112,7 @@ class NightSignals:
                 pool = load_pool(self.data_dir)
                 feats = features(pool)
                 keys, masks = reference_masks(pool)
-                self._night = _Night(
+                self._night = NightData(
                     pool=pool,
                     feats=feats,
                     facts=compute_facts(pool, feats),
@@ -123,6 +123,10 @@ class NightSignals:
                 )
                 log.info("night signals ready: %d windows", len(pool.windows))
             return self._night
+
+    def load(self) -> NightData:
+        """The pool, its facts and references; built on the first call, then kept."""
+        return self._load()
 
     def get(self, window_id: str, channels: list[str] | None = None) -> SignalsResponse:
         night = self._load()

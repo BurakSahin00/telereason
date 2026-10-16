@@ -69,3 +69,22 @@ def test_night_source_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch, ra
 
     with pytest.raises(ValueError, match="NIGHT_SOURCE"):
         load_settings()
+
+
+def test_gate_mode_defaults_to_auto(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GATE_MODE", raising=False)
+
+    assert load_settings().gate_mode == "auto"
+
+
+def test_gate_mode_comes_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GATE_MODE", " Full ")
+
+    assert load_settings().gate_mode == "full"
+
+
+def test_gate_mode_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GATE_MODE", "sometimes")
+
+    with pytest.raises(ValueError, match="GATE_MODE"):
+        load_settings()

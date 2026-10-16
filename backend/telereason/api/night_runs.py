@@ -6,11 +6,12 @@ from telereason.api.fake import fixture_response, is_fake
 from telereason.api.rate_limit import limit
 from telereason.api.schemas import NightRunProgress, NightRunRequest, NightRunStarted
 from telereason.night.run import NightRunner, RunnerBusyError
+from telereason.settings import Settings
 from telereason.store.db import RunRecord
 
 router = APIRouter()
 
-UNAVAILABLE_MESSAGE = "Night runs are not available in real mode yet."
+NEEDS_DB_MESSAGE = "Set NIGHT_SOURCE=db to run a night."
 
 
 def progress(run: RunRecord) -> NightRunProgress:
@@ -35,10 +36,11 @@ async def start_night_run(request: Request, body: NightRunRequest) -> NightRunSt
         return fixture_response(
             request, NightRunStarted, "night_run_started.json", "POST /api/night-runs"
         )
+    settings: Settings = request.app.state.settings
+    # A run's report is served only from the store, so real mode runs a night with it only.
+    if settings.night_source != "db":
+        raise ApiError(501, "not_implemented", NEEDS_DB_MESSAGE)
     runner: NightRunner = request.app.state.night_runner
-    # The real night steps are wired in #40; until then real mode starts no run.
-    if not runner.available:
-        raise ApiError(501, "not_implemented", UNAVAILABLE_MESSAGE)
     engine: Engine = request.app.state.engine
     if not engine.ready:
         raise EngineNotReadyError("engine is not ready")
