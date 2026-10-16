@@ -27,7 +27,12 @@ REPORT_WINDOW_IDS = [
 def app(tmp_path: Path) -> FastAPI:
     # Downloaded data, as on the droplet: the stored night must still win over it.
     write_factorywave(factorywave_dir(tmp_path))
-    settings = Settings(engine="vllm", model=DEFAULT_MODEL, data_dir=str(tmp_path))
+    settings = Settings(
+        engine="vllm",
+        model=DEFAULT_MODEL,
+        data_dir=str(tmp_path),
+        db_path=str(tmp_path / "night.sqlite"),
+    )
     return create_app(settings, engine=FakeEngine(model=DEFAULT_MODEL))
 
 
@@ -55,20 +60,21 @@ def test_stored_night_endpoints_serve_the_11_oct_files(
     assert response.json() == load(name)
 
 
-@pytest.mark.parametrize(
-    ("method", "path"),
-    [
-        ("POST", "/api/night-runs"),
-        ("GET", "/api/night-runs/run-20261015-1"),
-    ],
-)
-def test_endpoints_without_a_stored_night_stay_not_implemented(
-    client: TestClient, method: str, path: str
-) -> None:
-    response = client.request(method, path, json={} if method == "POST" else None)
+def test_night_runs_do_not_start_in_real_mode_yet(client: TestClient, tmp_path: Path) -> None:
+    # The night steps are wired in #40.
+    response = client.post("/api/night-runs", json={})
 
     assert response.status_code == 501
     assert_error_shape(response.json(), "not_implemented")
+    assert response.json()["error"]["message"] == "Night runs are not available in real mode yet."
+    assert not (tmp_path / "night.sqlite").exists()
+
+
+def test_unknown_night_run_is_not_found(client: TestClient) -> None:
+    response = client.get("/api/night-runs/run-20261015-1")
+
+    assert response.status_code == 404
+    assert_error_shape(response.json(), "not_found")
 
 
 def test_window_list_is_the_stored_night(client: TestClient) -> None:

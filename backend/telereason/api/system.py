@@ -2,7 +2,8 @@
 
 Fake mode serves `fixtures/system.json`. Real mode asks `rocm-smi` for the GPU on every
 request (memory in use changes while the engine runs), reads the versions once at startup
-(`create_app` stores them), and reports the stored night's timings while NIGHT_SOURCE=stored.
+(`create_app` stores them), and reports the timings of the run that finished last with
+NIGHT_SOURCE=db, or the stored night's timings with NIGHT_SOURCE=stored.
 """
 
 import json
@@ -16,7 +17,13 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from telereason.api.fake import fixture_path, fixture_response, is_fake, serves_stored_night
+from telereason.api.fake import (
+    db_night,
+    fixture_path,
+    fixture_response,
+    is_fake,
+    serves_stored_night,
+)
 from telereason.api.schemas import GpuInfo, LastNight, SystemResponse, Versions
 
 ROCM_SMI_ARGS = ("--showproductname", "--showmeminfo", "vram", "--json")
@@ -165,8 +172,8 @@ def system(request: Request) -> SystemResponse:
     if is_fake(request):
         return fixture_response(request, SystemResponse, STORED_SYSTEM, "GET /api/system")
     versions: Versions = request.app.state.versions
-    return SystemResponse(
-        gpu=read_gpu(),
-        versions=versions,
-        last_night=stored_last_night(request) if serves_stored_night(request) else None,
-    )
+    if (night := db_night(request)) is not None:
+        last_night = night.last_night()
+    else:
+        last_night = stored_last_night(request) if serves_stored_night(request) else None
+    return SystemResponse(gpu=read_gpu(), versions=versions, last_night=last_night)

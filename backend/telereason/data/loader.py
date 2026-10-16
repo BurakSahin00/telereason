@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, Protocol
 
 import pyarrow.parquet as pq
 
@@ -19,6 +19,22 @@ from telereason.api.schemas import (
 )
 from telereason.data.paths import factorywave_dir
 from telereason.night.band import NightSignals, PoolNotAvailableError, UnknownWindowError
+
+
+class WindowSource(Protocol):
+    """What the window endpoints and the agent's tools read: `DataStore` or the night store."""
+
+    def list_windows(
+        self,
+        *,
+        line: Line | None = None,
+        flagged: bool | None = None,
+        sort: Literal["score", "deviation"] | None = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> WindowListResponse: ...
+
+    def get_window(self, window_id: str) -> WindowDetail: ...
 
 
 class DataNotAvailableError(RuntimeError):
