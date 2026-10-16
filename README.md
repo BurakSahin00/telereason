@@ -53,6 +53,8 @@ All tests run in fake mode.
 
 ## How to run
 
+Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 (`frontend/package.json`'s `engines`) for the frontend.
+
 ### One command (fake mode)
 
 Needs Docker with Compose, on Windows, macOS or Linux.
