@@ -10,6 +10,7 @@ from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import Engine, create_engine, warm_up
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
+from telereason.api.frontend import mount_frontend
 from telereason.data.loader import DataStore
 from telereason.settings import Settings, load_settings
 
@@ -95,6 +96,8 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     install_error_handlers(app)
     for module in ROUTERS:
         app.include_router(module.router, responses=ERROR_RESPONSES)
+    if app.state.settings.frontend_dist:
+        mount_frontend(app, app.state.settings.frontend_dist)
     return app
 
 

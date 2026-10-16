@@ -1,0 +1,23 @@
+# Keep secrets, data, weights and local build output out of the build context.
+.git
+**/node_modules
+**/.venv
+frontend/dist
+data/
+backend/data/
+models/
+experiments/
+**/.env
+**/.env.*
+**/*.local
+CLAUDE.md
+.claude/
+AGENTS.md
+**/*.whl
+**/*.sqlite
+**/*.db
+**/*.parquet
+**/*.safetensors
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache

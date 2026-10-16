@@ -23,6 +23,8 @@ class Settings:
     hf_dataset: str = "FactoryBench/FactoryBench"
     gpu_memory_utilization: float = DEFAULT_GPU_MEMORY_UTILIZATION
     night_source: NightSource = "stored"
+    # Built frontend served from the same origin; empty means the API only.
+    frontend_dist: str = ""
 
 
 def load_settings() -> Settings:
@@ -42,6 +44,7 @@ def load_settings() -> Settings:
         hf_dataset=hf_dataset or "FactoryBench/FactoryBench",
         gpu_memory_utilization=_gpu_memory_utilization(),
         night_source=cast(NightSource, night_source),
+        frontend_dist=os.environ.get("FRONTEND_DIST", "").strip(),
     )
 
 
