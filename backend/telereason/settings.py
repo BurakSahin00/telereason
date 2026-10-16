@@ -5,14 +5,15 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 EngineKind = Literal["fake", "vllm"]
-# Where real mode gets its night: "stored" is the 11 Oct night in fixtures/, until the real
-# night source lands (#26, #27).
-NightSource = Literal["stored"]
+# Where real mode gets its night: "db" is the latest finished run in the SQLite store at
+# DB_PATH (#48); "stored" is the 11 Oct night in fixtures/, kept as the fallback.
+NightSource = Literal["stored", "db"]
 
 ENGINE_KINDS: tuple[EngineKind, ...] = ("fake", "vllm")
-NIGHT_SOURCES: tuple[NightSource, ...] = ("stored",)
+NIGHT_SOURCES: tuple[NightSource, ...] = ("stored", "db")
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GPU_MEMORY_UTILIZATION = 0.85
+DEFAULT_DB_PATH = "./telereason.sqlite"
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,8 @@ class Settings:
     hf_dataset: str = "FactoryBench/FactoryBench"
     gpu_memory_utilization: float = DEFAULT_GPU_MEMORY_UTILIZATION
     night_source: NightSource = "stored"
+    # SQLite store of night runs, windows, notes and reports.
+    db_path: str = DEFAULT_DB_PATH
     # Built frontend served from the same origin; empty means the API only.
     frontend_dist: str = ""
     # Requests per client per minute; 0 turns the limit off.
@@ -50,6 +53,7 @@ def load_settings() -> Settings:
         hf_dataset=hf_dataset or "FactoryBench/FactoryBench",
         gpu_memory_utilization=_gpu_memory_utilization(),
         night_source=cast(NightSource, night_source),
+        db_path=os.environ.get("DB_PATH", "").strip() or DEFAULT_DB_PATH,
         frontend_dist=os.environ.get("FRONTEND_DIST", "").strip(),
         rate_limit_ask_per_min=_per_min("RATE_LIMIT_ASK_PER_MIN", 10),
         rate_limit_night_per_min=_per_min("RATE_LIMIT_NIGHT_PER_MIN", 2),
