@@ -6,7 +6,7 @@ deviations.  The median and MAD resist single outliers in the reference, and the
 near-constant reference from inflating z.
 
 The floor is the standard deviation of the feature over every pool window on the same line,
-every label included (the 11 Oct z experiment, ``p29_normal.py``, used 0.1 times the training
+every label included (an earlier experiment, run before the event, used 0.1 times the training
 windows' standard deviation).  With 0.1 the reference MAD is so small that 96% of normal windows
 read "Clearly off normal"; with 1.0 the median of a normal window's largest |z| is 2.7-3.0,
 close to the 2.7 of the largest |z| among 106 independent standard-normal signals, so the

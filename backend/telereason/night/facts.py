@@ -11,10 +11,9 @@ Normal is the windows labelled ``normal`` outside the window's own group: on Fac
 same task on other days (all tasks on other days when that gives fewer than 10 windows), on
 AURSAD other experiment blocks.  A channel needs 5 normal windows that carry it.  Values are
 rounded to 3 significant digits; ``difference`` and ``excess_over_typical`` are computed from
-the rounded values, so a note that copies them stays consistent.  This is the 11 Oct method
-(``p35_gece.gece_girdileri`` and ``girdi_v2``), except that z is robust by default
-(``telereason.night.robust``): ``normal_mean`` and ``normal_typical`` are then the reference
-median.  ``mean_std`` gives the 11 Oct z.
+the rounded values, so a note that copies them stays consistent.  This is the 11 Oct method,
+except that z is robust by default (``telereason.night.robust``): ``normal_mean`` and
+``normal_typical`` are then the reference median.  ``mean_std`` gives the 11 Oct z.
 """
 
 from __future__ import annotations
