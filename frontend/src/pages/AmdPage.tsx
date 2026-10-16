@@ -38,7 +38,7 @@ function SystemPanels() {
       </Panel>
     )
   }
-  const { gpu, versions, last_night: night } = system.data
+  const { gpu, versions } = system.data
 
   return (
     <>
@@ -81,23 +81,33 @@ function SystemPanels() {
         </dl>
         {fake && <p className="mt-4 text-muted">Versions recorded with the stored night.</p>}
       </Panel>
-      <Panel title="Last night">
-        {night ? (
-          <>
-            <p className="break-all font-mono text-id text-muted">{night.run_id}</p>
-            <p className="mt-3 font-mono text-id tabular-nums">
-              {formatSeconds(night.timings_s.total)} total
-            </p>
-            <NightSteps timings={night.timings_s} status="done" />
-            <p className="mt-4 text-muted">Measured step durations from the stored night.</p>
-          </>
-        ) : (
-          <p className="text-muted">
-            No night run is stored yet. Start a small night to see its timings.
-          </p>
-        )}
-      </Panel>
     </>
+  )
+}
+
+// Own column from SystemPanels (same `system` query, cached): keeps both columns
+// closer in height so the page fits one 1080p frame.
+function LastNightPanel() {
+  const system = useSystem()
+  if (system.isPending) return <LoadingBlocks rows={1} height="h-32" />
+  if (system.isError) return null
+  const { last_night: night } = system.data
+
+  return (
+    <Panel title="Last night">
+      {night ? (
+        <>
+          <p className="break-all font-mono text-id text-muted">{night.run_id}</p>
+          <p className="mt-3 font-mono text-id tabular-nums">
+            {formatSeconds(night.timings_s.total)} total
+          </p>
+          <NightSteps timings={night.timings_s} status="done" />
+          <p className="mt-4 text-muted">Measured step durations from the stored night.</p>
+        </>
+      ) : (
+        <p className="text-muted">No night run is stored yet. Start a small night to see its timings.</p>
+      )}
+    </Panel>
   )
 }
 
@@ -243,8 +253,9 @@ export function AmdPage() {
         <div className="flex min-w-0 flex-col gap-gutter">
           <SystemPanels />
         </div>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-gutter">
           <NightRunPanel />
+          <LastNightPanel />
         </div>
       </div>
     </>
