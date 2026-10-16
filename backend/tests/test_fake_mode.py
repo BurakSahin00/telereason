@@ -73,10 +73,11 @@ def test_fake_mode_serves_fixture(
     assert response.json() == load(name)
 
 
-# Real mode serves the stored night (report, gate, examples; see test_stored_night.py).
+# Real mode serves the stored night (report, gate, examples; see test_stored_night.py) and
+# reads the system info itself (test_system.py).
 NOT_IN_STORED_NIGHT = [
     (method, path) for method, path, *_ in FIXTURE_ENDPOINTS if "night-runs" in path
-] + [("GET", "/api/system")]
+]
 
 
 @pytest.mark.parametrize(("method", "path"), NOT_IN_STORED_NIGHT)
