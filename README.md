@@ -46,8 +46,8 @@ flowchart LR
 |---|---|---|
 | Hardware | Any laptop, no GPU | One AMD Instinct MI300X |
 | Model | A stand-in engine, no model | gpt-oss-120b in vLLM on ROCm |
-| Night | Responses from `fixtures/` | `NIGHT_SOURCE=stored` (the default and for now the only value) serves the stored 11 Oct night from `fixtures/` |
-| AMD panel | From `fixtures/system.json` | GPU from `rocm-smi` and the installed versions; timings of the stored night |
+| Night | Responses from `fixtures/` | `NIGHT_SOURCE=stored` (the default) serves the stored 11 Oct night from `fixtures/`; `NIGHT_SOURCE=db` serves the night run that finished last in the SQLite store (`DB_PATH`) |
+| AMD panel | From `fixtures/system.json` | GPU from `rocm-smi` and the installed versions; timings of the night served |
 
 All tests run in fake mode.
 

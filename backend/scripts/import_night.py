@@ -32,16 +32,16 @@ from scripts.make_fixtures import (
     EXPLANATIONS,
     LABELS,
     LINE_ORDER,
-    REPORT_THRESHOLD,
     RUN_ID,
     VERDICTS,
     clean_note,
     plain_reading,
 )
-from telereason.api.schemas import Fact, GateLine, GateResponse, Line, StepTimings
+from telereason.api.schemas import Fact, GateLine, GateResponse, Line, ReportLine, StepTimings
 from telereason.data.paths import dataset_dir
+from telereason.night.report import SCORE_THRESHOLD, build_report, flagged
 from telereason.settings import load_settings
-from telereason.store.db import NightDb, NoteRecord, RunRecord, WindowRecord
+from telereason.store.db import NightDb, NoteRecord, RunRecord, StoredWindow, WindowRecord
 
 logger = logging.getLogger("import_night")
 
@@ -291,7 +291,7 @@ def window_record(note: NightNote, window_id: str, ms_id: str) -> WindowRecord:
         seq=note.seq,
         ms_id=ms_id,
         score=note.score,
-        flagged=None if note.score is None else note.score >= REPORT_THRESHOLD,
+        flagged=flagged(note.score),
         max_abs_z=note.max_abs_z,
         look_first=str(note.facts.get("look_first") or ""),
         facts=facts,
@@ -324,6 +324,7 @@ class ImportedNight:
     run: RunRecord
     windows: list[WindowRecord]
     notes: list[NoteRecord]
+    report: list[ReportLine]
     counts: dict[str, int]
 
 
@@ -343,9 +344,11 @@ def build(results: Sequence[Path], data_dir: str | Path) -> ImportedNight:
     windows = [window_record(r, window_ids[m], m) for r, m in zip(rows, ms_ids, strict=True)]
     notes = [n for r, w in zip(rows, windows, strict=True) for n in note_records(r, w.window_id)]
 
-    flagged = sum(bool(w.flagged) for w in windows if w.line == "AURSAD")
-    if flagged != night["rapor"]["AURSAD"]["isaretli"]:
-        raise NightImportError(f"threshold {REPORT_THRESHOLD} flags {flagged} AURSAD windows")
+    n_flagged = sum(bool(w.flagged) for w in windows if w.line == "AURSAD")
+    if n_flagged != night["rapor"]["AURSAD"]["isaretli"]:
+        raise NightImportError(f"threshold {SCORE_THRESHOLD} flags {n_flagged} AURSAD windows")
+    last_notes = {n.window_id: n for n in notes}  # attempts are in order, so the last one wins
+    report = build_report(gate, [StoredWindow(w, last_notes.get(w.window_id)) for w in windows])
 
     sure = night["sure_s"]
     run = RunRecord(
@@ -369,14 +372,14 @@ def build(results: Sequence[Path], data_dir: str | Path) -> ImportedNight:
         attempts=len(notes),
         repeated_ids=sum(1 for n in repeated.values() if n > 1),
         renamed=sum(1 for w in windows if w.window_id != base_window_id(w.ms_id or "")),
-        flagged=flagged,
+        flagged=n_flagged,
     )
-    return ImportedNight(run=run, windows=windows, notes=notes, counts=dict(counts))
+    return ImportedNight(run=run, windows=windows, notes=notes, report=report, counts=dict(counts))
 
 
 def import_night(results: Sequence[Path], data_dir: str | Path, db: NightDb) -> ImportedNight:
     imported = build(results, data_dir)
-    db.init().replace_run(imported.run, imported.windows, imported.notes)
+    db.init().replace_run(imported.run, imported.windows, imported.notes, imported.report)
     return imported
 
 

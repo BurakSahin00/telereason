@@ -25,7 +25,7 @@ from telereason.api.schemas import (
     ReportResponse,
     WindowDetail,
 )
-from telereason.data.loader import DataStore, WindowNotFoundError
+from telereason.data.loader import WindowNotFoundError, WindowSource
 from telereason.data.paths import dataset_dir
 
 logger = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ class ProtocolIndex:
 
 @dataclass(frozen=True)
 class AgentData:
-    store: DataStore
+    store: WindowSource
     gate: GateResponse
     protocols: ProtocolIndex
     report: ReportResponse | None = None

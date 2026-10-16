@@ -12,8 +12,10 @@ from telereason.api import ask, examples, gate, health, night_runs, report, syst
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
 from telereason.api.rate_limit import RateLimiter
-from telereason.data.loader import DataStore
+from telereason.data.loader import DataStore, WindowSource
 from telereason.settings import Settings, load_settings
+from telereason.store.db import NightDb
+from telereason.store.night import DbNight
 
 ROUTERS = (health, system, gate, report, windows, ask, examples, night_runs)
 WARMUP_PREVIEW_CHARS = 200
@@ -71,15 +73,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.close()
 
 
-def night_store(settings: Settings, data_store: DataStore) -> DataStore:
+def db_night(settings: Settings) -> DbNight | None:
+    """The stored night runs the API serves: real mode with NIGHT_SOURCE=db only."""
+    if settings.engine == "fake" or settings.night_source != "db":
+        return None
+    return DbNight(NightDb(settings.db_path))
+
+
+def night_store(
+    settings: Settings, data_store: DataStore, night: DbNight | None = None
+) -> WindowSource:
     """Windows and details of the night the API serves.
 
-    Fake mode serves `data_store`. Real mode with NIGHT_SOURCE=stored serves the stored
-    11 Oct night in `fixtures/`, even when the dataset is downloaded, so every report window
-    opens; signals still come from `data_store` (#28). The real night replaces this (#26, #27).
+    Fake mode serves `data_store`. Real mode with NIGHT_SOURCE=db serves the latest finished
+    run in the SQLite store. With NIGHT_SOURCE=stored it serves the stored 11 Oct night in
+    `fixtures/`, even when the dataset is downloaded, so every report window opens. Signals
+    always come from `data_store` (#28).
     """
     if settings.engine == "fake":
         return data_store
+    if night is not None:
+        return night
     return DataStore(settings.data_dir, fixtures_first=settings.night_source == "stored")
 
 
@@ -91,7 +105,10 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.data_store = DataStore(
         app.state.settings.data_dir, use_fixtures=app.state.settings.engine == "fake"
     )
-    app.state.night_store = night_store(app.state.settings, app.state.data_store)
+    app.state.db_night = db_night(app.state.settings)
+    app.state.night_store = night_store(
+        app.state.settings, app.state.data_store, app.state.db_night
+    )
     # Read once: the installed versions do not change while the process runs.
     app.state.versions = system.read_versions()
     app.state.rate_limiters = {
