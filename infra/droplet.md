@@ -34,7 +34,7 @@ The script is safe to run again. Run it again after a reboot (the Docker port ru
 | XGBoost | Our ROCm build from the GitHub Release (below), checked by SHA-256, installed with `--no-deps`; then a short training on the GPU | `xgboost 3.2.0 on cuda:0` |
 | Python extras | `scikit-learn` (the gate's AUROC) and the `hf` CLI if missing; every package already in the image is pinned as a constraint, so nothing there changes | `scikit-learn …, hf CLI present` |
 | Repository | `/root/telereason` inside the container at `--ref` (default `main`), shallow, detached | `repo at main: <commit>` |
-| Downloads | In the background inside the container: `openai/gpt-oss-120b` (about 65 GB; the repo's `original/` and `metal/` copies are skipped) into the Hugging Face cache, `FactoryBench/FactoryBench` into `/root/data/factorybench`. Logs in `/root/logs/` | `model download started`, `dataset download started` |
+| Downloads | In the background inside the container: `openai/gpt-oss-120b` (about 65 GB; the repo's `original/` and `metal/` copies are skipped) into the Hugging Face cache, `FactoryBench/FactoryBench` at the pinned revision `DATASET_REVISION` (the same as `DEFAULT_REVISION` in `backend/telereason/data/download.py`), only the files the data loader reads (`DEFAULT_PATTERNS` there), into `/root/data/factorybench`. Logs in `/root/logs/` | `model download started`, `dataset download started` |
 
 Inside the container, `DATA_DIR` is `/root/data`.
 

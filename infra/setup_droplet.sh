@@ -26,6 +26,7 @@ EXPECT_TORCH="2.11.0"
 
 MODEL_ID="openai/gpt-oss-120b"
 DATASET_ID="FactoryBench/FactoryBench"
+DATASET_REVISION="2561c2c90560ae3df90ef8136f774faa5fb4b4e3"   # DEFAULT_REVISION in backend/telereason/data/download.py
 XGB_WHEEL="amd_xgboost-3.2.0-py3-none-linux_x86_64.whl"
 XGB_URL="https://github.com/BurakSahin00/telereason/releases/download/xgboost-rocm-gfx942/${XGB_WHEEL}"
 XGB_SHA256="511377cea997c29f548b74c194f9bd1d7e0da7a48674a4f48662e9dfb94790b9"
@@ -119,7 +120,7 @@ docker exec -i -e HF_TOKEN -e REF="$REF" -e REPO_URL="$REPO_URL" \
   -e SKIP_MODEL="$SKIP_MODEL" -e SKIP_DATA="$SKIP_DATA" \
   -e EXPECT_ROCM="$EXPECT_ROCM" -e EXPECT_PYTHON="$EXPECT_PYTHON" \
   -e EXPECT_VLLM="$EXPECT_VLLM" -e EXPECT_TORCH="$EXPECT_TORCH" \
-  -e MODEL_ID="$MODEL_ID" -e DATASET_ID="$DATASET_ID" \
+  -e MODEL_ID="$MODEL_ID" -e DATASET_ID="$DATASET_ID" -e DATASET_REVISION="$DATASET_REVISION" \
   -e XGB_WHEEL="$XGB_WHEEL" -e XGB_URL="$XGB_URL" -e XGB_SHA256="$XGB_SHA256" \
   "$CONTAINER" bash -s <<'IN_CONTAINER'
 set -euo pipefail
@@ -194,7 +195,11 @@ if [[ "$SKIP_MODEL" == "0" ]]; then
 fi
 if [[ "$SKIP_DATA" == "0" ]]; then
   if running data; then ok "dataset download already running"; else
-    nohup hf download "$DATASET_ID" --repo-type dataset --local-dir /root/data/factorybench </dev/null > /root/logs/data.log 2>&1 &
+    # only the files the data loader reads: DEFAULT_PATTERNS in backend/telereason/data/download.py
+    nohup hf download "$DATASET_ID" --repo-type dataset --revision "$DATASET_REVISION" \
+      --include "factorywave/episodes.parquet" --include "factorywave/flow.parquet" \
+      --include "factorywave/*_signals.parquet" --include "knowledge_graph/knowledge_graph.json" \
+      --local-dir /root/data/factorybench </dev/null > /root/logs/data.log 2>&1 &
     echo $! > /root/logs/data.pid
     ok "dataset download started ($DATASET_ID) -> /root/data/factorybench, /root/logs/data.log"
   fi
