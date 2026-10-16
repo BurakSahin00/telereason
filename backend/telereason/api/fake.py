@@ -3,7 +3,8 @@
 Fixtures are found through the window data store (`DataStore.fixture_root`), the same path
 the window endpoints use. With ENGINE=vllm these helpers raise `not_implemented` until the
 real endpoints land in their own issues; endpoints of the stored night are the exception
-while NIGHT_SOURCE=stored (#26, #27 replace them).
+while NIGHT_SOURCE=stored. With NIGHT_SOURCE=db those endpoints read the store instead
+(`db_night`).
 """
 
 import asyncio
@@ -14,8 +15,10 @@ from pathlib import Path
 from fastapi import Request
 from pydantic import BaseModel
 
-from telereason.api.errors import not_implemented
+from telereason.api.errors import ApiError, not_implemented
+from telereason.data.loader import DataNotAvailableError
 from telereason.settings import Settings
+from telereason.store.night import DbNight
 
 # Pause between replayed SSE events, in seconds, so the stream looks like a live answer.
 EVENT_DELAY_S = (0.3, 0.8)
@@ -33,6 +36,15 @@ def fixture_path(request: Request, name: str) -> Path:
 def serves_stored_night(request: Request) -> bool:
     settings: Settings = request.app.state.settings
     return settings.night_source == "stored"
+
+
+def db_night(request: Request) -> DbNight | None:
+    """The SQLite store of night runs while real mode serves NIGHT_SOURCE=db, else None."""
+    return request.app.state.db_night
+
+
+def not_available(exc: DataNotAvailableError) -> ApiError:
+    return ApiError(503, "engine_not_ready", str(exc))
 
 
 def fixture_response[M: BaseModel](

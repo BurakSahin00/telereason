@@ -1,6 +1,6 @@
 import pytest
 
-from telereason.settings import DEFAULT_GPU_MEMORY_UTILIZATION, load_settings
+from telereason.settings import DEFAULT_DB_PATH, DEFAULT_GPU_MEMORY_UTILIZATION, load_settings
 
 
 def test_gpu_memory_utilization_defaults_to_085(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -45,7 +45,25 @@ def test_rate_limits_reject_bad_values(monkeypatch: pytest.MonkeyPatch, raw: str
         load_settings()
 
 
-@pytest.mark.parametrize("raw", ["live", "fixtures", "db"])
+def test_night_source_accepts_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NIGHT_SOURCE", "db")
+
+    assert load_settings().night_source == "db"
+
+
+def test_db_path_defaults_to_the_example_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DB_PATH", raising=False)
+
+    assert load_settings().db_path == DEFAULT_DB_PATH == "./telereason.sqlite"
+
+
+def test_db_path_comes_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DB_PATH", " /var/lib/telereason/night.sqlite ")
+
+    assert load_settings().db_path == "/var/lib/telereason/night.sqlite"
+
+
+@pytest.mark.parametrize("raw", ["live", "fixtures", "sqlite"])
 def test_night_source_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
     monkeypatch.setenv("NIGHT_SOURCE", raw)
 

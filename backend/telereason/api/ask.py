@@ -21,7 +21,7 @@ from telereason.ai.agent import AgentMessage
 from telereason.ai.agent import ask as run_agent
 from telereason.ai.engine import Engine, EngineNotReadyError
 from telereason.ai.tools import AgentData, ProtocolIndex
-from telereason.api.fake import fixture_path, is_fake, replay_sse
+from telereason.api.fake import fixture_path, is_fake, not_available, replay_sse
 from telereason.api.rate_limit import limit
 from telereason.api.schemas import (
     AskRequest,
@@ -32,6 +32,8 @@ from telereason.api.schemas import (
     GateResponse,
     ReportResponse,
 )
+from telereason.data.loader import DataNotAvailableError
+from telereason.store.night import DbNight, RunWindows
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -126,26 +128,51 @@ async def stream_agent(
 
 
 def agent_data(request: Request) -> AgentData:
-    """Data the agent's tools read, loaded once per process.
+    """Data the agent's tools read.
 
-    Until the stored night run lands (#25, #26, #27, #48), the gate verdicts, the morning
-    report and the windows are the stored 11 Oct night in `fixtures/`, read through the same
-    store as `/api/windows`; protocols come from the downloaded knowledge graph.
+    With NIGHT_SOURCE=db the gate verdicts, the morning report and the windows are those of
+    the run that finished last, loaded again when a newer run finishes. Otherwise they are the
+    stored 11 Oct night in `fixtures/`, read through the same store as `/api/windows` and
+    loaded once per process. Protocols come from the downloaded knowledge graph, loaded once.
     """
     state = request.app.state
     data: AgentData | None = getattr(state, "agent_data", None)
+    night: DbNight | None = state.db_night
+    if night is not None:
+        try:
+            run = night.latest()
+            if data is not None and getattr(state, "agent_data_run", None) == run.run_id:
+                return data
+            data = AgentData(
+                store=RunWindows(night.db, run),
+                gate=night.gate(run),
+                protocols=protocols(request),
+                report=night.report(run),
+            )
+        except DataNotAvailableError as exc:
+            raise not_available(exc) from exc
+        state.agent_data, state.agent_data_run = data, run.run_id
+        return data
     if data is None:
         root = state.night_store.fixture_root
         data = AgentData(
             store=state.night_store,
             gate=GateResponse.model_validate_json((root / "gate.json").read_text("utf-8")),
-            protocols=ProtocolIndex.load(state.settings.data_dir),
+            protocols=protocols(request),
             report=ReportResponse.model_validate_json(
                 (root / "report_latest.json").read_text("utf-8")
             ),
         )
         state.agent_data = data
     return data
+
+
+def protocols(request: Request) -> ProtocolIndex:
+    state = request.app.state
+    index: ProtocolIndex | None = getattr(state, "protocols", None)
+    if index is None:
+        index = state.protocols = ProtocolIndex.load(state.settings.data_dir)
+    return index
 
 
 @router.post(

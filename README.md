@@ -46,8 +46,8 @@ flowchart LR
 |---|---|---|
 | Hardware | Any laptop, no GPU | One AMD Instinct MI300X |
 | Model | A stand-in engine, no model | gpt-oss-120b in vLLM on ROCm |
-| Night | Responses from `fixtures/` | `NIGHT_SOURCE=stored` (the default and for now the only value) serves the stored 11 Oct night from `fixtures/` |
-| AMD panel | From `fixtures/system.json` | GPU from `rocm-smi` and the installed versions; timings of the stored night |
+| Night | Responses from `fixtures/` | `NIGHT_SOURCE=stored` (the default) serves the stored 11 Oct night from `fixtures/`; `NIGHT_SOURCE=db` serves the night run that finished last in the SQLite store (`DB_PATH`) |
+| AMD panel | From `fixtures/system.json` | GPU from `rocm-smi` and the installed versions; timings of the night served |
 
 All tests run in fake mode.
 
@@ -148,7 +148,7 @@ This is a hackathon build. A real factory deployment will add:
 
 - **SSO:** technicians will sign in with the plant's single sign-on instead of reaching an open demo URL.
 - **Audit log:** every question, answer, tool call and refused action request will be written to an append-only audit log.
-- **Postgres:** night runs, notes and reports will be stored in Postgres; this build serves a stored night from files.
+- **Postgres:** night runs, notes and reports move from this build's SQLite file (`DB_PATH`) to Postgres, so several API instances can share them.
 - **Separate model server:** the engine will move to its own model server so the API and the model can be restarted and scaled independently.
 - **Monitoring:** engine health, answer latency, night-run duration and failures will be monitored, with alerts to the maintenance team.
 
