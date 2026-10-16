@@ -32,8 +32,9 @@ from tests.test_night_windows import _dataset, _item, _write_jsonl
 VERDICTS: dict[Line, Verdict] = {"FactoryWave": "closed", "AURSAD": "screening"}
 
 
-def night_dataset(tmp_path: Path) -> Path:
-    """Six normal AURSAD windows and one faulty one; four FactoryWave windows on two days."""
+def night_dataset(tmp_path: Path, extra_fw_normals: int = 0) -> Path:
+    """Six normal AURSAD windows and one faulty one; four FactoryWave windows on two days, plus
+    `extra_fw_normals` normal ones on the other day of the faulty one."""
     data_dir = _dataset(tmp_path)
     pool = [
         _item(f"au-n{n}", "aursad", f"experiment_{n + 1}_1", rows=_rows([n, n + 1.0, n + 2.0]))
@@ -57,6 +58,10 @@ def night_dataset(tmp_path: Path) -> Path:
             "fw-fault", "factorywave", "ep-a", root_cause="Collision Foam-Object", rows=_rows([9.0])
         )
     )
+    pool += [
+        _item(f"fw-x{n}", "factorywave", "ep-b", rows=_rows([n + 0.5, n + 1.5]))
+        for n in range(extra_fw_normals)
+    ]
     _write_jsonl(data_dir / "factorybench" / "factorybench_qa" / "level_4.jsonl", pool)
     return data_dir
 
