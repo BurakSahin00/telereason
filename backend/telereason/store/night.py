@@ -138,8 +138,8 @@ class DbNight:
             run_id=run.run_id, timings_s=run.timings, lines=self.db.report(run.run_id)
         )
 
-    def last_night(self) -> LastNight | None:
-        run = self.latest_or_none()
+    def last_night(self, run: RunRecord | None = None) -> LastNight | None:
+        run = run or self.latest_or_none()
         if run is None or run.timings is None:
             return None
         return LastNight(run_id=run.run_id, timings_s=run.timings)
