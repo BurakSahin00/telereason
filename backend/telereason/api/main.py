@@ -8,12 +8,14 @@ from fastapi import FastAPI
 
 from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import Engine, create_engine, warm_up
+from telereason.ai.tools import ProtocolIndex
 from telereason.api import ask, examples, gate, health, night_runs, report, system, windows
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
 from telereason.api.rate_limit import RateLimiter
 from telereason.data.loader import DataStore, WindowSource
 from telereason.night.run import NightRunner
+from telereason.night.steps import NightPipeline
 from telereason.settings import Settings, load_settings
 from telereason.store.db import NightDb
 from telereason.store.night import DbNight
@@ -107,6 +109,19 @@ def night_store(
     return DataStore(settings.data_dir, fixtures_first=settings.night_source == "stored")
 
 
+def night_runner(app: FastAPI) -> NightRunner | None:
+    """Night runs on request, recorded in the store at DB_PATH (real mode only). The steps
+    read the same pool as `/signals`, so the pool is built once per process."""
+    settings: Settings = app.state.settings
+    if settings.engine == "fake":
+        return None
+    steps = NightPipeline(
+        app.state.data_store.night_signals,
+        protocols=lambda: ProtocolIndex.load(settings.data_dir),
+    )
+    return NightRunner(NightDb(settings.db_path), app.state.engine, steps)
+
+
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
@@ -119,12 +134,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     app.state.night_store = night_store(
         app.state.settings, app.state.data_store, app.state.db_night
     )
-    # Night runs on request are recorded in the store at DB_PATH (real mode only).
-    app.state.night_runner = (
-        None
-        if app.state.settings.engine == "fake"
-        else NightRunner(NightDb(app.state.settings.db_path), app.state.engine)
-    )
+    app.state.night_runner = night_runner(app)
     # Read once: the installed versions do not change while the process runs.
     app.state.versions = system.read_versions()
     app.state.rate_limiters = {
