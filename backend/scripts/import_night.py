@@ -29,17 +29,19 @@ from typing import Any
 
 import numpy as np
 
-from scripts.make_fixtures import (
-    EXPLANATIONS,
-    LABELS,
-    LINE_ORDER,
-    RUN_ID,
-    VERDICTS,
-    clean_note,
-    plain_reading,
+from telereason.ai.markdown import clean_note
+from telereason.api.schemas import (
+    Fact,
+    GateLine,
+    GateResponse,
+    Line,
+    ReportLine,
+    StepTimings,
+    Verdict,
 )
-from telereason.api.schemas import Fact, GateLine, GateResponse, Line, ReportLine, StepTimings
 from telereason.data.paths import dataset_dir
+from telereason.night.facts import plain_reading
+from telereason.night.gate_run import GATE_TEXTS, LINE_ORDER
 from telereason.night.report import SCORE_THRESHOLD, build_report, flagged
 from telereason.night.windows import POOL_FILE, Pool, Window, base_window_id, load_pool
 from telereason.settings import load_settings
@@ -47,7 +49,10 @@ from telereason.store.db import NightDb, NoteRecord, RunRecord, StoredWindow, Wi
 
 logger = logging.getLogger("import_night")
 
+RUN_ID = "2026-10-11-amd"
 RUN_DATE = "2026-10-11"
+# Gate verdicts as the results spell them.
+VERDICTS: dict[str, Verdict] = {"DAGITMA": "closed", "KOSULLU": "screening", "GECER": "open"}
 NIGHT_FILE = "p35_gece.json"
 GATE_FILE = "kapi_gpu.json"
 NOTES_FILE = "gece_notlar.jsonl"
@@ -113,14 +118,15 @@ def gate_response(gate_run: dict[str, Any]) -> GateResponse:
         verdict = VERDICTS[gate_run["hat"][line]["karar"]]
         anomaly = gate_run["hat"][line]["anomali"]
         low, high = anomaly["aralik"]
+        label, explanation = GATE_TEXTS[verdict]
         lines.append(
             GateLine(
                 line=line,
                 verdict=verdict,
-                label=LABELS[verdict],
+                label=label,
                 auroc=anomaly["auroc"],
                 auroc_ci=(low, high),
-                explanation=EXPLANATIONS[verdict],
+                explanation=explanation,
             )
         )
     return GateResponse(run_id=RUN_ID, lines=lines)
