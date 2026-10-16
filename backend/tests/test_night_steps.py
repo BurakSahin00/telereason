@@ -1,4 +1,5 @@
-"""The real night steps (#40) on a tiny synthetic pool, with a stand-in gate and FakeEngine."""
+"""The real night steps (#40) on a tiny synthetic pool, with a stand-in gate process and
+FakeEngine."""
 
 import asyncio
 import json
@@ -13,18 +14,14 @@ from telereason.ai.engine import FakeEngine, Generation, Priority, Prompt
 from telereason.ai.notes import INSTRUCTIONS
 from telereason.ai.tools import ProtocolIndex
 from telereason.api.main import create_app
-from telereason.api.schemas import FeatureContribution, GateLine, GateResponse, Line, Verdict
+from telereason.api.schemas import Line, Verdict
 from telereason.night.band import NightSignals
-from telereason.night.run import NightRunner, RunContext
-from telereason.night.steps import (
-    GATE_NOT_WIRED,
-    GateOutput,
-    GateStep,
-    GateWindow,
-    NightPipeline,
-    night_terms,
-)
-from telereason.settings import DEFAULT_MODEL, Settings
+from telereason.night.gate import write_outputs
+from telereason.night.gate_run import GateFailedError
+from telereason.night.run import NightRunner
+from telereason.night.steps import NightPipeline, night_terms
+from telereason.night.windows import load_pool
+from telereason.settings import DEFAULT_MODEL, GateMode, Settings
 from telereason.store.db import NightDb, RunRecord
 from telereason.store.night import DbNight
 from tests.test_lifespan import wait_until_ready
@@ -33,7 +30,6 @@ from tests.test_night_runs import wait_for_run
 from tests.test_night_windows import _dataset, _item, _write_jsonl
 
 VERDICTS: dict[Line, Verdict] = {"FactoryWave": "closed", "AURSAD": "screening"}
-CONTRIBUTION = (FeatureContribution(feature="sig_a.mean", contribution=0.4),)
 
 
 def night_dataset(tmp_path: Path) -> Path:
@@ -65,40 +61,56 @@ def night_dataset(tmp_path: Path) -> Path:
     return data_dir
 
 
-def stand_in_gate(signals: NightSignals) -> GateStep:
-    """Verdicts as on 11 Oct; every pool window tested; a score on both lines (the closed
-    line's must never reach the store)."""
+class FakeGate:
+    """Stands in for the gate process: writes a small gate.json and scores.jsonl."""
 
-    async def gate(ctx: RunContext) -> GateOutput:
-        pool = signals.load().pool
-        windows = {
-            w.window_id: GateWindow(
-                score=0.95 if w.label != "normal" else 0.2, fold=1, top_features=CONTRIBUTION
-            )
-            for w in pool.windows
+    def __init__(self, *, fail: bool = False, classes: list[str] | None = None) -> None:
+        self.fail = fail
+        self.classes = classes
+        self.calls: list[tuple[Path, str]] = []
+
+    async def __call__(self, out: Path, data_dir: str) -> None:
+        self.calls.append((out, data_dir))
+        if self.fail:
+            raise GateFailedError("the gate process exited with code 1: boom")
+        pool = load_pool(data_dir)
+        document = {
+            "classes": self.classes or sorted({w.label for w in pool.windows}),
+            "lines": {
+                line: {
+                    "decision": "stand-in",
+                    "verdict": verdict,
+                    "anomaly": {"auroc": 0.5, "interval": [0.4, 0.6]},
+                }
+                for line, verdict in VERDICTS.items()
+            },
         }
-        lines = [
-            GateLine(
-                line=line,
-                verdict=verdict,
-                label=verdict,
-                auroc=0.5,
-                auroc_ci=(0.4, 0.6),
-                explanation="explanation",
-            )
-            for line, verdict in VERDICTS.items()
+        scores = [
+            {
+                "window_id": w.window_id,
+                "ms_id": w.ms_id,
+                "line": w.line,
+                "group": w.group,
+                "fold": 1,
+                "score": 0.95 if w.label != "normal" else 0.2,
+            }
+            for w in pool.windows
         ]
-        return GateOutput(verdicts=GateResponse(run_id="gate", lines=lines), windows=windows)
-
-    return gate
+        write_outputs(out, document, scores)
 
 
-def pipeline(data_dir: Path, *, gate: bool = True, concurrency: int = 64) -> NightPipeline:
-    signals = NightSignals(data_dir)
+def pipeline(
+    data_dir: Path,
+    *,
+    gate: FakeGate | None = None,
+    concurrency: int = 64,
+    gate_mode: GateMode = "auto",
+) -> NightPipeline:
     return NightPipeline(
-        signals,
+        NightSignals(data_dir),
         protocols=lambda: ProtocolIndex([]),
-        gate_step=stand_in_gate(signals) if gate else None,
+        gate_mode=gate_mode,
+        gate_process=gate or FakeGate(),
         concurrency=concurrency,
     )
 
@@ -165,7 +177,8 @@ def test_scores_reach_only_the_screening_line(data_dir: Path, db: NightDb) -> No
 
     target = windows["au-target"]
     assert (target.score, target.flagged, target.fold) == (0.95, True, 1)
-    assert target.top_features == CONTRIBUTION
+    # Gate contributions (#45) are not on main yet.
+    assert target.top_features == ()
     for ms_id in ("fw-fault", "fw-n0"):
         assert (windows[ms_id].score, windows[ms_id].flagged) == (None, None)
         assert windows[ms_id].top_features == ()
@@ -235,13 +248,13 @@ def test_the_scan_writes_at_most_the_concurrency_limit_at_once(data_dir: Path, d
     assert engine.most == 3
 
 
-def test_without_the_gate_module_a_run_stops_at_the_gate(data_dir: Path, db: NightDb) -> None:
+def test_a_failing_gate_fails_the_run_at_the_gate(data_dir: Path, db: NightDb) -> None:
     engine = FakeEngine()
 
-    run = run_night(db, engine, pipeline(data_dir, gate=False))
+    run = run_night(db, engine, pipeline(data_dir, gate=FakeGate(fail=True)))
 
     assert (run.status, run.step) == ("failed", "gate")
-    assert run.error == f"NotImplementedError: {GATE_NOT_WIRED}"
+    assert run.error == "GateFailedError: the gate process exited with code 1: boom"
     assert engine.calls == []
 
 
@@ -260,7 +273,7 @@ def test_night_terms_keep_fault_names_whole() -> None:
     assert "overload" not in terms.words and "collision" not in terms.words
 
 
-def db_app(data_dir: Path, tmp_path: Path) -> FastAPI:
+def db_app(data_dir: Path, tmp_path: Path, gate_mode: GateMode = "auto") -> FastAPI:
     settings = Settings(
         engine="vllm",
         model=DEFAULT_MODEL,
@@ -268,10 +281,11 @@ def db_app(data_dir: Path, tmp_path: Path) -> FastAPI:
         night_source="db",
         db_path=str(tmp_path / "night.sqlite"),
         rate_limit_night_per_min=0,
+        gate_mode=gate_mode,
     )
     app = create_app(settings, engine=FakeEngine(model=DEFAULT_MODEL))
     steps: NightPipeline = app.state.night_runner.steps
-    steps.gate_step = stand_in_gate(steps.signals)
+    steps.gate_process = FakeGate()
     return app
 
 

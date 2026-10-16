@@ -146,6 +146,7 @@ def night_runner(app: FastAPI) -> NightRunner | None:
     steps = NightPipeline(
         app.state.data_store.night_signals,
         protocols=lambda: ProtocolIndex.load(settings.data_dir),
+        gate_mode=settings.gate_mode,
     )
     return NightRunner(NightDb(settings.db_path), app.state.engine, steps)
 

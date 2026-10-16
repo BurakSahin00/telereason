@@ -206,6 +206,15 @@ class NightDb:
             ).fetchone()
         return _run(row) if row else None
 
+    def finished_runs(self) -> list[RunRecord]:
+        """Every finished run, the one that finished last first (as `latest_finished_run`)."""
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM night_runs WHERE status = 'done' "
+                "ORDER BY finished_at DESC, rowid DESC"
+            ).fetchall()
+        return [_run(row) for row in rows]
+
     def active_run(self) -> RunRecord | None:
         with self.connect() as conn:
             row = conn.execute(

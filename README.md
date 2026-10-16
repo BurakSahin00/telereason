@@ -38,7 +38,7 @@ flowchart LR
   API --> UI["React frontend"]
 ```
 
-- The night run is code, not an agent, and runs in a fixed order: gate, facts, scan (notes and verifier), report. The 11 Oct night was run in this order on one MI300X; its results are stored in `fixtures/`. The night pipeline code is not in this repository yet.
+- The night run is code, not an agent, and runs in a fixed order: gate, facts, scan (notes and verifier), report. The 11 Oct night was run in this order on one MI300X; its results are stored in `fixtures/`. The night pipeline is in this repository (`backend/telereason/night/`) and runs in real mode with `NIGHT_SOURCE=db`.
 - FastAPI and the vLLM engine (gpt-oss-120b) run in the same process on one MI300X. The engine cannot be shared across processes, so uvicorn runs with one worker. The night scan and the live assistant share this engine; live questions are scheduled before night notes.
 - FastAPI serves the built React frontend from the same origin.
 

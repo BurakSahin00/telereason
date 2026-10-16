@@ -1,8 +1,7 @@
 """The real night steps (#40): gate, facts, scan, report, in the order of the 11 Oct night.
 
-- **gate**: the gate verdict per line and the score of every window it tested. The gate runs in
-  its own process and is wired here when its module is on main (#15); until then a run stops
-  at this step.
+- **gate**: the gate verdict per line and the score of every window it tested, from the gate
+  process or, on a small night, from the latest stored gate (`night/gate_run.py`).
 - **facts**: the night pool and its facts (`telereason.night.facts`), loaded once per process
   and shared with `/signals`. The run keeps the windows the gate tested, writes their facts and
   scores to the store, and counts them as progress.
@@ -22,18 +21,27 @@ import json
 import logging
 import time
 import zlib
-from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass, replace
 
 from telereason.ai.notes import NoteResult, note_mode, write_note
 from telereason.ai.tools import ProtocolIndex
 from telereason.ai.verifier import ForbiddenTerms, forbidden_terms
-from telereason.api.schemas import FeatureContribution, GateResponse, Verdict
+from telereason.api.schemas import Verdict
 from telereason.night.band import NightSignals
 from telereason.night.facts import WindowFacts
+from telereason.night.gate_run import (
+    GateOutput,
+    GateProcess,
+    gate_process,
+    read_gate_files,
+    reusable_gate,
+    run_dir,
+)
 from telereason.night.report import flagged, has_score, write_report
 from telereason.night.run import RunContext
 from telereason.night.windows import Window
+from telereason.settings import GateMode
 from telereason.store.db import NoteRecord, WindowRecord
 
 logger = logging.getLogger(__name__)
@@ -41,27 +49,6 @@ logger = logging.getLogger(__name__)
 SCAN_CONCURRENCY = 64
 # Notes go to the store in batches, at most this often, so the scan does not write per note.
 NOTE_FLUSH_S = 1.0
-GATE_NOT_WIRED = "The gate step is not wired yet; it lands with the gate module (#15)."
-
-
-@dataclass(frozen=True)
-class GateWindow:
-    """What the gate says about one window it tested."""
-
-    # 1 - P(normal), out of fold; shown only on a line with a score.
-    score: float | None = None
-    fold: int | None = None
-    top_features: tuple[FeatureContribution, ...] = ()
-
-
-@dataclass(frozen=True)
-class GateOutput:
-    verdicts: GateResponse
-    # Every window the gate tested, by window id: the windows a night can scan.
-    windows: Mapping[str, GateWindow]
-
-
-GateStep = Callable[[RunContext], Awaitable[GateOutput]]
 
 
 @dataclass(frozen=True)
@@ -142,21 +129,38 @@ class NightPipeline:
         self,
         signals: NightSignals,
         protocols: Callable[[], ProtocolIndex],
-        gate_step: GateStep | None = None,
+        *,
+        gate_mode: GateMode = "auto",
+        gate_process: GateProcess = gate_process,
         concurrency: int = SCAN_CONCURRENCY,
     ) -> None:
         self.signals = signals
         self.protocols = protocols
-        self.gate_step = gate_step
+        self.gate_mode = gate_mode
+        self.gate_process = gate_process
         self.concurrency = concurrency
 
     async def gate(self, ctx: RunContext) -> None:
-        if self.gate_step is None:
-            raise NotImplementedError(GATE_NOT_WIRED)
-        output = await self.gate_step(ctx)
+        output = None
+        if self.gate_mode != "full":
+            reused = await asyncio.to_thread(reusable_gate, ctx.db)
+            if reused is not None and ctx.max_windows < len(reused.windows):
+                logger.info(
+                    "night run %s: small night (%d of %d windows), gate reused from run %s",
+                    ctx.run_id,
+                    ctx.max_windows,
+                    len(reused.windows),
+                    reused.source_run,
+                )
+                output = reused
+        if output is None:
+            out = run_dir(ctx.db, ctx.run_id)
+            logger.info("night run %s: running the gate into %s", ctx.run_id, out)
+            await self.gate_process(out, str(self.signals.data_dir))
+            output = await asyncio.to_thread(read_gate_files, out, ctx.run_id)
         verdicts = output.verdicts.model_copy(update={"run_id": ctx.run_id})
         ctx.db.update_run(ctx.run_id, gate=verdicts)
-        ctx.state["gate"] = GateOutput(verdicts=verdicts, windows=output.windows)
+        ctx.state["gate"] = replace(output, verdicts=verdicts)
 
     async def facts(self, ctx: RunContext) -> None:
         gate: GateOutput = ctx.state["gate"]
@@ -194,7 +198,8 @@ class NightPipeline:
             scan.append(NightWindow(facts=facts, verdict=verdict, score=score))
         ctx.db.put_windows(ctx.run_id, records)
         ctx.state["scan"] = scan
-        ctx.state["classes"] = sorted({w.label for w in night.pool.windows})
+        # The gate's class labels; the pool's labels are the same classes when it lists none.
+        ctx.state["classes"] = list(gate.classes) or sorted({w.label for w in night.pool.windows})
         ctx.progress(len(picked), flush=True)
 
     async def scan(self, ctx: RunContext) -> None:

@@ -111,8 +111,10 @@ class HeldNotes(FakeEngine):
 
 def test_the_assistant_answers_while_a_small_night_scans(tmp_path: Path) -> None:
     data_dir = night_dataset(tmp_path)
+    # A finished night for the assistant to read; its windows are not in this pool, so the
+    # small night runs the gate instead of reusing that night's.
     fixture_night(NightDb(tmp_path / "night.sqlite"))
-    app = db_app(data_dir, tmp_path)
+    app = db_app(data_dir, tmp_path, gate_mode="full")
     engine = HeldNotes()
     app.state.engine = app.state.night_runner.engine = engine
 
