@@ -9,7 +9,7 @@ Built by Team CSAIDev for the AMD Developer Hackathon ACT III, Track 1: Intellig
 
 ## What it does
 
-- **Morning report.** One section per line with the windows a technician should look at first, the signal to check first and a short note. Every note is checked by code against the facts before it is shown; a note that fails twice is replaced by the facts alone.
+- **Morning report.** One section per line with the windows a technician should look at first, the signal to check first and a short note. Every note is checked by code against the facts; a note that did not pass is not shown, only the facts.
 - **Gate verdicts.** Each night the gate decides what the data of each line can support, and every response follows that verdict:
   - `closed`: no diagnosis, facts only. No fault name appears anywhere.
   - `screening`: the abnormal-behaviour score only, no cause.
@@ -17,7 +17,7 @@ Built by Team CSAIDev for the AMD Developer Hackathon ACT III, Track 1: Intellig
 
   In the stored 11 Oct night, FactoryWave is `closed` (facts, not diagnosis) and AURSAD is `screening` (abnormal-behaviour screening only, no cause). Neither line is `open`.
 - **Window page.** For one window: the facts per signal (window mean against the normal mean, the difference, the z-value and a plain reading), the signal to look at first, and the note with whether it passed the verifier.
-- **Assistant.** A tool-calling assistant over five narrow tools (`get_report`, `list_windows`, `get_window`, `classify_fault`, `search_protocols`), at most six turns. The answer streams the tool calls as they happen. On a fault question the answer is written by code from the tool result, following the gate verdict; a request to start, stop or change equipment is refused before the model runs. Example questions are in Turkish and English.
+- **Assistant.** A tool-calling assistant over five narrow tools (`get_report`, `list_windows`, `get_window`, `classify_fault`, `search_protocols`), at most four tool calls per question. The answer streams the tool calls as they happen. On a fault question the answer is written by code from the tool result, following the gate verdict; a request to start, stop or change equipment is refused before the model runs. Example questions are in Turkish and English.
 - **AMD panel.** The GPU, the software versions and the measured step durations of the stored night.
 
 The API contract is [docs/api.md](docs/api.md).
@@ -87,7 +87,7 @@ npm run dev
 
 Opens on `http://localhost:5173` and proxies `/api` to the backend above. See [frontend/DESIGN.md](frontend/DESIGN.md) for the UI conventions.
 
-Checks: `uv run ruff check .` and `uv run pytest -q` in `backend/`; `npm run lint` and `npm run build` in `frontend/`.
+Checks: `uv run ruff check .` and `uv run pytest -q` in `backend/`; `npm run lint`, `npm run build` and `npm test` in `frontend/`.
 
 ### Real mode (one AMD Instinct MI300X)
 
@@ -146,7 +146,7 @@ This is a hackathon build. A real factory deployment will add:
 
 - **SSO:** technicians will sign in with the plant's single sign-on instead of reaching an open demo URL.
 - **Audit log:** every question, answer, tool call and refused action request will be written to an append-only audit log.
-- **Postgres:** Postgres will replace SQLite for night runs, notes and reports.
+- **Postgres:** night runs, notes and reports will be stored in Postgres; this build serves a stored night from files.
 - **Separate model server:** the engine will move to its own model server so the API and the model can be restarted and scaled independently.
 - **Monitoring:** engine health, answer latency, night-run duration and failures will be monitored, with alerts to the maintenance team.
 
