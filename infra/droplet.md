@@ -74,17 +74,20 @@ The app is one process: FastAPI with the vLLM engine inside it. The engine canno
    docker exec rocm bash -c 'pip install -q --root-user-action=ignore -c <(pip freeze) pyarrow'   # only if pyarrow was missing
    ```
 
-3. **Start.** `HF_HUB_OFFLINE=1` makes vLLM load the downloaded model and fail clearly if the download is not finished.
+3. **Frontend.** The app serves the built frontend from the same origin. Build it on the droplet host and copy it into the container (see [Frontend in the ROCm container](#frontend-in-the-rocm-container)).
+
+4. **Start.** `HF_HUB_OFFLINE=1` makes vLLM load the downloaded model and fail clearly if the download is not finished. `FRONTEND_DIST` points at the frontend from step 3; leave it out to run the API only.
 
    ```bash
    docker exec -d -w /root/telereason/backend \
-     -e ENGINE=vllm -e NIGHT_SOURCE=stored -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 rocm \
+     -e ENGINE=vllm -e NIGHT_SOURCE=stored -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 \
+     -e FRONTEND_DIST=/root/telereason/frontend/dist rocm \
      bash -c 'python -m uvicorn telereason.api.main:app --workers 1 --host 127.0.0.1 --port 8000 > /root/logs/app.log 2>&1'
    ```
 
-   With a bridge network, use `--host 0.0.0.0`.
+   With a bridge network, use `--host 0.0.0.0`. If `FRONTEND_DIST` has no `index.html`, the app stops at startup with an error naming `FRONTEND_DIST`.
 
-4. **Follow the startup.** The API answers at once with `ready: false`; the engine loads in the background, then sends one short warm-up request.
+5. **Follow the startup.** The API answers at once with `ready: false`; the engine loads in the background, then sends one short warm-up request.
 
    ```bash
    docker exec rocm tail -f /root/logs/app.log
@@ -100,17 +103,37 @@ The app is one process: FastAPI with the vLLM engine inside it. The engine canno
 
    Until the engine is ready, endpoints that need it answer `503` with `{"error": {"code": "engine_not_ready", …}}`.
 
-5. **Open it from your laptop** through an SSH tunnel, then use `http://localhost:8000/api/health` and `http://localhost:8000/docs`:
+6. **Open it from your laptop** through an SSH tunnel, then use `http://localhost:8000` (the frontend), `http://localhost:8000/api/health` and `http://localhost:8000/docs`:
 
    ```bash
    ssh -N -L 8000:127.0.0.1:8000 root@<droplet-address>
    ```
 
-6. **Stop.** A graceful stop closes the engine (`vllm engine closed` in the log). A stop during loading returns only after the weights have finished loading.
+7. **Stop.** A graceful stop closes the engine (`vllm engine closed` in the log). A stop during loading returns only after the weights have finished loading.
 
    ```bash
    docker exec rocm pkill -INT -f 'uvicorn telereason.api.main:app'
    ```
+
+## Frontend in the ROCm container
+
+In real mode the app keeps running in the existing `rocm` container (the vLLM ROCm image); the root `Dockerfile` is the fake-mode container for laptops. The droplet takes only its `frontend-dist` stage, which holds nothing but the built files, so no Node.js is installed in the container. Run on the droplet host, with the same ref as the repository in the container (`main` here; a tag for the demo):
+
+1. Build the frontend (needs BuildKit, the default builder since Docker 23):
+
+   ```bash
+   docker build --target frontend-dist --output type=local,dest=/root/frontend-dist "https://github.com/BurakSahin00/telereason.git#main"
+   ```
+
+2. Copy it into the container:
+
+   ```bash
+   docker cp /root/frontend-dist/. rocm:/root/telereason/frontend/dist
+   ```
+
+3. Start the app with `-e FRONTEND_DIST=/root/telereason/frontend/dist`, as in step 4 of [Run the app](#run-the-app).
+
+Repeat the three steps after the repository in the container moves to another ref.
 
 ## Check from your laptop
 

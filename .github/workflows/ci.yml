@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # The job ids (backend, frontend) are the required status checks in the main ruleset.
-# Renaming a job means updating the ruleset too.
+# Renaming a job means updating the ruleset too. The image job is not required.
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -56,3 +56,13 @@ jobs:
       # build runs tsc -b first, so it also covers the typecheck.
       - run: npm run build
       - run: npm test
+
+  # Only proves the image builds; nothing is pushed.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: docker build .
