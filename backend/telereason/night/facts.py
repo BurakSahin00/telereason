@@ -137,7 +137,7 @@ class _Reference:
     gap_spread: np.ndarray
 
 
-def _reference_masks(pool: Pool) -> tuple[list[tuple[str, ...]], dict[tuple[str, ...], Any]]:
+def reference_masks(pool: Pool) -> tuple[list[tuple[str, ...]], dict[tuple[str, ...], Any]]:
     """Reference key per window, and (description, mask) per key."""
     windows = pool.windows
     line = np.array([w.line for w in windows])
@@ -326,7 +326,7 @@ def compute_facts(
 ) -> dict[str, WindowFacts]:
     """Facts for every pool window, keyed by window id."""
     feats = feats or features(pool)
-    keys, masks = _reference_masks(pool)
+    keys, masks = reference_masks(pool)
     floors = line_floors(pool, feats)
     references = {key: _reference(*masks[key], feats, scale, floors[key[0]]) for key in masks}
     return {
