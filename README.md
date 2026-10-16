@@ -53,8 +53,6 @@ All tests run in fake mode.
 
 ## How to run
 
-Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 (`frontend/package.json`'s `engines`) for the frontend.
-
 ### One command (fake mode)
 
 Needs Docker with Compose, on Windows, macOS or Linux.
@@ -66,6 +64,8 @@ docker compose up --build
 Then open `http://localhost:8000`. The container serves the API and the built frontend; `http://localhost:8000/docs` lists the endpoints.
 
 ### Development (two processes)
+
+Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 for the frontend (`frontend/.nvmrc`).
 
 Settings come from environment variables; `.env.example` lists them. `ENGINE` defaults to `fake`, so this mode needs no setup.
 
