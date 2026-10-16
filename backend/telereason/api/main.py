@@ -90,6 +90,8 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         app.state.settings.data_dir, use_fixtures=app.state.settings.engine == "fake"
     )
     app.state.night_store = night_store(app.state.settings, app.state.data_store)
+    # Read once: the installed versions do not change while the process runs.
+    app.state.versions = system.read_versions()
     install_error_handlers(app)
     for module in ROUTERS:
         app.include_router(module.router, responses=ERROR_RESPONSES)

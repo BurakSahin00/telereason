@@ -58,7 +58,6 @@ def test_stored_night_endpoints_serve_the_11_oct_files(
 @pytest.mark.parametrize(
     ("method", "path"),
     [
-        ("GET", "/api/system"),
         ("POST", "/api/night-runs"),
         ("GET", "/api/night-runs/run-20261015-1"),
     ],

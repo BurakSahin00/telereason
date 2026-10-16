@@ -2,7 +2,7 @@
 
 Contract between the backend (FastAPI) and the frontend. Until the real endpoints are ready, the backend's fake mode (`ENGINE=fake`) serves `fixtures/` as the responses, so the frontend always talks to the same backend; `GET /api/health` reports the real engine setting, not a fixture.
 
-In real mode (`ENGINE=vllm`) with `NIGHT_SOURCE=stored`, for now the default and only value, `/api/report/latest`, `/api/gate`, `/api/examples`, `/api/windows` and `/api/windows/{window_id}` serve the stored 11 Oct night from `fixtures/`, and the live assistant's tools read the same files; `/api/windows/{window_id}/signals` reads the downloaded dataset, and `/api/system` and `/api/night-runs` answer `501` until they are built.
+In real mode (`ENGINE=vllm`) with `NIGHT_SOURCE=stored`, for now the default and only value, `/api/report/latest`, `/api/gate`, `/api/examples`, `/api/windows` and `/api/windows/{window_id}` serve the stored 11 Oct night from `fixtures/`, and the live assistant's tools read the same files; `/api/windows/{window_id}/signals` reads the downloaded dataset; `/api/system` reads the GPU from `rocm-smi` and the installed versions, with the stored night's timings as `last_night`; `/api/night-runs` answers `501` until it is built.
 
 Status: **draft v0**. Values in the examples are illustrative; `fixtures/` holds responses generated from the real 11 Oct MI300X run (see `fixtures/README.md`).
 
@@ -64,11 +64,11 @@ The Pydantic models are in `backend/telereason/api/schemas.py`. `docs/openapi.js
 {
   "gpu": {"name": "AMD Instinct MI300X", "memory_total_gib": 191.6875, "memory_used_gib": 160.11891174316406},
   "versions": {"rocm": "7.2.3", "vllm": "0.27.1", "xgboost": "3.2.0", "python": "3.12"},
-  "last_night": {"run_id": "2026-10-11-amd", "timings_s": {"gate": 462, "facts": 84, "scan": 1020, "report": 2, "total": 1566}}
+  "last_night": {"run_id": "2026-10-11-amd", "timings_s": {"gate": 462, "facts": 82, "scan": 1020, "report": 0, "total": 1566}}
 }
 ```
 
-Memory is in GiB (2^30 bytes), as the GPU driver reports it. `gpu` is `null` when no GPU is visible (fake mode on a laptop). A `versions` entry other than `python` is `null` when that package is not installed. `last_night` is `null` before the first stored night run.
+Memory is in GiB (2^30 bytes), as the GPU driver reports it. `gpu` is `null` when `rocm-smi` is missing, fails, takes longer than 2 s or reports no readable card; fake mode serves `fixtures/system.json`. A `versions` entry other than `python` is `null` when that package is not installed. `last_night` is `null` before the first stored night run.
 
 ### GET /api/gate
 
@@ -103,7 +103,7 @@ Memory is in GiB (2^30 bytes), as the GPU driver reports it. `gpu` is `null` whe
 ```json
 {
   "run_id": "2026-10-11-amd",
-  "timings_s": {"gate": 462, "facts": 84, "scan": 1020, "report": 2, "total": 1566},
+  "timings_s": {"gate": 462, "facts": 82, "scan": 1020, "report": 0, "total": 1566},
   "lines": [
     {
       "line": "AURSAD",
