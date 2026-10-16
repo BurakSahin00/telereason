@@ -12,6 +12,11 @@ CHANNELS = ["sig_a", "sig_b", "flat", *PAIR]
 FAULT = "missing_screw"
 
 
+def _classic(pool: Pool) -> dict:
+    """These tests pin the 11 Oct method, so they use its mean/std z."""
+    return compute_facts(pool, scale=mean_std)
+
+
 def _window(
     window_id: str,
     line: str,
@@ -62,7 +67,7 @@ def _aursad_pool() -> Pool:
 def test_mean_std_ignores_missing_values() -> None:
     values = np.array([[1.0, np.nan], [3.0, 5.0], [np.nan, 7.0]])
 
-    centre, spread = mean_std(values)
+    centre, spread = mean_std(values, np.zeros(2))
 
     assert centre.tolist() == [2.0, 6.0]
     assert spread.tolist() == [1.0, 1.0]
@@ -79,7 +84,7 @@ def test_y3_and_plain_reading() -> None:
 
 
 def test_aursad_reference_is_other_blocks_and_skips_thin_or_flat_signals() -> None:
-    facts = compute_facts(_aursad_pool())["W-000200"]
+    facts = _classic(_aursad_pool())["W-000200"]
 
     reference = np.arange(6.0)
     expected_z = (10.0 - reference.mean()) / reference.std()
@@ -99,7 +104,7 @@ def test_aursad_reference_is_other_blocks_and_skips_thin_or_flat_signals() -> No
 
 
 def test_gap_and_look_first() -> None:
-    facts = compute_facts(_aursad_pool())["W-000200"]
+    facts = _classic(_aursad_pool())["W-000200"]
 
     gaps = 0.1 * np.arange(1, 7)
     assert facts.gap == {
@@ -115,7 +120,7 @@ def test_gap_and_look_first() -> None:
 
 
 def test_fact_rows_match_the_window_detail_schema() -> None:
-    facts = compute_facts(_aursad_pool())["W-000200"]
+    facts = _classic(_aursad_pool())["W-000200"]
 
     rows = facts.fact_rows()
 
@@ -131,7 +136,7 @@ def test_fact_rows_match_the_window_detail_schema() -> None:
 
 
 def test_note_input_keeps_the_11_oct_shape() -> None:
-    facts = compute_facts(_aursad_pool())["W-000200"]
+    facts = _classic(_aursad_pool())["W-000200"]
 
     closed = facts.note_input()
     screening = facts.note_input(score=0.845)
@@ -152,7 +157,7 @@ def test_note_input_keeps_the_11_oct_shape() -> None:
 
 
 def test_facts_never_carry_the_fault_label() -> None:
-    facts = compute_facts(_aursad_pool())["W-000200"]
+    facts = _classic(_aursad_pool())["W-000200"]
 
     text = json.dumps([facts.note_input(), [row.model_dump() for row in facts.fact_rows()]])
 
@@ -167,7 +172,7 @@ def test_missing_signals_counts_channels_normal_windows_usually_have() -> None:
     del columns["flat"]
     pool.windows[-1] = _window("W-000200", "AURSAD", "au:b00", FAULT, columns)
 
-    facts = compute_facts(_pool(pool.windows))["W-000200"]
+    facts = _classic(_pool(pool.windows))["W-000200"]
 
     # flat is in all 6 reference windows; sig_b in 4 of 6 (>= half) but the window has it.
     assert facts.missing_signals == 1
@@ -193,7 +198,7 @@ def test_factorywave_reference(same_task_normals: int, reference: str) -> None:
     windows.append(_fw("W-300000", "gun:2026-04-07", "screwing", "normal", -50.0))
     windows.append(_fw("W-400000", "gun:2026-04-07", "screwing", "collision", 4.0))
 
-    facts = compute_facts(_pool(windows))["W-400000"]
+    facts = _classic(_pool(windows))["W-400000"]
 
     assert facts.reference == reference
     expected = np.arange(float(same_task_normals))
@@ -206,7 +211,7 @@ def test_factorywave_reference(same_task_normals: int, reference: str) -> None:
 def test_window_without_usable_signals_has_no_look_first() -> None:
     windows = [_fw("W-000001", "gun:2026-04-07", "screwing", "normal", 1.0)]
 
-    facts = compute_facts(_pool(windows))["W-000001"]
+    facts = _classic(_pool(windows))["W-000001"]
 
     assert facts.deviating == []
     assert facts.gap is None

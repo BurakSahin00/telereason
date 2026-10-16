@@ -12,7 +12,9 @@ same task on other days (all tasks on other days when that gives fewer than 10 w
 AURSAD other experiment blocks.  A channel needs 5 normal windows that carry it.  Values are
 rounded to 3 significant digits; ``difference`` and ``excess_over_typical`` are computed from
 the rounded values, so a note that copies them stays consistent.  This is the 11 Oct method
-(``p35_gece.gece_girdileri`` and ``girdi_v2``).
+(``p35_gece.gece_girdileri`` and ``girdi_v2``), except that z is robust by default
+(``telereason.night.robust``): ``normal_mean`` and ``normal_typical`` are then the reference
+median.  ``mean_std`` gives the 11 Oct z.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ import numpy as np
 
 from telereason.api.schemas import Fact, Line
 from telereason.night.channels import pair_name
+from telereason.night.robust import floor, median_scale, robust_z
 from telereason.night.windows import Pool, Window
 
 NORMAL = "normal"
@@ -34,12 +37,13 @@ MIN_SPREAD = 1e-9
 TOP_SIGNALS = 3
 SCORE_NOTE = "screening model, 0 = normal-like, 1 = abnormal-like"
 
-# (normal values, one column per channel, NaN where absent) -> (centre, spread) per column
-Scale = Callable[[np.ndarray], tuple[np.ndarray, np.ndarray]]
+# (normal values, one column per channel, NaN where absent; per-column floor of the line)
+#   -> (centre, spread) per column
+Scale = Callable[[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]
 
 
-def mean_std(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Mean and population standard deviation per column, ignoring NaN (the 11 Oct z)."""
+def mean_std(values: np.ndarray, column_floor: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Mean and population standard deviation per column, ignoring NaN (the 11 Oct z, no floor)."""
     present = ~np.isnan(values)
     count = present.sum(axis=0)
     filled = np.where(present, values, 0.0)
@@ -160,10 +164,16 @@ def _reference_masks(pool: Pool) -> tuple[list[tuple[str, ...]], dict[tuple[str,
     return keys, masks
 
 
-def _reference(description: str, mask: np.ndarray, feats: Features, scale: Scale) -> _Reference:
+def _reference(
+    description: str,
+    mask: np.ndarray,
+    feats: Features,
+    scale: Scale,
+    floors: tuple[np.ndarray, np.ndarray],
+) -> _Reference:
     means, gaps = feats.means[mask], feats.gaps[mask]
-    signal_centre, signal_spread = scale(means)
-    gap_centre, gap_spread = scale(gaps)
+    signal_centre, signal_spread = scale(means, floors[0])
+    gap_centre, gap_spread = scale(gaps, floors[1])
     size = int(mask.sum())
     signal_count = (~np.isnan(means)).sum(axis=0)
     return _Reference(
@@ -256,7 +266,7 @@ def _window_facts(i: int, window: Window, ref: _Reference, feats: Features) -> W
     usable = present & (ref.signal_count >= MIN_REFERENCE) & (ref.signal_spread > MIN_SPREAD)
     deviating = []
     if usable.any():
-        z = np.where(usable, (x - ref.signal_centre) / np.where(usable, ref.signal_spread, 1), 0)
+        z = robust_z(x, ref.signal_centre, ref.signal_spread)
         candidates = np.flatnonzero(usable)
         order = candidates[np.argsort(-np.abs(z[candidates]), kind="stable")][:TOP_SIGNALS]
         for c in order:
@@ -275,9 +285,7 @@ def _window_facts(i: int, window: Window, ref: _Reference, feats: Features) -> W
     g = feats.gaps[i]
     usable_gaps = ~np.isnan(g) & (ref.gap_count >= MIN_REFERENCE) & (ref.gap_spread > MIN_SPREAD)
     if usable_gaps.any():
-        gz = np.where(
-            usable_gaps, (g - ref.gap_centre) / np.where(usable_gaps, ref.gap_spread, 1), 0
-        )
+        gz = robust_z(g, ref.gap_centre, ref.gap_spread)
         best = int(np.flatnonzero(usable_gaps)[np.argmax(gz[usable_gaps])])
         planned, measured = feats.pairs[best]
         largest, typical = y3(g[best]), y3(ref.gap_centre[best])
@@ -304,13 +312,23 @@ def _window_facts(i: int, window: Window, ref: _Reference, feats: Features) -> W
     )
 
 
+def line_floors(pool: Pool, feats: Features) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Per line: the robust-z floor of every channel and every pair."""
+    lines = np.array([window.line for window in pool.windows])
+    return {
+        line: (floor(feats.means[lines == line]), floor(feats.gaps[lines == line]))
+        for line in sorted(set(lines.tolist()))
+    }
+
+
 def compute_facts(
-    pool: Pool, feats: Features | None = None, scale: Scale = mean_std
+    pool: Pool, feats: Features | None = None, scale: Scale = median_scale
 ) -> dict[str, WindowFacts]:
     """Facts for every pool window, keyed by window id."""
     feats = feats or features(pool)
     keys, masks = _reference_masks(pool)
-    references = {key: _reference(*masks[key], feats, scale) for key in masks}
+    floors = line_floors(pool, feats)
+    references = {key: _reference(*masks[key], feats, scale, floors[key[0]]) for key in masks}
     return {
         window.window_id: _window_facts(i, window, references[keys[i]], feats)
         for i, window in enumerate(pool.windows)
