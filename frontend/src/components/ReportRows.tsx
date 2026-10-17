@@ -63,7 +63,6 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
           <li key={item.window_id} className={first ? '' : 'border-t border-line'}>
             <Link
               to={`/windows/${encodeURIComponent(item.window_id)}`}
-              aria-label={`Open window ${item.window_id}`}
               className={`grid ${withScore ? SCORE_COLUMNS : FACTS_COLUMNS} items-center gap-x-4 gap-y-3 px-3 py-3.5 hover:bg-raised sm:px-4 @5xl:gap-5 ${
                 first && markFirst ? 'brackets brackets-attention' : ''
               }`}

@@ -167,20 +167,22 @@ export function AssistantPage() {
                 MI300X; the video shows them.
               </p>
             )}
-            {conversations.length === 0 ? (
-              <p className="text-muted">Ask a question to see the tool steps and answer here.</p>
-            ) : (
-              <div className="space-y-6">
-                {conversations.map((turn) => (
-                  <AssistantTurn
-                    key={turn.id}
-                    turn={turn}
-                    retryDisabled={active || unavailable}
-                    onRetry={() => void send(turn.request, fake)}
-                  />
-                ))}
-              </div>
-            )}
+            <div aria-live="polite">
+              {conversations.length === 0 ? (
+                <p className="text-muted">Ask a question to see the tool steps and answer here.</p>
+              ) : (
+                <div className="space-y-6">
+                  {conversations.map((turn) => (
+                    <AssistantTurn
+                      key={turn.id}
+                      turn={turn}
+                      retryDisabled={active || unavailable}
+                      onRetry={() => void send(turn.request, fake)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </Panel>
         </div>
       </div>
