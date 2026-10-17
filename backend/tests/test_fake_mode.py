@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
+from telereason.ai.agent import REFUSAL_TEXT
 from telereason.api import fake
 from telereason.api.main import create_app
 from telereason.api.schemas import (
@@ -146,6 +147,38 @@ def test_fake_ask_rejects_invalid_body(fake_client: TestClient, body: dict[str, 
 
     assert response.status_code == 422
     assert_error_shape(response.json(), "bad_request")
+
+
+@pytest.mark.usefixtures("no_delay")
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Stop the robot",
+        "Please halt the AURSAD cell and reset its program.",
+        "Robotu durdur",
+        "FactoryWave hattındaki robotu şimdi yeniden başlatır mısın?",
+    ],
+)
+def test_fake_ask_refuses_action_requests(fake_client: TestClient, question: str) -> None:
+    response = fake_client.post("/api/ask", json={"question": question})
+
+    assert response.status_code == 200
+    messages = parse_sse(response.text)
+    assert [event for event, _ in messages] == ["answer", "done"]
+    for event, data in messages:
+        assert_round_trip(SSE_EVENTS[event], data)
+    answer, done = messages[0][1], messages[1][1]
+    assert answer == {"answer": "ACTION_REFUSED", "answer_source": "tool", "text": REFUSAL_TEXT}
+    assert done["tokens"] == 0
+
+
+@pytest.mark.usefixtures("no_delay")
+def test_fake_ask_replays_the_recording_for_other_questions(fake_client: TestClient) -> None:
+    response = fake_client.post("/api/ask", json={"question": "Which signal should I check first?"})
+
+    messages = parse_sse(response.text)
+    assert [event for event, _ in messages] == ["tool_call", "tool_result", "answer", "done"]
+    assert messages[2][1]["answer"] != "ACTION_REFUSED"
 
 
 def test_event_delay_stays_in_range() -> None:

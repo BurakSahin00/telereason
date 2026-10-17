@@ -215,6 +215,7 @@ data: {"total_ms": 3400, "tokens": 812}
 - A comment line (`: ping`) is sent every 15 s so proxies keep the stream open; clients ignore it.
 - When the client disconnects, the server stops the answer and cancels the model request.
 - `ms` is the tool's run time; `null` when it was not measured.
+- Fake mode replays `fixtures/ask.sse` for every question except a request to start, stop or change equipment, which gets the same `ACTION_REFUSED` answer as in real mode, followed by `done` with `tokens: 0`.
 - `total_ms` is the time from the request to `done`; `tokens` is the number of tokens the model generated for this question (0 when the model did not run).
 - `answer_source` says who wrote `text`: `tool` when code wrote it (from a tool result, a refusal or the not-answerable text), `model` when the language model wrote it.
 - `answer` is one of these codes:
