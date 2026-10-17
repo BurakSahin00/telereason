@@ -2,7 +2,7 @@
 
 ![TeleReason: a maintenance assistant that knows when to stay quiet. Night scan and live assistant on one AMD Instinct MI300X](docs/images/telereason-cover.png)
 
-TeleReason helps factories spot problems earlier, and first measures what the data can support. Every night a gate trains XGBoost on one AMD Instinct MI300X and puts a group-bootstrap interval on how well each robot line separates normal from faulty windows. FactoryWave's interval includes chance, so the line is `closed`: verified facts, no fault name. AURSAD separates well but the cause does not hold, so it is `screening`: an abnormal-behaviour score, never a cause. The morning report for maintenance technicians and the live assistant follow that verdict: gpt-oss-120b on the same GPU writes notes and answers; code checks every note, writes every answer to a fault question and refuses requests to act on equipment.
+TeleReason helps factories spot problems earlier, and first measures what the data can support. Every night a gate trains XGBoost on one AMD Instinct MI300X and puts a group-bootstrap interval on how well each robot line separates normal from faulty windows. FactoryWave's interval includes chance, so the line is `closed`: verified facts, no fault name. AURSAD separates normal from faulty runs well, but the fault cause is not reliable, so it is `screening`: an abnormal-behaviour score, never a cause. The morning report for maintenance technicians and the live assistant follow that verdict: gpt-oss-120b on the same GPU writes notes and answers; code checks every note, writes every answer to a fault question and refuses requests to act on equipment.
 
 Built by Team CSAIDev for the AMD Developer Hackathon ACT III, Track 1: Intelligent Industry.
 
@@ -39,7 +39,7 @@ While our MI300X droplet is up, the demo URL above answers from gpt-oss-120b on 
 
 4. **Assistant.** Ask three questions; read each answer's chip:
    - "Which signal should I check first in this record, and how far is it from normal?" (window `W-574006`): **Answered from facts**.
-   - "What went wrong in this record?" (window `W-246062`): **Diagnosis closed**; code writes the answer from the facts.
+   - "What happened to the robot in this record, and what caused the fault?" (window `W-246062`): **Diagnosis closed**; code writes the answer from the facts.
    - "Please halt the AURSAD cell and reset its program.": **Action refused**, 0 tokens; refused before the model runs.
 
    While the droplet is off, the demo has no model: every question that is not an action request gets the recorded **Diagnosis closed** answer. **Answered from facts** comes from gpt-oss-120b on the MI300X ([smoke test](results/run-20261016-1/smoke.json), video).
@@ -59,7 +59,7 @@ docker compose up --build
 | Component | What runs on the MI300X | Evidence |
 |---|---|---|
 | Language model | gpt-oss-120b in vLLM 0.27.1+rocm723 on ROCm 7.2.3, inside the API process: night notes and live answers. | [results/droplet-20261017/system.json](results/droplet-20261017/system.json), [results/run-20261016-1/startup.log](results/run-20261016-1/startup.log) |
-| Gate | XGBoost 3.2.0, built from [AMD-Ecosystem/xgboost](https://github.com/AMD-Ecosystem/xgboost) with `USE_HIP=1` and `AMDGPU_TARGETS=gfx942` published as release `xgboost-rocm-gfx942` with its SHA-256. The gate's 222 trainings ran on the GPU (`cuda:0`). | [infra/droplet.md](infra/droplet.md#xgboost-for-rocm), [results/run-20261016-1/gate.json](results/run-20261016-1/gate.json) |
+| Gate | XGBoost 3.2.0, built from [AMD-Ecosystem/xgboost](https://github.com/AMD-Ecosystem/xgboost) with `USE_HIP=1` and `AMDGPU_TARGETS=gfx942`, published as release `xgboost-rocm-gfx942` with its SHA-256. The gate's 222 trainings ran on the GPU (`cuda:0`). | [infra/droplet.md](infra/droplet.md#xgboost-for-rocm), [results/run-20261016-1/gate.json](results/run-20261016-1/gate.json) |
 | GPU | Name read from the machine: "AMD Instinct MI300X VF". | [results/droplet-20261017/system.json](results/droplet-20261017/system.json) |
 | Scheduling | One vLLM engine with priority scheduling: live questions run before night notes. | [backend/telereason/ai/engine.py](backend/telereason/ai/engine.py), `scheduling_policy=priority` in [startup.log](results/run-20261016-1/startup.log) |
 
