@@ -97,6 +97,8 @@ The real engine runs on one MI300X droplet from AMD Developer Cloud, inside its 
 
 ## Measurements
 
+Every number here comes from a file in this repository.
+
 The night run `run-20261016-1` (16 Oct), started from the app on one AMD Instinct MI300X ([fixtures/report_latest.json](fixtures/report_latest.json)):
 
 | Line | Verdict | Windows scanned | Windows flagged |
@@ -110,13 +112,13 @@ Step durations of that night, run one after another (`timings_s`, rounded to 0.1
 |---:|---:|---:|---:|---:|
 | 469.4 s (7.8 min) | 0.5 s, see below | 1,104.7 s (18.4 min) | 0.2 s | 1,574.9 s (26.2 min) |
 
-The facts step is short because the app computes the window facts at startup together with the night pool, which took 21.2 s in that session (app log); the facts step of the night took 0.5 s.
+The facts step is short because the app computes the window facts at startup together with the night pool, which took 21.2 s in that session ([results/run-20261016-1/startup.log](results/run-20261016-1/startup.log)); the facts step of the night took 0.5 s.
 
-Gate of that night ([fixtures/gate.json](fixtures/gate.json)): FactoryWave `closed`, AUROC 0.532 (interval 0.321 to 0.712, which includes 0.5, chance); AURSAD `screening`, AUROC 0.909 (interval 0.898 to 0.920). XGBoost 3.2.0 on the GPU (`gate.json` in the run directory).
+Gate of that night ([fixtures/gate.json](fixtures/gate.json)): FactoryWave `closed`, AUROC 0.532 (interval 0.321 to 0.712, which includes 0.5, chance); AURSAD `screening`, AUROC 0.909 (interval 0.898 to 0.920). XGBoost 3.2.0 on the GPU ([results/run-20261016-1/gate.json](results/run-20261016-1/gate.json)).
 
 Software on the MI300X ([fixtures/system.json](fixtures/system.json), kept from the 11 Oct fixtures): ROCm 7.2.3, vLLM 0.27.1, Python 3.12.
 
-Source: `fixtures/report_latest.json` and `fixtures/gate.json`, generated from the store of run `run-20261016-1`; the pool time comes from the app log of that session.
+Source: `fixtures/report_latest.json` and `fixtures/gate.json`, generated from the store of run `run-20261016-1`; the pool time and the XGBoost version from [results/run-20261016-1/](results/run-20261016-1/), which also describes the run.
 
 AURSAD screening at the threshold 0.9, measured in the 11 Oct run ([docs/business-value.md](docs/business-value.md)): 68.8% of the windows labelled faulty and 3.9% of the normal windows are flagged. These are rates within each class on lab data, not a guarantee for a production line.
 

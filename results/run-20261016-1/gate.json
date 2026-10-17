@@ -1,0 +1,200 @@
+{
+  "rules": {
+    "version": "v0",
+    "anomaly_auroc": 0.8,
+    "anomaly_lower": 0.7,
+    "anomaly_within_group": 0.75,
+    "cause_difference": 10.0,
+    "cause_lower": 0.0,
+    "k6_permutations": 19,
+    "k6_p": 0.05,
+    "k7_changed": 0,
+    "min_groups": 3
+  },
+  "xgboost": "3.2.0",
+  "params": {
+    "objective": "multi:softprob",
+    "tree_method": "hist",
+    "max_depth": 6,
+    "n_estimators": 100,
+    "learning_rate": 0.2,
+    "max_bin": 128
+  },
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "k6_permutations": 19,
+  "device": "cuda",
+  "device_used": [
+    "cuda:0"
+  ],
+  "windows": 8508,
+  "features": 848,
+  "classes": [
+    "additional_axis_payload",
+    "collision_cardboard_object",
+    "collision_foam_object",
+    "collision_hanging_cable",
+    "collision_rigid_object",
+    "damaged_plate_thread",
+    "damaged_screw_thread",
+    "external_arm_disturbance",
+    "extra_assembly_component",
+    "fixture_displacement",
+    "gripper_activation_failure",
+    "gripper_release_during_motion",
+    "hole_obstruction",
+    "incorrect_insertion_depth",
+    "invalid_gripping_position",
+    "joint_position_limit_violation",
+    "loosening_phase",
+    "missing_screw",
+    "normal",
+    "peg_insertion_misalignment",
+    "peg_surface_contamination",
+    "self_collision_link_interference",
+    "unstable_mounting_platform"
+  ],
+  "trainings": 222,
+  "seconds": {
+    "features": 14.6,
+    "total": 457.4,
+    "load": 11.4,
+    "wall": 468.9
+  },
+  "lines": {
+    "FactoryWave": {
+      "decision": "do_not_deploy",
+      "verdict": "closed",
+      "n_test": 3354,
+      "anomaly": {
+        "open": false,
+        "auroc": 0.5316899327057594,
+        "interval": [
+          0.32140101035647817,
+          0.7115791240828092
+        ],
+        "within_group": 0.5113236366840789,
+        "within_group_pairs": 204263
+      },
+      "cause": {
+        "open": false,
+        "difference": -4.220045214770158,
+        "interval": [
+          -16.770186335403725,
+          4.037267080745342
+        ],
+        "n": 1327
+      },
+      "k6": {
+        "passed": true,
+        "p": 0.05,
+        "shuffled_auroc": [
+          0.4943231880305421,
+          0.48130697060872396,
+          0.4998782068472334,
+          0.5003819276925532,
+          0.4805903503009271,
+          0.4919955467467967,
+          0.49645118667499355,
+          0.47856374073188235,
+          0.4938562692395099,
+          0.5159130349789116,
+          0.48928976832226,
+          0.5266580784957835,
+          0.485768870361093,
+          0.5009081315356053,
+          0.49760478265139907,
+          0.4771443862957049,
+          0.4959682504887196,
+          0.4812663094233558,
+          0.5037671713441654
+        ]
+      },
+      "k7": {
+        "passed": true,
+        "changed": 0
+      },
+      "k1": {
+        "cramer_v": 0.6321675317273199,
+        "single_group_classes": [
+          "collision_rigid_object",
+          "fixture_displacement",
+          "gripper_release_during_motion",
+          "hole_obstruction",
+          "incorrect_insertion_depth",
+          "invalid_gripping_position",
+          "peg_insertion_misalignment",
+          "peg_surface_contamination",
+          "unstable_mounting_platform"
+        ],
+        "groups": 4085
+      },
+      "trainings": 111,
+      "seconds": 350.9
+    },
+    "AURSAD": {
+      "decision": "conditional",
+      "verdict": "screening",
+      "n_test": 4068,
+      "anomaly": {
+        "open": true,
+        "auroc": 0.9094001319092805,
+        "interval": [
+          0.8982013510002598,
+          0.9204647204367122
+        ],
+        "within_group": 0.912879345001716,
+        "within_group_pairs": 183573
+      },
+      "cause": {
+        "open": false,
+        "difference": 6.3444108761329305,
+        "interval": [
+          2.6277897768178544,
+          10.481163744871317
+        ],
+        "n": 2648
+      },
+      "k6": {
+        "passed": true,
+        "p": 0.05,
+        "shuffled_auroc": [
+          0.5021913961108038,
+          0.5080323709629377,
+          0.48880765712097357,
+          0.5042385164461087,
+          0.49820911876090385,
+          0.4984258648568146,
+          0.4973611495255521,
+          0.5271219841708864,
+          0.4883087421811838,
+          0.4941850878686014,
+          0.48542894451299945,
+          0.48969884260244245,
+          0.5113902067997107,
+          0.4967759350665929,
+          0.4967730096591635,
+          0.4991604080677418,
+          0.5087565422747968,
+          0.5125482692225862,
+          0.496277684992128
+        ]
+      },
+      "k7": {
+        "passed": true,
+        "changed": 0
+      },
+      "k1": {
+        "cramer_v": 0.20518770837980801,
+        "single_group_classes": [],
+        "groups": 20
+      },
+      "trainings": 111,
+      "seconds": 91.8
+    }
+  },
+  "device_requested": "auto"
+}

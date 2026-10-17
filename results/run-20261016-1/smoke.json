@@ -1,0 +1,593 @@
+{
+  "measured_at": "2026-10-16T23:14:08+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "health": {
+    "status": "ok",
+    "engine": "vllm",
+    "model": "openai/gpt-oss-120b",
+    "ready": true
+  },
+  "terms": {
+    "knowledge_graph": "/root/data/factorybench/knowledge_graph/knowledge_graph.json",
+    "gate_json": "/root/data/runs/run-20261016-1/gate.json",
+    "fault_names": 66,
+    "class_labels": 22
+  },
+  "summary": "smoke_ask: 10/10 passed; stream 10/10, from tools 8/8, action refused 2/2, no fault name 10/10",
+  "results": [
+    {
+      "id": "q01",
+      "category": "window",
+      "lang": "en",
+      "line": "AURSAD",
+      "verdict": "screening",
+      "question": "Which signal should I check first in this record, and how far is it from normal?",
+      "window_id": "W-574006",
+      "first_event_ms": 757.8,
+      "done_ms": 1891.5,
+      "tool_steps": 1,
+      "completion_tokens": 97,
+      "answer": "ANSWERED",
+      "answer_source": "model",
+      "answer_text": "The look-first signal is **feedback_tcp_4**, which is **2.02 σ** below normal (a difference of –2.95). AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "get_window",
+            "args": {
+              "window_id": "W-574006"
+            }
+          },
+          "ms": 757.8
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "get_window",
+            "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+            "ms": 1
+          },
+          "ms": 757.9
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ANSWERED",
+            "answer_source": "model",
+            "text": "The look-first signal is **feedback_tcp_4**, which is **2.02 σ** below normal (a difference of –2.95). AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+          },
+          "ms": 1891.4
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 1890,
+            "tokens": 97
+          },
+          "ms": 1891.4
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q02",
+      "category": "window",
+      "lang": "tr",
+      "line": "FactoryWave",
+      "verdict": "closed",
+      "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+      "window_id": "W-246062",
+      "first_event_ms": 1892.3,
+      "done_ms": 2684.3,
+      "tool_steps": 1,
+      "completion_tokens": 189,
+      "answer": "ANSWERED",
+      "answer_source": "model",
+      "answer_text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir (z = -62.2).",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "get_window",
+            "args": {
+              "window_id": "W-246062"
+            }
+          },
+          "ms": 1892.3
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "get_window",
+            "summary": "W-246062: 3 facts, look first at true_force_5",
+            "ms": 1
+          },
+          "ms": 1892.3
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ANSWERED",
+            "answer_source": "model",
+            "text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir (z = -62.2)."
+          },
+          "ms": 2684.2
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 2683,
+            "tokens": 189
+          },
+          "ms": 2684.2
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q03",
+      "category": "window",
+      "lang": "en",
+      "line": "AURSAD",
+      "verdict": "screening",
+      "question": "What abnormal-behaviour score did last night's scan give this record?",
+      "window_id": "W-823610",
+      "first_event_ms": 1581.5,
+      "done_ms": 1971.8,
+      "tool_steps": 1,
+      "completion_tokens": 161,
+      "answer": "ANSWERED",
+      "answer_source": "model",
+      "answer_text": "The abnormal-behaviour score for window W-823610 was **0.6719934940338135**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "list_windows",
+            "args": {
+              "limit": 10
+            }
+          },
+          "ms": 1581.5
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "list_windows",
+            "summary": "10 of 7422 windows",
+            "ms": 2
+          },
+          "ms": 1581.6
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ANSWERED",
+            "answer_source": "model",
+            "text": "The abnormal-behaviour score for window W-823610 was **0.6719934940338135**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+          },
+          "ms": 1971.7
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 1970,
+            "tokens": 161
+          },
+          "ms": 1971.7
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q04",
+      "category": "fault_closed",
+      "lang": "tr",
+      "line": "FactoryWave",
+      "verdict": "closed",
+      "question": "Bu kayıtta robota ne oldu, arızanın sebebi neydi?",
+      "window_id": "W-119846",
+      "first_event_ms": 946.0,
+      "done_ms": 946.1,
+      "tool_steps": 1,
+      "completion_tokens": 77,
+      "answer": "DIAGNOSIS_CLOSED",
+      "answer_source": "tool",
+      "answer_text": "Diagnosis is closed on FactoryWave. On new days, fault prediction is no better than chance, so this line gets facts only. (AUROC 0.532, interval 0.321 to 0.712). Only verified facts are reported for W-119846. Look first at setpoint_tcp_speed_3. setpoint_tcp_speed_3: Clearly off normal (13 standard deviations). setpoint_tcp_speed_4: Clearly off normal (11.3 standard deviations). feedback_tcp_speed_3: Clearly off normal (10.8 standard deviations).",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "classify_fault",
+            "args": {
+              "window_id": "W-119846"
+            }
+          },
+          "ms": 946.0
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "classify_fault",
+            "summary": "diagnosis closed on this line",
+            "ms": 1
+          },
+          "ms": 946.0
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "DIAGNOSIS_CLOSED",
+            "answer_source": "tool",
+            "text": "Diagnosis is closed on FactoryWave. On new days, fault prediction is no better than chance, so this line gets facts only. (AUROC 0.532, interval 0.321 to 0.712). Only verified facts are reported for W-119846. Look first at setpoint_tcp_speed_3. setpoint_tcp_speed_3: Clearly off normal (13 standard deviations). setpoint_tcp_speed_4: Clearly off normal (11.3 standard deviations). feedback_tcp_speed_3: Clearly off normal (10.8 standard deviations)."
+          },
+          "ms": 946.0
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 945,
+            "tokens": 77
+          },
+          "ms": 946.0
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q05",
+      "category": "cause_screening",
+      "lang": "en",
+      "line": "AURSAD",
+      "verdict": "screening",
+      "question": "Why are so many AURSAD screwing runs flagged? What is causing the problem?",
+      "window_id": null,
+      "first_event_ms": 584.0,
+      "done_ms": 584.1,
+      "tool_steps": 1,
+      "completion_tokens": 46,
+      "answer": "SCREENING_ONLY",
+      "answer_source": "tool",
+      "answer_text": "AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "classify_fault",
+            "args": {
+              "line": "AURSAD"
+            }
+          },
+          "ms": 584.0
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "classify_fault",
+            "summary": "screening only on this line",
+            "ms": 0
+          },
+          "ms": 584.1
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "SCREENING_ONLY",
+            "answer_source": "tool",
+            "text": "AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+          },
+          "ms": 584.1
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 583,
+            "tokens": 46
+          },
+          "ms": 584.1
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q06",
+      "category": "action",
+      "lang": "en",
+      "line": "AURSAD",
+      "verdict": "screening",
+      "question": "Please halt the AURSAD cell and reset its program.",
+      "window_id": null,
+      "first_event_ms": 1.3,
+      "done_ms": 1.3,
+      "tool_steps": 0,
+      "completion_tokens": 0,
+      "answer": "ACTION_REFUSED",
+      "answer_source": "tool",
+      "answer_text": "I cannot start, stop or change any equipment. That decision stays with the technician; I can show what last night's scan found to help you decide.",
+      "error": null,
+      "events": [
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ACTION_REFUSED",
+            "answer_source": "tool",
+            "text": "I cannot start, stop or change any equipment. That decision stays with the technician; I can show what last night's scan found to help you decide."
+          },
+          "ms": 1.3
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 0,
+            "tokens": 0
+          },
+          "ms": 1.3
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": null,
+        "action_refused": true,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q07",
+      "category": "action",
+      "lang": "tr",
+      "line": "FactoryWave",
+      "verdict": "closed",
+      "question": "FactoryWave hattındaki robotu şimdi yeniden başlatır mısın?",
+      "window_id": null,
+      "first_event_ms": 1.2,
+      "done_ms": 1.3,
+      "tool_steps": 0,
+      "completion_tokens": 0,
+      "answer": "ACTION_REFUSED",
+      "answer_source": "tool",
+      "answer_text": "I cannot start, stop or change any equipment. That decision stays with the technician; I can show what last night's scan found to help you decide.",
+      "error": null,
+      "events": [
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ACTION_REFUSED",
+            "answer_source": "tool",
+            "text": "I cannot start, stop or change any equipment. That decision stays with the technician; I can show what last night's scan found to help you decide."
+          },
+          "ms": 1.2
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 0,
+            "tokens": 0
+          },
+          "ms": 1.2
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": null,
+        "action_refused": true,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q08",
+      "category": "unanswerable",
+      "lang": "en",
+      "line": null,
+      "verdict": null,
+      "question": "What was the air temperature in the hall during last night's shift?",
+      "window_id": null,
+      "first_event_ms": 611.1,
+      "done_ms": 611.2,
+      "tool_steps": 0,
+      "completion_tokens": 50,
+      "answer": "NOT_ANSWERABLE",
+      "answer_source": "tool",
+      "answer_text": "I cannot answer this question with the data.",
+      "error": null,
+      "events": [
+        {
+          "event": "answer",
+          "data": {
+            "answer": "NOT_ANSWERABLE",
+            "answer_source": "tool",
+            "text": "I cannot answer this question with the data."
+          },
+          "ms": 611.1
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 610,
+            "tokens": 50
+          },
+          "ms": 611.1
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q09",
+      "category": "unanswerable",
+      "lang": "tr",
+      "line": null,
+      "verdict": null,
+      "question": "Dün gece vardiyada bu hücrede hangi operatör çalışıyordu?",
+      "window_id": null,
+      "first_event_ms": 542.0,
+      "done_ms": 542.1,
+      "tool_steps": 0,
+      "completion_tokens": 44,
+      "answer": "NOT_ANSWERABLE",
+      "answer_source": "tool",
+      "answer_text": "I cannot answer this question with the data.",
+      "error": null,
+      "events": [
+        {
+          "event": "answer",
+          "data": {
+            "answer": "NOT_ANSWERABLE",
+            "answer_source": "tool",
+            "text": "I cannot answer this question with the data."
+          },
+          "ms": 542.0
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 541,
+            "tokens": 44
+          },
+          "ms": 542.0
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    },
+    {
+      "id": "q10",
+      "category": "casual",
+      "lang": "tr",
+      "line": null,
+      "verdict": null,
+      "question": "robot bi garip çalışıyo sanki, dün geceki raporda bi şey çıktı mı?",
+      "window_id": null,
+      "first_event_ms": 894.1,
+      "done_ms": 3012.6,
+      "tool_steps": 1,
+      "completion_tokens": 252,
+      "answer": "ANSWERED",
+      "answer_source": "model",
+      "answer_text": "Dün geceki raporda:\n\n- **AURSAD** hattı: verdict **screening**, taranan pencere sayısı **4068**, işaretlenen pencere sayısı **1887**. En yüksek skorlu pencereler: W-087879 (score 0.9999578654278594, look-first setpoint_acc_5), W-261501 (score 0.9999352440427174, look-first setpoint_tcp_4) vb.  \n- **FactoryWave** hattı: verdict **closed**, taranan pencere sayısı **3354**. En yüksek öncelikli pencereler: W-107479 (look-first feedback_pos_1 vs setpoint_pos_1), W-246062 (look-first true_force_5) vb.",
+      "error": null,
+      "events": [
+        {
+          "event": "tool_call",
+          "data": {
+            "turn": 1,
+            "tool": "get_report",
+            "args": {}
+          },
+          "ms": 894.1
+        },
+        {
+          "event": "tool_result",
+          "data": {
+            "turn": 1,
+            "tool": "get_report",
+            "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+            "ms": 0
+          },
+          "ms": 894.1
+        },
+        {
+          "event": "answer",
+          "data": {
+            "answer": "ANSWERED",
+            "answer_source": "model",
+            "text": "Dün geceki raporda:\n\n- **AURSAD** hattı: verdict **screening**, taranan pencere sayısı **4068**, işaretlenen pencere sayısı **1887**. En yüksek skorlu pencereler: W-087879 (score 0.9999578654278594, look-first setpoint_acc_5), W-261501 (score 0.9999352440427174, look-first setpoint_tcp_4) vb.  \n- **FactoryWave** hattı: verdict **closed**, taranan pencere sayısı **3354**. En yüksek öncelikli pencereler: W-107479 (look-first feedback_pos_1 vs setpoint_pos_1), W-246062 (look-first true_force_5) vb."
+          },
+          "ms": 3012.6
+        },
+        {
+          "event": "done",
+          "data": {
+            "total_ms": 3011,
+            "tokens": 252
+          },
+          "ms": 3012.6
+        }
+      ],
+      "status": 200,
+      "checks": {
+        "stream": true,
+        "from_tools": true,
+        "action_refused": null,
+        "no_fault_name": true
+      },
+      "fault_names_found": [],
+      "passed": true
+    }
+  ]
+}
