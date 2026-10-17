@@ -37,7 +37,7 @@ EXPOSE 8000
 
 # The slim image has no curl.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4)"]
+    CMD ["sh", "-c", "python -c \"import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/api/health', timeout=4)\""]
 
 # One worker: the engine cannot be shared across processes.
-CMD ["uvicorn", "telereason.api.main:app", "--workers", "1", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn telereason.api.main:app --workers 1 --host 0.0.0.0 --port ${PORT:-8000}"]

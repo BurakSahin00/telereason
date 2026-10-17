@@ -63,6 +63,20 @@ def test_db_path_comes_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert load_settings().db_path == "/var/lib/telereason/night.sqlite"
 
 
+def test_cors_origins_are_trimmed_deduplicated_and_normalized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "CORS_ORIGINS",
+        " https://demo.vercel.app/ , https://api.example.com,https://demo.vercel.app ",
+    )
+
+    assert load_settings().cors_origins == (
+        "https://demo.vercel.app",
+        "https://api.example.com",
+    )
+
+
 @pytest.mark.parametrize("raw", ["live", "fixtures", "sqlite"])
 def test_night_source_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
     monkeypatch.setenv("NIGHT_SOURCE", raw)

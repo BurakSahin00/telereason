@@ -18,3 +18,16 @@ def test_health_defaults_to_fake_engine(monkeypatch: pytest.MonkeyPatch) -> None
         "model": "openai/gpt-oss-120b",
         "ready": True,
     }
+
+
+def test_cors_allows_configured_frontend_origin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CORS_ORIGINS", "https://demo.vercel.app")
+    client = TestClient(create_app())
+
+    response = client.get(
+        "/api/health",
+        headers={"Origin": "https://demo.vercel.app"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://demo.vercel.app"

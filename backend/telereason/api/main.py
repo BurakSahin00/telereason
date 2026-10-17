@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from telereason.ai.agent import warm_up_prompt
 from telereason.ai.engine import Engine, create_engine, warm_up
@@ -154,6 +155,14 @@ def night_runner(app: FastAPI) -> NightRunner | None:
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
+    if app.state.settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(app.state.settings.cors_origins),
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
     # Building the engine imports no GPU code; vllm is imported only when it starts.
     app.state.engine = engine or create_engine(app.state.settings)
     app.state.data_store = DataStore(
