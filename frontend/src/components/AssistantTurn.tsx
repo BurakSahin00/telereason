@@ -24,8 +24,12 @@ export function AssistantTurn({
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <span className="mono-label">Your question</span>
           {turn.request.window_id && (
+            // A new tab: the conversation lives in this page's state and would be lost.
             <Link
               to={`/windows/${turn.request.window_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Opens in a new tab"
               className="font-mono text-id underline underline-offset-4"
             >
               {turn.request.window_id}
