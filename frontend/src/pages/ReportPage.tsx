@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { errorSentence, isNotFound, useGate, useLatestReport } from '../api/queries.ts'
 import type { components } from '../api/schema.d.ts'
+import { formatSeconds } from '../components/format.ts'
 import { GateLines } from '../components/GateLines.tsx'
 import { ErrorState, LoadingBlocks } from '../components/LoadStates.tsx'
 import { PageHeader } from '../components/PageHeader.tsx'
@@ -43,12 +45,34 @@ function FlaggedStat({ report }: { report: ReportResponse }) {
       value={flagged === null ? null : flagged.toLocaleString('en-US')}
       context={
         screening
-          ? `of ${screening.scanned.toLocaleString('en-US')} windows on ${screening.line}, by screening score`
+          ? `of ${screening.scanned.toLocaleString('en-US')} windows on ${screening.line}, ` +
+            (screening.threshold === null
+              ? 'by screening score'
+              : `score ${screening.threshold.toLocaleString('en-US')} or above`)
           : 'No screening line last night'
       }
       meter={flagged !== null && screening?.scanned ? flagged / screening.scanned : 0}
       tone="screening"
     />
+  )
+}
+
+// A single muted line, not a stat card of its own: scanned windows and the night's
+// duration matter but are not the one number worth a meter (#21's "scanned" and "duration").
+function NightSummary({ report }: { report: ReportResponse }) {
+  const totalScanned = report.lines.reduce((sum, line) => sum + line.scanned, 0)
+  const perLine = report.lines
+    .map((line) => `${line.line} ${line.scanned.toLocaleString('en-US')}`)
+    .join(', ')
+
+  return (
+    <p className="mt-3 text-[15px] text-muted">
+      {totalScanned.toLocaleString('en-US')} windows scanned last night ({perLine}) in{' '}
+      {formatSeconds(report.timings_s.total)}.{' '}
+      <Link to="/amd" className="underline underline-offset-4 hover:no-underline">
+        Step timings
+      </Link>
+    </p>
   )
 }
 
@@ -94,7 +118,12 @@ function ReportBody() {
   if (report.isPending) {
     return (
       <>
-        <LoadingBlocks rows={1} height="h-[190px]" />
+        <div>
+          <LoadingBlocks rows={1} height="h-[190px]" />
+          <div className="mt-3">
+            <LoadingBlocks rows={1} height="h-5" />
+          </div>
+        </div>
         <Panel title="Look first">
           <LoadingBlocks rows={LOOK_FIRST_ROWS} />
         </Panel>
@@ -126,7 +155,10 @@ function ReportBody() {
 
   return (
     <>
-      <FlaggedStat report={report.data} />
+      <div>
+        <FlaggedStat report={report.data} />
+        <NightSummary report={report.data} />
+      </div>
       {scored.map((line) => (
         <LinePanel
           key={line.line}
