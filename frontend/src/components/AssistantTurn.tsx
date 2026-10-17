@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import type { Conversation } from '../api/useAssistant.ts'
+import { answerCodeInfo } from './answerCodes.ts'
 import { AssistantAnswer } from './AssistantAnswer.tsx'
 import { formatSeconds } from './format.ts'
 import { StatusChip } from './StatusChip.tsx'
@@ -79,6 +80,10 @@ export function AssistantTurn({
             <StatusChip>
               {turn.answer.answer_source === 'tool' ? 'From tool' : 'From model'}
             </StatusChip>
+            {(() => {
+              const code = answerCodeInfo(turn.answer.answer)
+              return code && <StatusChip tone={code.tone}>{code.label}</StatusChip>
+            })()}
             {turn.done && (
               <span className="font-mono text-id text-muted">
                 {formatSeconds(turn.done.total_ms / 1000)} ·{' '}
