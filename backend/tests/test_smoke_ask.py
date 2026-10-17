@@ -150,12 +150,12 @@ def test_main_in_fake_mode(base_url: str, tmp_path: Path, caplog: pytest.LogCapt
 
     output = json.loads(out.read_text(encoding="utf-8"))
     results = {r["id"]: r for r in output["results"]}
-    # Fake mode replays the closed-line answer for every question, so only the two action
-    # requests fail.
-    assert code == 1
+    # Fake mode refuses the two action requests, as real mode does, and replays the
+    # closed-line answer for every other question.
+    assert code == 0
     assert output["summary"] == (
-        "smoke_ask: 8/10 passed; stream 10/10, from tools 8/8, action refused 0/2, "
-        "no fault name 10/10; failed: q06, q07"
+        "smoke_ask: 10/10 passed; stream 10/10, from tools 8/8, action refused 2/2, "
+        "no fault name 10/10"
     )
     assert output["summary"] in caplog.text
     assert output["terms"]["class_labels"] == 1

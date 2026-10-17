@@ -153,7 +153,8 @@ def test_during_night_stops_when_the_night_never_scans(base_url: str, tmp_path: 
 
     night = json.loads(out.read_text(encoding="utf-8"))["night"]
     assert code == 1
-    assert night["run_id"] == "run-20261015-1"
+    started = json.loads((FIXTURES / "night_run_started.json").read_text("utf-8"))
+    assert night["run_id"] == started["run_id"]
     assert night["max_windows"] == 300
     assert night["error"] == "the night finished before its scan step"
 

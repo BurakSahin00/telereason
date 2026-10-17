@@ -1,6 +1,7 @@
 """POST /api/ask: the live assistant as a Server-Sent Events stream.
 
-With ENGINE=fake the recorded stream in `fixtures/ask.sse` is replayed. Otherwise the agent
+With ENGINE=fake the recorded stream in `fixtures/ask.sse` is replayed, except for a request
+to act on equipment, which gets the same refusal as in real mode. Otherwise the agent
 in `ai/agent.py` runs against the engine and each of its messages becomes one SSE message.
 A `: ping` comment goes out every `PING_INTERVAL_S`. A question that runs longer than
 `ASK_TIMEOUT_S`, or fails, ends with an `error` message. When the client disconnects,
@@ -11,21 +12,24 @@ request.
 import asyncio
 import json
 import logging
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from telereason.ai.agent import AgentMessage
+from telereason.ai.agent import REFUSAL_TEXT, AgentMessage, is_action_request, strip_harmony_markers
 from telereason.ai.agent import ask as run_agent
 from telereason.ai.engine import Engine, EngineNotReadyError
 from telereason.ai.tools import AgentData, ProtocolIndex
 from telereason.api.fake import fixture_path, is_fake, not_available, replay_sse
 from telereason.api.rate_limit import limit
 from telereason.api.schemas import (
+    AnswerEvent,
     AskRequest,
     AskStreamMessage,
+    DoneEvent,
     ErrorCode,
     ErrorDetail,
     ErrorResponse,
@@ -63,6 +67,15 @@ def sse(event: str, data: dict[str, Any]) -> str:
 def sse_error(code: ErrorCode, message: str) -> str:
     error = ErrorResponse(error=ErrorDetail(code=code, message=message))
     return sse("error", error.model_dump())
+
+
+async def refusal_stream() -> AsyncIterator[str]:
+    """The refusal the agent gives in real mode, for fake mode: no model runs, so 0 tokens."""
+    started = time.perf_counter()
+    refusal = AnswerEvent(answer="ACTION_REFUSED", answer_source="tool", text=REFUSAL_TEXT)
+    yield sse("answer", refusal.model_dump(mode="json"))
+    total_ms = round((time.perf_counter() - started) * 1000)
+    yield sse("done", DoneEvent(total_ms=total_ms, tokens=0).model_dump(mode="json"))
 
 
 class _End:
@@ -193,7 +206,12 @@ def protocols(request: Request) -> ProtocolIndex:
 )
 async def ask(request: Request, body: AskRequest) -> StreamingResponse:
     if is_fake(request):
-        stream = replay_sse(fixture_path(request, "ask.sse"))
+        # The recorded answer is about one window; a request to act on equipment must still
+        # be refused, as the agent does before the model runs.
+        if is_action_request(strip_harmony_markers(body.question)):
+            stream = refusal_stream()
+        else:
+            stream = replay_sse(fixture_path(request, "ask.sse"))
     else:
         engine: Engine = request.app.state.engine
         if not engine.ready:

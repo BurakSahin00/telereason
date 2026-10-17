@@ -51,14 +51,17 @@ export function SignalChartPanel({ detail }: { detail: components['schemas']['Wi
             <div className="mt-5">
               <LoadingBlocks rows={1} height="h-[320px]" />
             </div>
+          ) : signals.isError && missing && fake ? (
+            <p className="mt-5 text-muted">
+              The recorded demo does not include the time series. The video shows this chart on the
+              MI300X.
+            </p>
           ) : signals.isError ? (
             <div className="mt-5">
               <ErrorState
                 message={
                   missing
-                    ? fake
-                      ? 'The recorded demo does not include the time series. The video shows this chart on the MI300X.'
-                      : 'The time series and normal band are not available for this signal yet. You can still read the measured facts.'
+                    ? 'The time series and normal band are not available for this signal yet. You can still read the measured facts.'
                     : signals.error instanceof SignalDataError
                       ? signals.error.message
                       : errorSentence(signals.error, 'the signal chart')
