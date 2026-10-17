@@ -53,7 +53,8 @@ By line: 10 flagged AURSAD, 1 unflagged AURSAD, 10 FactoryWave.
 - `ask.sse`: recorded `POST /api/ask` stream `ask.sse` for `ask_request.json` (run `run-20261016-1`, file time 2026-10-16 23:07 UTC): one real answer, so `total_ms`, `tokens` and `ms` are that answer's.
 - The first fixtures took the kept values from the 11 Oct MI300X run: the model, the gate's
   XGBoost version, `memory_total_gib` (the card's memory), `memory_used_gib` (card peak in the
-  load test while the engine was loaded, MiB / 1024), `total_ms` (single-question p90 alone on
+  load test while the engine was loaded, MiB / 1024; vLLM reserves 85% of GPU memory for its
+  cache, so this is not what the model needs), `total_ms` (single-question p90 alone on
   the card) and `tokens` (mean tokens per question with one user); `ms` was `null` because tool
   time was not measured. Their other version strings: `docs/api.md`.
 
