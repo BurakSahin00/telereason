@@ -14,7 +14,7 @@ set -euo pipefail
 CONTAINER="rocm"
 REPO_URL="https://github.com/BurakSahin00/telereason.git"
 REF="main"
-TEAM_USERS="buraksal52"                 # GitHub users whose public SSH keys may log in
+TEAM_USERS=""                           # GitHub users whose public SSH keys may log in (--team)
 BLOCK_PORTS="8000 8091 8888 30000"      # ports the image publishes from the container
 SKIP_MODEL=0
 SKIP_DATA=0
@@ -96,6 +96,7 @@ log "Teammates' public SSH keys"
 mkdir -p /root/.ssh && chmod 700 /root/.ssh
 touch /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys
 key_re='^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh\.com|sk-ecdsa-sha2-nistp256@openssh\.com) '
+[[ -n "$TEAM_USERS" ]] || ok "no --team given: only the keys added when the droplet was created can log in"
 for user in $TEAM_USERS; do
   keys="$(curl -fsSL "https://github.com/${user}.keys" || true)"
   if [[ -z "$keys" ]]; then warn "no public keys on GitHub for ${user}"; continue; fi
