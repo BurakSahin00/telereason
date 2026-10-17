@@ -1,0 +1,4 @@
+2026-10-16 22:13:41,379 INFO telereason.night.windows night pool: 10028 L4-t1 items read, 0 voraus-AD dropped, 1520 touching Lite dropped, 0 without episode, 0 unlabelled, 8508 kept; 33 window ids re-hashed
+2026-10-16 22:13:51,893 INFO telereason.api.main night pool loaded in 21.2 s
+2026-10-16 22:16:30,269 INFO telereason.ai.engine vllm engine started in 144.2 s (model=openai/gpt-oss-120b, gpu_memory_utilization=0.85, scheduling_policy=priority)
+2026-10-16 22:16:31,315 INFO telereason.api.main vllm engine ready in 180.6 s (model=openai/gpt-oss-120b); warm-up: 1045 ms, 557 prompt + 29 completion tokens

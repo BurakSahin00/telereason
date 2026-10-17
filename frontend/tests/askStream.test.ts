@@ -37,7 +37,8 @@ test('recorded fixture survives every single-byte transport boundary', async () 
     received.map((m) => m.event),
     ['tool_call', 'tool_result', 'answer', 'done'],
   )
-  assert.equal(received[1].event === 'tool_result' && received[1].data.ms, null)
+  // The fixture is a recorded answer, so the tool time is measured.
+  assert.equal(received[1].event === 'tool_result' && typeof received[1].data.ms, 'number')
 })
 
 test('split UTF-8 Turkish text and CRLFs decode without corruption', async () => {

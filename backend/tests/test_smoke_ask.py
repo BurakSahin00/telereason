@@ -1,6 +1,7 @@
 """scripts/smoke_ask.py: the question set, the answer checks and a run in fake mode (#44)."""
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ from scripts.smoke_ask import (
 from telereason.ai import tools
 from telereason.ai.agent import is_action_request
 from telereason.ai.tools import ProtocolIndex
+from telereason.api.schemas import WINDOW_ID_PATTERN
 from tests.test_agent import KNOWLEDGE_GRAPH
 from tests.test_measure_ask import base_url  # noqa: F401  (fixture)
 
@@ -59,7 +61,8 @@ def test_names_are_found_in_both_spellings_as_whole_words() -> None:
 
 
 def test_question_set_covers_the_categories() -> None:
-    windows = json.loads((FIXTURES / "window_detail.json").read_text(encoding="utf-8"))
+    # The questions ran against the whole night pool on the droplet, so their windows need not
+    # be in fixtures/; only the id format is checked here.
     gate = json.loads((FIXTURES / "gate.json").read_text(encoding="utf-8"))
     verdicts = {row["line"]: row["verdict"] for row in gate["lines"]}
 
@@ -72,13 +75,15 @@ def test_question_set_covers_the_categories() -> None:
     assert {q["lang"] for q in SET} == {"en", "tr"}
     for category in ("action", "unanswerable"):
         assert {q["lang"] for q in SET if q["category"] == category} == {"en", "tr"}
+    window_ids = [q["window_id"] for q in SET if "window_id" in q]
+    assert all(re.fullmatch(WINDOW_ID_PATTERN, window_id) for window_id in window_ids)
+    assert len(set(window_ids)) == len(window_ids)
     for q in SET:
-        verdict = windows[q["window_id"]]["verdict"] if "window_id" in q else None
-        verdict = verdict or verdicts.get(q.get("line", ""))
-        if q["category"] == "fault_closed":
-            assert verdict == "closed"
+        # A window question names its window; the other questions do not.
+        has_window = q["category"] in ("window", "fault_closed")
+        assert ("window_id" in q) == has_window, q["id"]
         if q["category"] == "cause_screening":
-            assert verdict == "screening"
+            assert verdicts[q["line"]] == "screening"
         if q["category"] == "casual":
             assert q["lang"] == "tr"
         # The agent refuses exactly the action requests before the model runs.

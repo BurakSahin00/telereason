@@ -1,11 +1,11 @@
 {
-  "run_id": "2026-10-11-amd",
+  "run_id": "run-20261016-1",
   "timings_s": {
-    "gate": 461.54380083084106,
-    "facts": 81.77016472816467,
-    "scan": 1019.966655254364,
-    "report": 0.005202054977416992,
-    "total": 1565.5220742225647
+    "gate": 469.4342327019999,
+    "facts": 0.5049240789999203,
+    "scan": 1104.7385031989998,
+    "report": 0.17943471900025543,
+    "total": 1574.8713930689999
   },
   "lines": [
     {
@@ -13,87 +13,87 @@
       "verdict": "screening",
       "label": "Abnormal-behaviour screening only",
       "scanned": 4068,
-      "flagged": 1879,
+      "flagged": 1887,
       "threshold": 0.9,
       "items": [
         {
+          "window_id": "W-087879",
+          "task": "aursad",
+          "score": 0.9999578654278594,
+          "look_first": "setpoint_acc_5",
+          "note": "Abnormal-behaviour score: 1.0. The signals deviating most are setpoint_acc_5 (z = -3.29, difference = -0.00913) and feedback_tcp_4 (z = -2.03, difference = -2.96). A technician should look first at setpoint_acc_5.",
+          "verified": true
+        },
+        {
+          "window_id": "W-261501",
+          "task": "aursad",
+          "score": 0.9999352440427174,
+          "look_first": "setpoint_tcp_4",
+          "note": "The abnormal-behaviour score is 1.0. The signals deviating most are setpoint_tcp_4 (z = -1.98, difference = -2.91) and feedback_tcp_4 (z = -1.98, difference = -2.9). A technician should look first at the signal setpoint_tcp_4.",
+          "verified": true
+        },
+        {
+          "window_id": "W-728862",
+          "task": "aursad",
+          "score": 0.9999248185922625,
+          "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
+          "note": "The abnormal-behaviour score is 1.0. The signals effort_current_0 (z 1.92, difference 0.412) and feedback_tcp_4 (z -1.75, difference -2.57) deviate most from normal operation. A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
+          "verified": true
+        },
+        {
+          "window_id": "W-123608",
+          "task": "aursad",
+          "score": 0.999903606963926,
+          "look_first": "setpoint_acc_5",
+          "note": "The abnormal-behaviour score is 1.0. The most deviating signals are setpoint_acc_5 (z = -2.48, difference = -0.00695), effort_target_torque_5 (z = -2.47, difference = 0.0) and feedback_tcp_4 (z = -2.04, difference = -2.98). A technician should look first at the signal setpoint_acc_5.",
+          "verified": true
+        },
+        {
+          "window_id": "W-645386",
+          "task": "aursad",
+          "score": 0.9998972535177018,
+          "look_first": "setpoint_acc_5",
+          "note": "The abnormal-behaviour score is 1.0. Signals deviating most from normal are setpoint_acc_5 (z = -2.6, difference = -0.00729), effort_target_torque_5 (z = -2.6, difference = 0.0) and setpoint_acc_4 (z = -2.45, difference = -0.222). A technician should look first at setpoint_acc_5.",
+          "verified": true
+        },
+        {
+          "window_id": "W-914628",
+          "task": "aursad",
+          "score": 0.9998896418110235,
+          "look_first": "feedback_pos_4 vs setpoint_pos_4",
+          "note": "Abnormal-behaviour score: 1.0. The most deviating signals are feedback_tcp_4 (z = -2.06, difference = -3.01), setpoint_tcp_4 (z = -2.05, difference = -3.01) and feedback_tcp_3 (z = -1.9, difference = -4.54); the largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 3.87, max_abs_gap = 0.01, excess_over_typical = 0.01). A technician should look first at feedback_pos_4 vs setpoint_pos_4.",
+          "verified": true
+        },
+        {
+          "window_id": "W-758840",
+          "task": "aursad",
+          "score": 0.9998864355366095,
+          "look_first": "est_contact_force_5",
+          "note": "The abnormal-behaviour score is 1.0. The signal est_contact_force_5 deviates with a z value of 1.85 and a difference of 0.345, and est_contact_force_0 deviates with a z value of 1.59 and a difference of 4.19. A technician should look first at the signal named est_contact_force_5.",
+          "verified": true
+        },
+        {
+          "window_id": "W-580231",
+          "task": "aursad",
+          "score": 0.9998746560886502,
+          "look_first": "feedback_tcp_4",
+          "note": "The abnormal-behaviour score is 1.0. The signals that deviate most from normal operation are feedback_tcp_4 (z = -2.02, difference = -2.95), setpoint_tcp_4 (z = -2.01, difference = -2.95) and feedback_tcp_3 (z = -1.92, difference = -4.58). A technician should look first at feedback_tcp_4.",
+          "verified": true
+        },
+        {
+          "window_id": "W-742533",
+          "task": "aursad",
+          "score": 0.9998706493352074,
+          "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
+          "note": "The abnormal-behaviour score is 1.0. The signal vibration_2 deviates most with z -3.38 and difference -0.181, while feedback_tcp_4 shows a deviation of z -2.02 and difference -2.95 (setpoint_tcp_4 also has z -2.01 and difference -2.95). A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
+          "verified": true
+        },
+        {
           "window_id": "W-657587",
           "task": "aursad",
-          "score": 1.0,
-          "look_first": "joint_voltage_1",
-          "note": "The abnormal-behaviour score is 1.0. The signals that deviate most are joint_voltage_1 (z = -1.88, difference = 0.0), setpoint_tcp_4 (z = -1.83, difference = -2.56) and feedback_tcp_4 (z = -1.82, difference = -2.54). A technician should look first at the signal named joint_voltage_1.",
-          "verified": true
-        },
-        {
-          "window_id": "W-574006",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "feedback_tcp_4",
-          "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most from normal operation are feedback_tcp_4 (z = -1.98, difference = -2.76) and setpoint_tcp_4 (z = -1.97, difference = -2.77). A technician should look first at the signal named feedback_tcp_4.",
-          "verified": true
-        },
-        {
-          "window_id": "W-083850",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "vibration_2",
-          "note": "The abnormal‑behaviour score is 1.0. The most deviating signals are vibration_2 (z = -3.79, difference = -0.201), setpoint_acc_4 (z = -2.11, difference = -0.185) and effort_target_torque_5 (z = -2.01, difference = 0.0). A technician should look first at the signal named vibration_2.",
-          "verified": true
-        },
-        {
-          "window_id": "W-055777",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
-          "note": "The abnormal‑behaviour score for this window is 1.0. The signals that deviate most are setpoint_acc_5 (z = -2.11, difference = -0.00482) and effort_target_torque_5 (z = -2.11, difference = 0.0), while the plan‑vs‑measured gap for feedback_tcp_speed_0 vs setpoint_tcp_speed_0 shows a z = 3.72 and excess = 0.00548. A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
-          "verified": true
-        },
-        {
-          "window_id": "W-775654",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "feedback_tcp_4",
-          "note": "The abnormal‑behaviour score is 1.0. The signals deviating most are feedback_tcp_4 (z = -2.04, difference = -2.86) and setpoint_tcp_4 (z = -2.03, difference = -2.86). A technician should look first at the signal named feedback_tcp_4.",
-          "verified": true
-        },
-        {
-          "window_id": "W-959299",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
-          "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most are feedback_tcp_4 (z = -1.97, difference = -2.76) and feedback_pos_5 (z = 2.05, difference = 0.03). A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
-          "verified": true
-        },
-        {
-          "window_id": "W-278145",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "speed_scaling",
-          "note": "The abnormal‑behaviour score is 1.0. The most deviating signals are speed_scaling (z = -1.94, difference = -0.171), setpoint_speed_5 (z = 1.74, difference = 0.00761) and feedback_speed_5 (z = 1.72, difference = 0.00764). A technician should look first at the signal named speed_scaling.",
-          "verified": true
-        },
-        {
-          "window_id": "W-285205",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "est_contact_force_2",
-          "note": "The abnormal‑behaviour score is 1.0. The signal est_contact_force_2 deviates most with a z‑value of 1.7 and a difference of 13.9, while feedback_pos_0 and setpoint_pos_0 both show a z‑value of -1.63 and a difference of -0.907. A technician should look first at the signal named est_contact_force_2.",
-          "verified": true
-        },
-        {
-          "window_id": "W-246610",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "est_contact_force_5",
-          "note": "The abnormal‑behaviour score is 1.0. The signals that deviate most from normal operation are est_contact_force_5 (z = 1.76, difference = 0.354), robot_voltage (z = ‑1.71, difference = 0.0) and est_contact_force_2 (z = 1.68, difference = 13.8). A technician should look first at the signal named est_contact_force_5.",
-          "verified": true
-        },
-        {
-          "window_id": "W-199472",
-          "task": "aursad",
-          "score": 1.0,
-          "look_first": "feedback_tcp_speed_0 vs setpoint_tcp_speed_0",
-          "note": "The abnormal-behaviour score is 1.0. The most deviating signals are effort_current_0 (z = 1.87, difference = 0.345), setpoint_tcp_4 (z = -1.63, difference = -2.3) and feedback_tcp_4 (z = -1.63, difference = -2.28); the largest plan‑vs‑measured gap is feedback_tcp_speed_0 vs setpoint_tcp_speed_0 (z = 1.96, excess_over_typical = 0.00288). A technician should look first at feedback_tcp_speed_0 vs setpoint_tcp_speed_0.",
+          "score": 0.9998667166219093,
+          "look_first": "feedback_tcp_1 vs setpoint_tcp_1",
+          "note": "The abnormal‑behaviour score is 1.0. The signals setpoint_tcp_4 (z -1.87, difference -2.74) and feedback_tcp_4 (z -1.87, difference -2.73) deviate most from normal operation. A technician should look first at feedback_tcp_1 vs setpoint_tcp_1.",
           "verified": true
         }
       ]
@@ -107,83 +107,83 @@
       "threshold": null,
       "items": [
         {
+          "window_id": "W-107479",
+          "task": "pick_and_place",
+          "score": null,
+          "look_first": "feedback_pos_1 vs setpoint_pos_1",
+          "note": "The signals with the largest deviations are robot_voltage (z -37.7, difference -48.2), control_output_2 (z 25.9, difference 6.46) and control_output_3 (z 23.2, difference 5.38). The biggest plan‑vs‑measured gap is feedback_pos_1 vs setpoint_pos_1 (z 65.5, excess over typical 36.8). A technician should look first at the signal named feedback_pos_1 vs setpoint_pos_1.",
+          "verified": true
+        },
+        {
           "window_id": "W-246062",
           "task": "screwing",
           "score": null,
           "look_first": "true_force_5",
-          "note": "The most deviating signals are true_force_5 with z = -2160.0 and a difference of -2240.0, setpoint_tcp_5 with z = 34.3 and a difference of 1.21, and vibration_0 with z = 29.2 and a difference of 9.73. A technician should look first at the signal true_force_5.",
+          "note": "The signals with the largest deviations are true_force_5 (z = -62.2, difference = -2240.0), true_force_3 (z = -32.7, difference = -7440.0) and true_force_2 (z = -14.6, difference = -292.0). A technician should look first at the signal true_force_5.",
           "verified": true
         },
         {
-          "window_id": "W-119846",
+          "window_id": "W-573388",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The signals with the largest deviations are vibration_1 (z = 1410.0, difference = 3.1), vibration_2 (z = ‑217.0, difference = ‑9.58) and vibration_0 (z = ‑44.1, difference = ‑2.12). The biggest plan‑vs‑measured gap is for the pair feedback_tcp_1 vs setpoint_tcp_1 (z = 0.011, excess over typical = 0.001). A technician should look first at the signal vibration_1.",
+          "look_first": "true_force_4",
+          "note": "The signals with the largest deviations are true_force_4 (z = -56.9, difference = -10300.0), true_force_3 (z = 45.7, difference = 10400.0) and main_voltage (z = -31.2, difference = -28.6). The largest plan‑vs‑measured gap is feedback_speed_1 vs setpoint_speed_1 (z = 24.5, excess_over_typical = 76.0). A technician should look first at the signal true_force_4.",
           "verified": true
         },
         {
-          "window_id": "W-726372",
+          "window_id": "W-517135",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The most deviating signals are vibration_1 with a z‑value of 1170.0 and a difference of 2.58, vibration_2 with a z‑value of -223.0 and a difference of -9.85, and setpoint_tcp_speed_3 with a z‑value of 19.6 and a difference of 0.0907. The largest plan‑vs‑measured gap is feedback_tcp_1 vs setpoint_tcp_1 with a max absolute gap of 0.001, a z‑value of 0.011 and an excess over typical of 0.001. A technician should look first at the signal vibration_1.",
+          "look_first": "main_voltage",
+          "note": "The signals that deviate most from normal operation are main_voltage (z = -50.5, difference = -46.4), robot_voltage (z = -37.7, difference = -48.2) and feedback_speed_2 (z = -22.6, difference = -149.0). The largest plan‑vs‑measured gap is feedback_speed_2 vs setpoint_speed_2 (z = 24.3, excess_over_typical = 146.0). A technician should look first at the signal named main_voltage.",
           "verified": true
         },
         {
-          "window_id": "W-222671",
+          "window_id": "W-618258",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The signals that deviate most are vibration_1 (z = 1150.0, difference = 2.52), vibration_2 (z = ‑224.0, difference = ‑9.91) and setpoint_tcp_5 (z = 18.3, difference = 0.262). The largest plan‑vs‑measured gap is feedback_tcp_speed_0 vs setpoint_tcp_speed_0 (z = 0.0202, excess_over_typical = 0.0). A technician should look first at vibration_1.",
+          "look_first": "feedback_speed_2 vs setpoint_speed_2",
+          "note": "The signals with the largest deviations are feedback_speed_2 (z = -4.37, difference = -28.0), setpoint_speed_2 (z = -3.68, difference = -20.9) and feedback_speed_1 (z = 3.02, difference = 13.8). The greatest plan‑vs‑measured gap is feedback_speed_2 vs setpoint_speed_2 (z = 34.1, max_abs_gap = 205.0, excess_over_typical = 204.0). A technician should look first at feedback_speed_2 vs setpoint_speed_2.",
           "verified": true
         },
         {
-          "window_id": "W-836504",
+          "window_id": "W-595548",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The most deviating signals are vibration_1 (z = 1130.0, difference = 2.5), vibration_2 (z = ‑218.0, difference = ‑9.65) and vibration_0 (z = 51.9, difference = 2.49). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess_over_typical = 0.0339). A technician should look first at vibration_1.",
+          "look_first": "feedback_speed_2 vs setpoint_speed_2",
+          "note": "The signals with the largest deviations are feedback_speed_2 (z = -4.98, difference = -31.9), setpoint_speed_2 (z = -4.66, difference = -26.5) and feedback_tcp_speed_0 (z = -4.45, difference = -0.2). The biggest plan‑vs‑measured gap is feedback_speed_2 vs setpoint_speed_2 (z = 32.1, max_abs_gap = 193.0). A technician should look first at feedback_speed_2 vs setpoint_speed_2.",
           "verified": true
         },
         {
-          "window_id": "W-864504",
+          "window_id": "W-830381",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The signals that deviate most from normal operation are vibration_1 (z = 1120.0, difference = 2.47), vibration_2 (z = ‑224.0, difference = ‑9.92) and setpoint_tcp_speed_4 (z = 21.2, difference = 0.0497). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess over typical = 0.0339). A technician should look first at vibration_1.",
+          "look_first": "feedback_tcp_speed_3 vs setpoint_tcp_speed_3",
+          "note": "The signals that deviate most are setpoint_speed_1 (z = -4.2, difference = -17.7), feedback_speed_1 (z = -3.92, difference = -17.9) and feedback_speed_0 (z = -2.99, difference = -25.1). The largest plan‑vs‑measured gap is feedback_tcp_speed_3 vs setpoint_tcp_speed_3 (z = 22.6, max_abs_gap = 1.15, excess_over_typical = 1.14). A technician should look first at feedback_tcp_speed_3 vs setpoint_tcp_speed_3.",
           "verified": true
         },
         {
-          "window_id": "W-107479",
+          "window_id": "W-505522",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "feedback_tcp_2 vs setpoint_tcp_2",
-          "note": "The signals with the largest deviations are robot_voltage (z -38.2, difference -47.9), control_output_2 (z 33.1, difference 6.45) and control_output_3 (z 32.2, difference 5.37). The biggest plan‑vs‑measured gap is feedback_tcp_2 vs setpoint_tcp_2 (z 1030.0, excess over typical 0.394). A technician should look first at feedback_tcp_2 vs setpoint_tcp_2.",
+          "look_first": "feedback_pos_3 vs setpoint_pos_3",
+          "note": "The signals with the largest deviations are setpoint_speed_1 (z = -4.39, difference = -18.5), feedback_speed_1 (z = -4.07, difference = -18.6) and setpoint_speed_0 (z = -2.32, difference = -19.5). The biggest plan‑vs‑measured gap is for feedback_pos_3 vs setpoint_pos_3 (z = 22.1, excess_over_typical = 4.43). A technician should look first at feedback_pos_3 vs setpoint_pos_3.",
           "verified": true
         },
         {
-          "window_id": "W-644671",
+          "window_id": "W-309482",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The signals that deviate most from normal operation are vibration_1 (z = 998.0, difference = 2.2), vibration_2 (z = ‑224.0, difference = ‑9.88) and setpoint_tcp_speed_3 (z = 21.6, difference = 0.1). The largest plan‑vs‑measured gap is for feedback_speed_0 vs setpoint_speed_0 (max_abs_gap = 1.6, z = 0.661, excess_over_typical = 0.618). A technician should look first at vibration_1.",
+          "look_first": "feedback_speed_1 vs setpoint_speed_1",
+          "note": "The signals with the largest deviations are true_force_4 (z = -19.5, difference = -3520.0), true_force_3 (z = 16.1, difference = 3670.0), and feedback_tcp_speed_0 (z = -3.55, difference = -0.16). The biggest plan‑vs‑measured gap is feedback_speed_1 vs setpoint_speed_1 (z = 20.1, excess_over_typical = 62.6). A technician should look first at feedback_speed_1 vs setpoint_speed_1.",
           "verified": true
         },
         {
-          "window_id": "W-913866",
+          "window_id": "W-030053",
           "task": "pick_and_place",
           "score": null,
-          "look_first": "vibration_1",
-          "note": "The signals that deviate most are vibration_1 (z = 966.0, difference = 2.13), vibration_2 (z = ‑223.0, difference = ‑9.84) and vibration_0 (z = 42.5, difference = 2.04). The largest plan‑vs‑measured gap is feedback_pos_4 vs setpoint_pos_4 (z = 0.799, excess over typical = 0.0339). A technician should look first at vibration_1.",
-          "verified": true
-        },
-        {
-          "window_id": "W-787038",
-          "task": "pick_and_place",
-          "score": null,
-          "look_first": "vibration_1",
-          "note": "The most deviating signals are vibration_1 (z = 962.0, difference = 2.12), vibration_2 (z = ‑228.0, difference = ‑10.1) and setpoint_tcp_5 (z = ‑13.6, difference = ‑0.194). A technician should look first at the signal named vibration_1.",
+          "look_first": "true_force_3",
+          "note": "The signals that deviate most from normal operation are true_force_3 (z 19.9, difference 4530.0), true_force_4 (z 12.5, difference 2260.0) and true_force_2 (z 6.36, difference 127.0), while the largest plan‑vs‑measured gap is feedback_tcp_speed_2 vs setpoint_tcp_speed_2 (max_abs_gap 0.0256, z 2.13, excess_over_typical 0.0206). A technician should look first at true_force_3.",
           "verified": true
         }
       ]

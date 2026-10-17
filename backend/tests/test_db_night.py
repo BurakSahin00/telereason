@@ -23,7 +23,8 @@ from tests.test_report import fixture_night
 REPORT_WINDOW_IDS = [
     item["window_id"] for line in load("report_latest.json")["lines"] for item in line["items"]
 ]
-NEW_RUN = "run-20261016-1"
+# Later than the fixture night, so it must have another id.
+NEW_RUN = "run-20261017-1"
 
 
 def db_settings(tmp_path: Path, engine: EngineKind = "vllm") -> Settings:
@@ -56,7 +57,7 @@ def client(app: FastAPI) -> Iterator[TestClient]:
 
 
 def add_newer_run(db: NightDb) -> None:
-    """A small finished run after 11 Oct: one AURSAD window, one FactoryWave window."""
+    """A small finished run after the fixture night: one AURSAD window, one FactoryWave window."""
     gate = GateResponse(
         run_id=NEW_RUN,
         lines=[
@@ -91,7 +92,7 @@ def add_newer_run(db: NightDb) -> None:
             step="report",
             done=2,
             total=2,
-            finished_at="2026-10-16T09:30:00+00:00",
+            finished_at="2026-10-17T09:30:00+00:00",
             step_timings=StepTimings(gate=1.0, facts=2.0, scan=3.0, report=0.5),
             total_s=7.0,
             gate=gate,
@@ -110,7 +111,7 @@ def add_newer_run(db: NightDb) -> None:
         ("/api/examples", "examples.json"),
     ],
 )
-def test_stored_run_serves_the_11_oct_responses(client: TestClient, path: str, name: str) -> None:
+def test_stored_run_serves_the_fixture_responses(client: TestClient, path: str, name: str) -> None:
     response = client.get(path)
 
     assert response.status_code == 200
@@ -143,8 +144,10 @@ def test_window_list_pages_through_the_whole_night(client: TestClient) -> None:
         {k: v for k, v in d.items() if k in first["items"][0]}
         for d in list(load("window_detail.json").values())[:10]
     ]
-    assert flagged["total"] == 1879
-    assert by_score["items"][0]["score"] == 1.0
+    assert flagged["total"] == load("report_latest.json")["lines"][0]["flagged"]
+    assert (
+        by_score["items"][0]["score"] == load("report_latest.json")["lines"][0]["items"][0]["score"]
+    )
     assert closed["total"] == 3354
     assert {(i["score"], i["flagged"]) for i in closed["items"]} == {(None, None)}
 
@@ -207,7 +210,9 @@ def test_agent_reads_the_run_that_finished_last(app: FastAPI, db: NightDb) -> No
     for window_id in REPORT_WINDOW_IDS:
         expected = load("window_detail.json")[window_id]
         assert stored.store.get_window(window_id).model_dump(mode="json") == expected
-    assert stored.report is not None and stored.report.run_id == "2026-10-11-amd"
+    assert (
+        stored.report is not None and stored.report.run_id == load("report_latest.json")["run_id"]
+    )
     assert newer.gate.run_id == NEW_RUN
     assert newer.store.get_window("W-100001").verdict == "screening"
 
