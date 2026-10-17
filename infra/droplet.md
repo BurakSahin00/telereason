@@ -249,6 +249,52 @@ docker cp /root/backup/runs rocm:/root/data/
 
 Then start the app as in step 1 above. The run that finished last is served at once, and a small night reuses its gate.
 
+## Serve the live model to the demo
+
+The always-on demo runs in fake mode. With `REMOTE_API_URL` set, it answers every `/api` request from this droplet while the droplet's `/api/health` says ready, and from the recorded night otherwise (`backend/telereason/api/remote.py`). The droplet is reached through a Cloudflare quick tunnel and answers only requests that carry the demo's key.
+
+1. **Make a key** on your laptop. It goes only into `API_KEY` here and `REMOTE_API_KEY` on Railway; never into a file, an issue or a chat.
+
+   ```bash
+   python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+   ```
+
+2. **Start the app** with the stored 16 Oct night and the key, instead of step 4 of [Run the app](#run-the-app). `NIGHT_SOURCE=stored` keeps night runs off, so no visitor can change the night the demo serves. The demo applies the per-visitor question limit, so the droplet's own limit is off. `read -rs` takes the key without showing it.
+
+   ```bash
+   read -rs API_KEY
+   docker exec -d -w /root/telereason/backend \
+     -e ENGINE=vllm -e NIGHT_SOURCE=stored -e API_KEY="$API_KEY" -e RATE_LIMIT_ASK_PER_MIN=0 \
+     -e DATA_DIR=/root/data -e HF_HUB_OFFLINE=1 rocm \
+     bash -c 'python -m uvicorn telereason.api.main:app --workers 1 --host 0.0.0.0 --port 8000 > /root/logs/app.log 2>&1'
+   ```
+
+   With the `host` network, use `--host 127.0.0.1` (step 1 of [Run the app](#run-the-app)). After about three minutes the engine is ready:
+
+   ```bash
+   curl -s -H "x-telereason-key: $API_KEY" 127.0.0.1:8000/api/health     # "ready": true
+   curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8000/api/health     # 401 without the key
+   ```
+
+3. **Open the tunnel** on the droplet host. A quick tunnel needs no Cloudflare account and gets a new `trycloudflare.com` address every time it starts.
+
+   ```bash
+   curl -fsSLO https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+   dpkg -i cloudflared-linux-amd64.deb
+   systemd-run --unit=telereason-tunnel cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8000
+   sleep 15; journalctl -u telereason-tunnel --no-pager | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' | tail -1
+   ```
+
+4. **Point the demo at it.** In the Railway service, set `REMOTE_API_URL` to the tunnel address, `REMOTE_API_KEY` to the key, and `TRUST_PROXY_HEADERS=1` so the question limit counts each visitor. Railway deploys again.
+
+5. **Check** the demo in a private window:
+   - the top bar has no "Recorded night" chip, and the AMD panel shows the live GPU memory;
+   - a question streams its tool steps and answer; "Stop the robot" is refused with 0 tokens;
+   - a window page shows the signal chart;
+   - the "Start small night" button says night runs are switched off on this server.
+
+6. **Stop** with `systemctl stop telereason-tunnel`, or destroy the droplet. Within 15 s the demo answers from the recorded night again. Once the droplet is gone for good, remove `REMOTE_API_URL` on Railway: until then, one request every 15 s waits up to 3 s for a health check that cannot succeed.
+
 ## Check from your laptop
 
 A container port must not answer from outside:

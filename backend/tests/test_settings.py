@@ -102,3 +102,22 @@ def test_gate_mode_rejects_unknown_values(monkeypatch: pytest.MonkeyPatch) -> No
 
     with pytest.raises(ValueError, match="GATE_MODE"):
         load_settings()
+
+
+def test_live_backend_settings_default_to_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("REMOTE_API_URL", "REMOTE_API_KEY", "API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+
+    settings = load_settings()
+
+    assert (settings.remote_api_url, settings.remote_api_key, settings.api_key) == ("", "", "")
+
+
+def test_remote_api_url_drops_a_trailing_slash(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("REMOTE_API_URL", " https://live.example/ ")
+    monkeypatch.setenv("REMOTE_API_KEY", " key ")
+
+    settings = load_settings()
+
+    assert settings.remote_api_url == "https://live.example"
+    assert settings.remote_api_key == "key"

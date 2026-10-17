@@ -15,6 +15,7 @@ from telereason.api import ask, examples, gate, health, night_runs, report, syst
 from telereason.api.errors import ERROR_RESPONSES, install_error_handlers
 from telereason.api.frontend import mount_frontend
 from telereason.api.rate_limit import RateLimiter
+from telereason.api.remote import RemoteBackend, RemoteProxy, RequireKey
 from telereason.data.loader import DataStore, WindowSource
 from telereason.night.band import NightSignals, PoolNotAvailableError
 from telereason.night.run import NightRunner
@@ -112,6 +113,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         with suppress(asyncio.CancelledError):
             await opening
         await engine.close()
+        remote = getattr(app.state, "remote", None)
+        if remote is not None:
+            await remote.close()
 
 
 def db_night(settings: Settings) -> DbNight | None:
@@ -155,14 +159,7 @@ def night_runner(app: FastAPI) -> NightRunner | None:
 def create_app(settings: Settings | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="TeleReason", lifespan=lifespan)
     app.state.settings = settings or load_settings()
-    if app.state.settings.cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=list(app.state.settings.cors_origins),
-            allow_credentials=False,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+    install_middleware(app)
     # Building the engine imports no GPU code; vllm is imported only when it starts.
     app.state.engine = engine or create_engine(app.state.settings)
     app.state.data_store = DataStore(
@@ -185,6 +182,29 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     if app.state.settings.frontend_dist:
         mount_frontend(app, app.state.settings.frontend_dist)
     return app
+
+
+def install_middleware(app: FastAPI) -> None:
+    """The key check of a live backend, the live-backend proxy of the demo, and CORS.
+
+    Middleware added later runs first, so CORS goes last: it then also covers the answers that
+    come from the live backend.
+    """
+    settings: Settings = app.state.settings
+    app.state.remote = None
+    if settings.api_key:
+        app.add_middleware(RequireKey, key=settings.api_key)
+    if settings.remote_api_url and settings.engine == "fake":
+        app.state.remote = RemoteBackend(settings.remote_api_url, settings.remote_api_key)
+        app.add_middleware(RemoteProxy, remote=app.state.remote)
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_origins),
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
 
 app = create_app()

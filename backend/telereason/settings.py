@@ -41,6 +41,12 @@ class Settings:
     trust_proxy_headers: bool = False
     # Comma-separated browser origins allowed to call the API (for a separate Vercel frontend).
     cors_origins: tuple[str, ...] = ()
+    # Fake mode only: a live real-mode backend that answers /api while it is ready
+    # (telereason.api.remote), and the key it expects.
+    remote_api_url: str = ""
+    remote_api_key: str = ""
+    # Real mode behind a public tunnel: every /api request must carry this key.
+    api_key: str = ""
 
 
 def load_settings() -> Settings:
@@ -67,6 +73,9 @@ def load_settings() -> Settings:
         rate_limit_night_per_min=_per_min("RATE_LIMIT_NIGHT_PER_MIN", 2),
         trust_proxy_headers=os.environ.get("TRUST_PROXY_HEADERS", "").strip() == "1",
         cors_origins=_cors_origins(),
+        remote_api_url=os.environ.get("REMOTE_API_URL", "").strip().rstrip("/"),
+        remote_api_key=os.environ.get("REMOTE_API_KEY", "").strip(),
+        api_key=os.environ.get("API_KEY", "").strip(),
     )
 
 

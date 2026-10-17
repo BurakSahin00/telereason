@@ -239,7 +239,7 @@ function nightStartError(error: unknown): string {
     return 'A night run is already active. Wait for it to finish, then try again.'
   }
   if (error instanceof ApiError && error.code === 'not_implemented') {
-    return 'Night runs are not available from this backend yet. Try again after the night-run endpoint is ready.'
+    return 'Night runs are switched off on this server. The video shows a night run on the MI300X.'
   }
   return errorSentence(error, 'the new night run')
 }
