@@ -6,11 +6,14 @@ import { SegmentMeter } from './SegmentMeter.tsx'
 type ReportItem = components['schemas']['ReportItem']
 
 // Shared columns: window id, look-first signal, [score], note, chip.
+// Keyed to the row's own width (not the viewport): the row sits in a narrower
+// column next to the gate panel, so a viewport breakpoint opens the 5-column
+// layout before the row actually has room for it, crushing the note column.
 const SCORE_COLUMNS =
-  'grid-cols-[minmax(0,1fr)_auto] 2xl:grid-cols-[100px_220px_200px_minmax(0,1fr)_112px]'
+  'grid-cols-[minmax(0,1fr)_auto] @5xl:grid-cols-[100px_220px_200px_minmax(0,1fr)_112px]'
 const FACTS_COLUMNS =
-  'grid-cols-[minmax(0,1fr)_auto] 2xl:grid-cols-[100px_220px_minmax(0,1fr)_112px]'
-const CONTENT = 'col-span-2 min-w-0 2xl:col-span-1'
+  'grid-cols-[minmax(0,1fr)_auto] @5xl:grid-cols-[100px_220px_minmax(0,1fr)_112px]'
+const CONTENT = 'col-span-2 min-w-0 @5xl:col-span-1'
 
 export function VerifiedChip({ verified }: { verified: boolean }) {
   return (
@@ -53,7 +56,7 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
   if (items.length === 0) return <p className="px-4 py-3.5 text-muted">{empty}</p>
 
   return (
-    <ul>
+    <ul className="@container">
       {items.map((item, index) => {
         const first = index === 0
         return (
@@ -61,7 +64,7 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
             <Link
               to={`/windows/${encodeURIComponent(item.window_id)}`}
               aria-label={`Open window ${item.window_id}`}
-              className={`grid ${withScore ? SCORE_COLUMNS : FACTS_COLUMNS} items-center gap-x-4 gap-y-3 px-3 py-3.5 hover:bg-raised sm:px-4 2xl:gap-5 ${
+              className={`grid ${withScore ? SCORE_COLUMNS : FACTS_COLUMNS} items-center gap-x-4 gap-y-3 px-3 py-3.5 hover:bg-raised sm:px-4 @5xl:gap-5 ${
                 first && markFirst ? 'brackets brackets-attention' : ''
               }`}
             >
@@ -78,7 +81,7 @@ export function ReportRows({ items, withScore, markFirst, empty }: ReportRowsPro
                 </span>
               )}
               <Note item={item} clamp={withScore ? 'line-clamp-2' : 'line-clamp-1'} />
-              <span className="col-start-2 row-start-1 justify-self-end 2xl:col-start-auto 2xl:row-start-auto">
+              <span className="col-start-2 row-start-1 justify-self-end @5xl:col-start-auto @5xl:row-start-auto">
                 <VerifiedChip verified={item.verified} />
               </span>
             </Link>
