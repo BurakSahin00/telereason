@@ -39,6 +39,8 @@ class Settings:
     # Behind the Cloudflare tunnel every request comes from 127.0.0.1, so the client is
     # read from CF-Connecting-IP or X-Forwarded-For instead.
     trust_proxy_headers: bool = False
+    # Comma-separated browser origins allowed to call the API (for a separate Vercel frontend).
+    cors_origins: tuple[str, ...] = ()
 
 
 def load_settings() -> Settings:
@@ -64,7 +66,14 @@ def load_settings() -> Settings:
         rate_limit_ask_per_min=_per_min("RATE_LIMIT_ASK_PER_MIN", 10),
         rate_limit_night_per_min=_per_min("RATE_LIMIT_NIGHT_PER_MIN", 2),
         trust_proxy_headers=os.environ.get("TRUST_PROXY_HEADERS", "").strip() == "1",
+        cors_origins=_cors_origins(),
     )
+
+
+def _cors_origins() -> tuple[str, ...]:
+    raw = os.environ.get("CORS_ORIGINS", "")
+    origins = (origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip())
+    return tuple(dict.fromkeys(origins))
 
 
 def _gate_mode() -> GateMode:
