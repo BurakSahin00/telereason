@@ -149,13 +149,35 @@ The facts step is short because the app computes the window facts at startup tog
 
 Gate of that night ([fixtures/gate.json](fixtures/gate.json)): FactoryWave `closed`, AUROC 0.532 (interval 0.321 to 0.712, which includes 0.5, chance); AURSAD `screening`, AUROC 0.909 (interval 0.898 to 0.920). XGBoost 3.2.0 on the GPU ([results/run-20261016-1/gate.json](results/run-20261016-1/gate.json)).
 
-Software on the MI300X ([fixtures/system.json](fixtures/system.json), kept from the 11 Oct fixtures): ROCm 7.2.3, vLLM 0.27.1, Python 3.12.
+Software on the MI300X ([fixtures/system.json](fixtures/system.json), the app's `GET /api/system` response on the droplet on 17 Oct, [results/droplet-20261017/system.json](results/droplet-20261017/system.json)): GPU "AMD Instinct MI300X VF", ROCm 7.2.3, vLLM 0.27.1+rocm723, XGBoost 3.2.0, Python 3.12.
 
 Source: `fixtures/report_latest.json` and `fixtures/gate.json`, generated from the store of run `run-20261016-1`; the pool time and the XGBoost version from [results/run-20261016-1/](results/run-20261016-1/), which also describes the run.
 
 AURSAD screening at the threshold 0.9, measured in the 11 Oct run ([docs/business-value.md](docs/business-value.md)): 68.8% of the windows labelled faulty and 3.9% of the normal windows are flagged. These are rates within each class on lab data, not a guarantee for a production line.
 
-Live answer latency: measured in the final run, to be added.
+### Live answer latency
+
+Measured on the MI300X droplet on 17 Oct with `backend/scripts/measure_ask.py`, inside the container next to the app, with gpt-oss-120b serving the stored night `run-20261016-1` ([results/droplet-20261017/](results/droplet-20261017/)). At each concurrency level 8 questions were asked, that many at a time; three questions were sent in turn (a report question and two window questions, one of them in Turkish). "First event" is the time to the first event of the answer stream, "done" the time until the stream ends. No question ended in an error.
+
+With no night running ([measure.json](results/droplet-20261017/measure.json)); at every level all 8 questions were answered (`ANSWERED`):
+
+| Concurrency | First event p50 | First event p90 | Done p50 | Done p90 |
+|---:|---:|---:|---:|---:|
+| 1 | 795.4 ms | 1,330.9 ms | 1,880.2 ms | 2,063.0 ms |
+| 4 | 1,418.9 ms | 2,261.2 ms | 2,225.3 ms | 3,858.7 ms |
+| 8 | 1,067.1 ms | 1,494.8 ms | 2,300.1 ms | 2,487.6 ms |
+
+With a 300-window night started just before the questions ([measure_night.json](results/droplet-20261017/measure_night.json)). The night ran while the measurement questions were being asked, until it finished; each level records the night's step before and after it, and only concurrency 1 lies entirely within the scan step:
+
+| Concurrency | Night step (before → after) | First event p50 | First event p90 | Done p50 | Done p90 |
+|---:|---|---:|---:|---:|---:|
+| 1 | `scan` → `scan` | 2,438.7 ms | 4,926.8 ms | 6,320.6 ms | 7,424.8 ms |
+| 4 | `scan` → `report` | 1,017.5 ms | 1,790.6 ms | 2,625.1 ms | 3,353.0 ms |
+| 8 | `report` → `report` | 1,095.8 ms | 1,519.3 ms | 2,120.7 ms | 4,602.7 ms |
+
+During the scan step of a 300-window night, a single question (concurrency 1) took 7,424.8 ms at p90 until done; all 8 were answered (`ANSWERED`). The levels 4 and 8 ran after the scan step had ended or while it ended, so they do not measure questions asked during the scan. Once that night had finished, the app served it as the latest run, and the two windows the questions ask about are not in it: 2 of the 8 answers at concurrency 4 and 5 of the 8 at concurrency 8 are `NOT_ANSWERABLE`, so those two rows mix answers about two different runs.
+
+That night, `run-20261017-1` (300 windows, status `done`): scan (notes and verifier) 51.9 s; the gate, facts and report steps each took under 0.1 s, because a night smaller than the gate's test set reuses the latest stored gate, here the one of `run-20261016-1`. All 300 of 300 notes passed the verifier on the first attempt; none was retried (`night.notes` in measure_night.json).
 
 ## Before the event
 
