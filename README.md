@@ -51,6 +51,39 @@ flowchart LR
 
 All tests run in fake mode.
 
+## Night pipeline and gate
+
+The night is code, not an agent, and runs in a fixed order: gate, facts, scan, report. It starts from the AMD panel in the UI or with `POST /api/night-runs`. Measured durations are in [Measurements](#measurements).
+
+### Gate
+
+A full night runs the gate as its own process (`python -m telereason.night.gate`), with XGBoost on the GPU. A small night (`max_windows`, 300 from the UI) does not train it again: it reuses the verdicts and scores of the latest stored run that ran the gate.
+
+- **Features.** For every channel the gate sees eight summaries of the window: mean, standard deviation, minimum, maximum, first value, last value, slope per row and whether the channel is present.
+- **Grouped folds.** FactoryWave is split by recording day and AURSAD by experiment block, into 5 folds, so a test window never shares its day or block with a training window. Each line is trained on the 5 folds with 3 seeds; a window's score is 1 − P(normal), out of fold.
+- **Rules v0** decide each line in code (`backend/telereason/night/gate_rules.py`):
+  - Anomaly: open when the AUROC over all test windows is at least 0.80, the lower end of its group-bootstrap interval at least 0.70, and the AUROC within groups at least 0.75.
+  - Cause: on faulty windows, how often the true class is in the model's top 3 minus how often it is in the top 3 of a class-count prior; open when the difference is at least +10 points and the lower end of its group-bootstrap interval is above 0.
+  - K6 (label shuffle): with shuffled labels the AUROC is lower than the real one in all 19 shuffles (p ≤ 0.05).
+  - K7 (retraining): training fold 0 with seed 0 twice gives the same top class for every test window.
+- **Verdict.** A line with fewer than 3 groups, a failed K6 or K7, or neither anomaly nor cause open is `closed`: facts only, no fault name. A line with one of the two open is `screening`: the abnormal-behaviour score, no cause. A line with both open is `open`: diagnosis allowed. In the 16 Oct night no line is `open`: FactoryWave is `closed` and AURSAD is `screening`.
+
+### Facts
+
+For every window, code compares the window with windows labelled normal of the same task on other days (FactoryWave) or in other experiment blocks (AURSAD), using a robust z: the distance from the reference median divided by 1.4826 × MAD, with the standard deviation over the whole line as a floor. The facts are the three signals that deviate most, the planned-versus-measured pair with the largest gap, how many signals normal windows usually have but this one lacks, and the signal to look at first. They are computed at startup together with the night pool, so the facts step of the night only collects them.
+
+### Notes
+
+gpt-oss-120b writes two or three sentences per window from the facts. Code checks every note: each number must come from the facts and no fault name may appear. A note that fails is written once more; if that one fails too, the window is shown with its facts only. The check reads where numbers come from and which words are used, not what the note means, so passing does not make a note correct.
+
+### Report
+
+On AURSAD the report lists the windows scoring 0.9 or more, highest score first; on FactoryWave the windows with the largest deviations. Each line lists at most 10 windows, and only notes that passed the check are shown.
+
+### Live assistant
+
+On the droplet after the 16 Oct night, the ten fixed smoke questions (`backend/scripts/smoke_questions.json`) passed 10 of 10: every answer streamed, the 8 questions that are not action requests were answered by code or after at least one tool call, the 2 action requests were refused, and no answer on a `closed` or `screening` line named a fault ([results/run-20261016-1/smoke.json](results/run-20261016-1/smoke.json)).
+
 ## How to run
 
 ### One command (fake mode)
@@ -123,6 +156,12 @@ Source: `fixtures/report_latest.json` and `fixtures/gate.json`, generated from t
 AURSAD screening at the threshold 0.9, measured in the 11 Oct run ([docs/business-value.md](docs/business-value.md)): 68.8% of the windows labelled faulty and 3.9% of the normal windows are flagged. These are rates within each class on lab data, not a guarantee for a production line.
 
 Live answer latency: measured in the final run, to be added.
+
+## Before the event
+
+- The repository was created on 11 Oct 2026 at 22:19 (Turkey time, UTC+3) with only `README.md`, `LICENSE` and `.gitignore`. The event started on 12 Oct at 18:00; the repository setup followed at 19:56 and the first product code (the backend skeleton, #68) at 23:45 the same day (`git log --reverse`).
+- Before the event we ran experiments on FactoryBench (they are not in this repository) and one night on an MI300X on 11 Oct. The gate rules v0 were written on 10 Oct, before those measured runs, and have not changed since.
+- Until this pull request, `fixtures/` held the results of that 11 Oct night. They now come from `run-20261016-1`, run during the event. The two AURSAD per-class rates (68.8% and 3.9% at the threshold 0.9) are still from the 11 Oct run.
 
 ## Data and licenses
 
