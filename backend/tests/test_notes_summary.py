@@ -10,13 +10,11 @@ from telereason.store.db import NightDb, NoteRecord, RunRecord, WindowRecord
 
 RUN = "run-20261016-1"
 OTHER = "run-20261015-1"
-SECRET_TEXT = "Note text that must not reach the summary."
+NOTE_TEXT = "Note text that must not reach the summary."
 
 
 def note(window_id: str, attempt: int, passed: bool, tokens: int | None) -> NoteRecord:
-    return NoteRecord(
-        window_id, attempt, SECRET_TEXT, SECRET_TEXT, passed, completion_tokens=tokens
-    )
+    return NoteRecord(window_id, attempt, NOTE_TEXT, NOTE_TEXT, passed, completion_tokens=tokens)
 
 
 @pytest.fixture
@@ -62,7 +60,7 @@ def test_counts_the_notes_of_one_run(db: NightDb, tmp_path: Path) -> None:
         "completion_tokens_counted": 4,
         "mean_completion_tokens": 230.0,
     }
-    assert SECRET_TEXT not in out.read_text(encoding="utf-8")
+    assert NOTE_TEXT not in out.read_text(encoding="utf-8")
 
 
 def test_store_is_only_read(db: NightDb, tmp_path: Path) -> None:
