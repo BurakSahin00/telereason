@@ -7,8 +7,9 @@ main README and in `fixtures/` (generated from this run's store).
   The times in `startup.log` are UTC too.
 - Hardware: one AMD Instinct MI300X on AMD Developer Cloud.
 - Model: `openai/gpt-oss-120b` in vLLM (`startup.log`).
-- Software: ROCm 7.2.3 and vLLM 0.27.1+rocm723 as the app's `GET /api/system` reported them
-  on the droplet; XGBoost 3.2.0 (`gate.json`, `xgboost`), trained on the GPU (`device_used`).
+- Software: ROCm 7.2.3 and vLLM 0.27.1+rocm723 (`system.json`, `versions`); XGBoost 3.2.0
+  (`gate.json`, `xgboost`; `system.json` lists it as `null`), trained on the GPU
+  (`device_used`).
 - Started as in [infra/droplet.md](../../infra/droplet.md), "Night runs and measurements":
   the app with `NIGHT_SOURCE=db` and `GATE_DEVICE=auto` (step 1), then
   `POST /api/night-runs` with `{"max_windows": 100000}` (step 2), so the gate ran and every
@@ -19,6 +20,7 @@ main README and in `fixtures/` (generated from this run's store).
 |---|---|
 | `gate.json` | The gate's output for this night, copied as written: rules, XGBoost version and parameters, device, windows, trainings and seconds, and per line the verdict, the AUROC with its interval and the checks behind the verdict. It lists the gate's class labels, so it holds fault names; it is not served by the API. |
 | `smoke.json` | `smoke_ask.py` output, copied as written: ten fixed questions (`backend/scripts/smoke_questions.json`) against the running app, each with its events, timings and checks, and a summary line. |
+| `system.json` | The app's `GET /api/system` response on the droplet after the night, saved as returned: the software versions and the timings of this run. `gpu` is `null` because on the MI300X virtual function `rocm-smi` gives no product name, so the app cannot name the card; the fix is in a separate pull request. |
 | `startup.log` | Four lines of the app log, nothing else: the night pool (items read and kept, and its load time, which includes the window facts) and the vLLM engine start and ready times. |
 
 Not here: the window scores (`scores.jsonl`) and the SQLite store; `fixtures/` is generated

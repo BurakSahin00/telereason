@@ -97,7 +97,7 @@ The real engine runs on one MI300X droplet from AMD Developer Cloud, inside its 
 
 ## Measurements
 
-Every number here comes from a file in this repository.
+Every number here comes from a file in this repository, except the per-class rates at the end, which were measured in the 11 Oct run.
 
 The night run `run-20261016-1` (16 Oct), started from the app on one AMD Instinct MI300X ([fixtures/report_latest.json](fixtures/report_latest.json)):
 

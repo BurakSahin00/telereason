@@ -1,0 +1,1 @@
+{"gpu":null,"versions":{"rocm":"7.2.3","vllm":"0.27.1+rocm723","xgboost":null,"python":"3.12"},"last_night":{"run_id":"run-20261016-1","timings_s":{"gate":469.4342327019999,"facts":0.5049240789999203,"scan":1104.7385031989998,"report":0.17943471900025543,"total":1574.8713930689999}}}
