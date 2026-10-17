@@ -29,6 +29,9 @@ from tests.test_store import note, window
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 ASK_SSE = (FIXTURES / "ask.sse").read_text(encoding="utf-8")
+# The fixture's last event is `done`, with the recorded answer's time and tokens.
+ASK_DONE = json.loads(ASK_SSE.strip().split("\n\n")[-1].split("data: ", 1)[1])
+ASK_WINDOW = json.loads((FIXTURES / "ask_request.json").read_text(encoding="utf-8"))["window_id"]
 
 
 @pytest.fixture
@@ -68,7 +71,7 @@ def test_parse_sse_reads_the_fixture_and_skips_pings() -> None:
     messages = list(parse_sse(lines(": ping\n\n" + ASK_SSE)))
 
     assert [event for event, _ in messages] == ["tool_call", "tool_result", "answer", "done"]
-    assert messages[-1][1] == {"total_ms": 3394, "tokens": 255}
+    assert messages[-1] == ("done", ASK_DONE)
 
 
 def test_read_stream_records_timings_steps_and_tokens() -> None:
@@ -77,7 +80,7 @@ def test_read_stream_records_timings_steps_and_tokens() -> None:
     assert record["first_event_ms"] == 100.0
     assert record["done_ms"] == 500.0
     assert record["tool_steps"] == 1
-    assert record["completion_tokens"] == 255
+    assert record["completion_tokens"] == ASK_DONE["tokens"]
     assert (record["answer"], record["answer_source"]) == ("DIAGNOSIS_CLOSED", "tool")
     assert record["error"] is None
     assert [e["event"] for e in record["events"]] == ["tool_call", "tool_result", "answer", "done"]
@@ -107,12 +110,12 @@ def test_percentiles_interpolate_like_numpy() -> None:
 
 
 def test_ask_once_reads_the_fake_stream(base_url: str) -> None:
-    record = ask_once(ApiClient(base_url), "What went wrong in this record?", "W-246062")
+    record = ask_once(ApiClient(base_url), "What went wrong in this record?", ASK_WINDOW)
 
     assert record["status"] == 200
     assert record["error"] is None
     assert record["answer"] == "DIAGNOSIS_CLOSED"
-    assert (record["tool_steps"], record["completion_tokens"]) == (1, 255)
+    assert (record["tool_steps"], record["completion_tokens"]) == (1, ASK_DONE["tokens"])
     assert 0 < record["first_event_ms"] <= record["done_ms"]
 
 
@@ -138,12 +141,12 @@ def test_main_measures_every_level(base_url: str, tmp_path: Path) -> None:
         assert len(level["measurements"]) == 3
         assert level["first_event_ms"]["n"] == 3
         assert level["first_event_ms"]["p50"] <= level["done_ms"]["max"]
-        assert level["completion_tokens"]["max"] == 255
+        assert level["completion_tokens"]["max"] == ASK_DONE["tokens"]
     assert result["night"] is None
 
 
 def test_during_night_stops_when_the_night_never_scans(base_url: str, tmp_path: Path) -> None:
-    # Fake mode reports every run as the finished 11 Oct night, so no scan step is ever seen.
+    # Fake mode reports every run as the finished stored night, so no scan step is ever seen.
     out = tmp_path / "measure.json"
 
     code = main(["--base-url", base_url, "--out", str(out), "--during-night"])
