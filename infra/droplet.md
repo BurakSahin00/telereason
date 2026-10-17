@@ -2,10 +2,22 @@
 
 The demo, the real engine and the gate run on one AMD Instinct MI300X droplet from AMD Developer Cloud. The droplet is disposable: everything it needs comes from this repository, a GitHub Release or a download, so it is rebuilt with one script and destroyed after each work session. No code is edited on the droplet; it only pulls `main` or a tag.
 
+## On your own MI300X, in short
+
+About 30 minutes, most of it downloads. Every step is detailed below.
+
+1. Create a droplet from the vLLM quick-start image with one MI300X ([Before you start](#before-you-start)).
+2. Run `setup_droplet.sh` and wait until `bash setup_droplet.sh status` shows the model and data downloaded ([Set up](#set-up)).
+3. Build the frontend into the container ([Frontend in the ROCm container](#frontend-in-the-rocm-container)).
+4. Start the app with `NIGHT_SOURCE=stored`: it serves the stored 16 Oct night and answers live questions with gpt-oss-120b ([Run the app](#run-the-app), step 4).
+5. Open an SSH tunnel from your laptop and use `http://localhost:8000` ([Run the app](#run-the-app), step 6).
+
+To run a night yourself, start with `NIGHT_SOURCE=db` instead ([Night runs and measurements](#night-runs-and-measurements)). Destroy the droplet when you are done ([End of session](#end-of-session)).
+
 ## Before you start
 
 - A droplet from the **vLLM quick-start image** with one MI300X. The image runs a Docker container named `rocm` with ROCm 7.2.3, Python 3.12, PyTorch and vLLM.
-- Your SSH key added when the droplet is created. Teammates log in with the public keys on their GitHub accounts (`https://github.com/<user>.keys`); the script adds them. Private keys are never shared.
+- Your SSH key added when the droplet is created. To let teammates in, pass their GitHub user names with `--team`; the script adds the public keys on their GitHub accounts (`https://github.com/<user>.keys`). Without `--team` it adds none. Private keys are never shared.
 - Optional: a Hugging Face token. The script asks for it, keeps it in memory for the downloads, and never writes it to a file. Do not paste it into a command line, a file or a chat.
 
 The first SSH login can answer "Please wait while we get your droplet ready" for a few minutes after creation; wait and retry.
@@ -29,7 +41,7 @@ The script is safe to run again. Run it again after a reboot (the Docker port ru
 |---|---|---|
 | Firewall | `ufw` allows only OpenSSH; the image's 80/443 rules are removed. Docker-published ports bypass `ufw`, so inbound traffic to the container ports 8000, 8091, 8888 and 30000 is dropped in the `DOCKER-USER` chain | `ufw allows: OpenSSH` |
 | SSH | Password login off, root login with keys only. A drop-in file `01-telereason.conf` is written only if password login was on | `password login disabled` |
-| Team keys | Public keys from GitHub for the users in `--team` (default: `buraksal52`) are added to `authorized_keys`, without duplicates. A teammate first adds a public key under GitHub → Settings → SSH and GPG keys | `<user>: N new key(s)`, or a warning if the user has no public key on GitHub |
+| Team keys | Public keys from GitHub for the users in `--team` (default: none) are added to `authorized_keys`, without duplicates. A teammate first adds a public key under GitHub → Settings → SSH and GPG keys | `<user>: N new key(s)`, or a warning if the user has no public key on GitHub |
 | Versions | ROCm and Python must match the XGBoost build (the script stops otherwise); torch and vLLM are checked and never upgraded | `ROCm 7.2.3, Python 3.12, torch 2.11.0+…, vLLM 0.27.1+…` |
 | XGBoost | Our ROCm build from the GitHub Release (below), checked by SHA-256, installed with `--no-deps`; then a short training on the GPU | `xgboost 3.2.0 on cuda:0` |
 | Python extras | `scikit-learn` (the gate's AUROC) and the `hf` CLI if missing; every package already in the image is pinned as a constraint, so nothing there changes | `scikit-learn …, hf CLI present` |

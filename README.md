@@ -151,6 +151,12 @@ docker compose up --build
 
 Then open `http://localhost:8000`. The container serves the API and the built frontend; `http://localhost:8000/docs` lists the endpoints.
 
+The same container is published for each release, so it also runs without a clone:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/buraksahin00/telereason:v1.0
+```
+
 ### Development (two processes)
 
 Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) for the backend and Node 22 for the frontend (`frontend/.nvmrc`).
