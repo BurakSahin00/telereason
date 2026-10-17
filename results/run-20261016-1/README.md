@@ -21,10 +21,11 @@ main README and in `fixtures/` (generated from this run's store).
 | `gate.json` | The gate's output for this night, copied as written: rules, XGBoost version and parameters, device, windows, trainings and seconds, and per line the verdict, the AUROC with its interval and the checks behind the verdict. It lists the gate's class labels, so it holds fault names; it is not served by the API. |
 | `smoke.json` | `smoke_ask.py` output, copied as written: ten fixed questions (`backend/scripts/smoke_questions.json`) against the running app, each with its events, timings and checks, and a summary line. |
 | `system.json` | The app's `GET /api/system` response on the droplet after the night, saved as returned: the software versions and the timings of this run. `gpu` is `null` because on the MI300X virtual function `rocm-smi` gives no product name, so the app cannot name the card; the fix is in a separate pull request. |
+| `notes.json` | Note counts of this run, read from its store with `backend/scripts/notes_summary.py --db <store> --run run-20261016-1 --out notes.json` (the store opened read only): windows, windows with and without a note, note attempts, notes shown (last attempt passed the verifier), attempts that passed on the first and on the second try, and the mean completion tokens per attempt. Counts only, no note text. |
 | `startup.log` | Four lines of the app log, nothing else: the night pool (items read and kept, and its load time, which includes the window facts) and the vLLM engine start and ready times. |
 
-Not here: the window scores (`scores.jsonl`) and the SQLite store; `fixtures/` is generated
-from the store with `backend/scripts/make_fixtures.py`.
+Not here: the window scores (`scores.jsonl`) and the SQLite store. The files read from the
+store are `notes.json` (above) and `fixtures/`, generated with `backend/scripts/make_fixtures.py`.
 
 ## AURSAD rates within each class
 
