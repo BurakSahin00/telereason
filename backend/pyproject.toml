@@ -5,6 +5,7 @@ description = "Overnight robot-cell telemetry scan and live maintenance assistan
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi",
+    "httpx",
     "huggingface-hub",
     "numpy",
     "pyarrow",
@@ -13,7 +14,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx",
     "pytest",
     "ruff",
 ]
