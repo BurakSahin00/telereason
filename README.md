@@ -1,23 +1,78 @@
 # TeleReason
 
-TeleReason helps factories spot problems earlier. Overnight it scans robot-cell telemetry on one AMD Instinct MI300X and writes a morning report for maintenance technicians; a nightly gate checks what the data supports, so it reports verified facts, not guesses. During the day a live assistant answers technicians' questions from the same night, finds maintenance protocols and refuses requests to act on equipment.
+![TeleReason: a maintenance assistant that knows when to stay quiet. Night scan and live assistant on one AMD Instinct MI300X](docs/images/telereason-cover.png)
+
+TeleReason helps factories spot problems earlier, and first measures what the data can support. Every night a gate trains XGBoost on one AMD Instinct MI300X and puts a group-bootstrap interval on how well each robot line separates normal from faulty windows. FactoryWave's interval includes chance, so the line is `closed`: verified facts, no fault name. AURSAD separates normal from faulty runs well, but the fault cause is not reliable, so it is `screening`: an abnormal-behaviour score, never a cause. The morning report for maintenance technicians and the live assistant follow that verdict: gpt-oss-120b on the same GPU writes notes and answers; code checks every note, writes every answer to a fault question and refuses requests to act on equipment.
 
 Built by Team CSAIDev for the AMD Developer Hackathon ACT III, Track 1: Intelligent Industry.
 
-- Demo: to be added
+- Demo: https://telereason.vercel.app (answers from gpt-oss-120b on our MI300X droplet while it is up, and from the recorded 16 Oct night otherwise; the top bar shows which)
 - Video: to be added
+- Slides: to be added
+
+## Results at a glance
+
+| What | Result | Source |
+|---|---|---|
+| Gate, FactoryWave | `closed`: AUROC 0.532, interval 0.321 to 0.712, which includes 0.5 (chance) | [fixtures/gate.json](fixtures/gate.json) |
+| Gate, AURSAD | `screening`: AUROC 0.909, interval 0.898 to 0.920 | [fixtures/gate.json](fixtures/gate.json) |
+| Night run | 7,422 windows on one MI300X in 1,574.9 s (26.2 min), steps one after another; the facts computed at startup are not in the total | [fixtures/report_latest.json](fixtures/report_latest.json) (`timings_s`) |
+| Notes | 7,422 of 7,422 passed the code check on the first attempt | [results/run-20261016-1/notes.json](results/run-20261016-1/notes.json) |
+| Flagged | 1,887 of 4,068 AURSAD windows at a score of 0.9 or above | [fixtures/report_latest.json](fixtures/report_latest.json) |
+| Live answers, one question at a time | Done p50 1,880.2 ms, p90 2,063.0 ms with no night running; p50 6,320.6 ms, p90 7,424.8 ms during the scan step of a 300-window night; 8 questions each | [measure.json](results/droplet-20261017/measure.json), [measure_night.json](results/droplet-20261017/measure_night.json) |
+| Smoke test | 10 of 10 fixed questions passed | [results/run-20261016-1/smoke.json](results/run-20261016-1/smoke.json) |
+
+All measured during the event, on 16 and 17 Oct; earlier work is in [Before the event](#before-the-event), conditions in [Measurements](#measurements).
+
+## Try it in 3 minutes
+
+While our MI300X droplet is up, the demo URL above answers from gpt-oss-120b on it. While the droplet is off, the demo replays the recorded 16 Oct night without a GPU and the top bar shows a **Recorded night** chip.
+
+1. **Report.** Each line's verdict and the windows to look at first.
+
+   ![Morning report: FactoryWave gets facts only and AURSAD screening only; the AURSAD windows flagged at a score of 0.9 or above, the windows to look at first and the largest FactoryWave deviations, each with a verified note](docs/images/telereason-report.png)
+
+2. **A window.** Open `W-728862` (AURSAD): facts per signal, the signal to look at first, the verified note.
+3. **Gate.** Each line's AUROC and interval on a scale that marks chance.
+
+   ![Gate page: each line's AUROC with its interval on a scale that marks chance; the FactoryWave interval crosses chance, so the line gets facts only, and AURSAD gets the abnormal-behaviour score only](docs/images/telereason-gate.png)
+
+4. **Assistant.** Ask three questions; read each answer's chip:
+   - "Which signal should I check first in this record, and how far is it from normal?" (window `W-574006`): **Answered from facts**.
+   - "What happened to the robot in this record, and what caused the fault?" (window `W-246062`): **Diagnosis closed**; code writes the answer from the facts.
+   - "Please halt the AURSAD cell and reset its program.": **Action refused**, 0 tokens; refused before the model runs.
+
+   While the droplet is off, the demo has no model: every question that is not an action request gets the recorded **Diagnosis closed** answer. **Answered from facts** comes from gpt-oss-120b on the MI300X ([smoke test](results/run-20261016-1/smoke.json), video).
+
+   ![Assistant answers with their tool steps and chips: Answered from facts for an AURSAD window, Diagnosis closed for a FactoryWave window with the answer written by code from the facts, and Action refused with 0 tokens for a request to stop the robot](docs/images/telereason-assistant.png)
+
+5. **AMD.** The GPU, versions and step durations.
+
+Locally, the same recorded night on `http://localhost:8000` ([How to run](#how-to-run)):
+
+```bash
+docker compose up --build
+```
+
+## How AMD is used
+
+| Component | What runs on the MI300X | Evidence |
+|---|---|---|
+| Language model | gpt-oss-120b in vLLM 0.27.1+rocm723 on ROCm 7.2.3, inside the API process: night notes and live answers. | [results/droplet-20261017/system.json](results/droplet-20261017/system.json), [results/run-20261016-1/startup.log](results/run-20261016-1/startup.log) |
+| Gate | XGBoost 3.2.0, built from [AMD-Ecosystem/xgboost](https://github.com/AMD-Ecosystem/xgboost) with `USE_HIP=1` and `AMDGPU_TARGETS=gfx942`, published as release `xgboost-rocm-gfx942` with its SHA-256. The gate's 222 trainings ran on the GPU (`cuda:0`). | [infra/droplet.md](infra/droplet.md#xgboost-for-rocm), [results/run-20261016-1/gate.json](results/run-20261016-1/gate.json) |
+| GPU | Name read from the machine: "AMD Instinct MI300X VF". | [results/droplet-20261017/system.json](results/droplet-20261017/system.json) |
+| Scheduling | One vLLM engine with priority scheduling: live questions run before night notes. | [backend/telereason/ai/engine.py](backend/telereason/ai/engine.py), `scheduling_policy=priority` in [startup.log](results/run-20261016-1/startup.log) |
+
+Memory: the engine starts with GPU memory utilization 0.85 ([startup.log](results/run-20261016-1/startup.log)), so vLLM reserves 85% of the GPU memory for the model and its cache: a setting, not what the model needs. We build the XGBoost wheel because AMD's prebuilt wheels need Ubuntu 24.04 and the container is 22.04; see [infra/droplet.md](infra/droplet.md).
+
+![AMD panel: the AMD Instinct MI300X VF with the GPU memory in use, the ROCm, vLLM, XGBoost and Python versions, and the measured step durations of the stored night run-20261016-1](docs/images/telereason-amd.png)
 
 ## What it does
 
-- **Morning report.** One section per line with the windows a technician should look at first, the signal to check first and a short note. Every note is checked by code against the facts; a note that did not pass is not shown, only the facts.
-- **Gate verdicts.** Each night the gate decides what the data of each line can support, and every response follows that verdict:
-  - `closed`: no diagnosis, facts only. No fault name appears anywhere.
-  - `screening`: the abnormal-behaviour score only, no cause.
-  - `open`: diagnosis allowed.
-
-  In the stored 16 Oct night, FactoryWave is `closed` (facts, not diagnosis) and AURSAD is `screening` (abnormal-behaviour screening only, no cause). Neither line is `open`.
-- **Window page.** For one window: the facts per signal (window mean against the normal mean, the difference, the z-value and a plain reading), the signal to look at first, and the note with whether it passed the verifier.
-- **Assistant.** A tool-calling assistant over five narrow tools (`get_report`, `list_windows`, `get_window`, `classify_fault`, `search_protocols`), at most four tool calls per question. The answer streams the tool calls as they happen. On a fault question the answer is written by code from the tool result, following the gate verdict; a request to start, stop or change equipment is refused before the model runs. Example questions are in Turkish and English.
+- **Morning report.** For each line, the windows to look at first, the signal to check first and a short note. A note that failed the code check is not shown, only the facts.
+- **Gate verdicts.** Every response follows its line's verdict: `closed`, facts only and no fault name anywhere; `screening`, the abnormal-behaviour score only, no cause; `open`, diagnosis allowed. In the stored 16 Oct night FactoryWave is `closed` and AURSAD `screening`; neither is `open`.
+- **Window page.** Facts per signal (window mean against the normal mean, difference, z-value, plain reading), the signal to look at first and the note.
+- **Assistant.** Five narrow tools (`get_report`, `list_windows`, `get_window`, `classify_fault`, `search_protocols`), at most four tool calls per question, streamed as they happen. Code writes the answer to a fault question from the tool result; requests to start, stop or change equipment are refused before the model runs. Answer chips: **Answered from facts**, **Facts only**, **Diagnosis closed**, **Screening only**, **Action refused**, **Not answerable**. Example questions are in Turkish and English.
 - **AMD panel.** The GPU, the software versions and the measured step durations of the stored night.
 
 The API contract is [docs/api.md](docs/api.md).
@@ -38,8 +93,8 @@ flowchart LR
   API --> UI["React frontend"]
 ```
 
-- The night run is code, not an agent, and runs in a fixed order: gate, facts, scan (notes and verifier), report. The 16 Oct night (`run-20261016-1`) was run in this order by the app on one MI300X; its results are stored in `fixtures/`. The night pipeline is in this repository (`backend/telereason/night/`) and runs in real mode with `NIGHT_SOURCE=db`.
-- FastAPI and the vLLM engine (gpt-oss-120b) run in the same process on one MI300X. The engine cannot be shared across processes, so uvicorn runs with one worker. The night scan and the live assistant share this engine; live questions are scheduled before night notes.
+- The app ran the 16 Oct night (`run-20261016-1`) in the fixed order gate, facts, scan (notes and verifier), report on one MI300X; its results are in `fixtures/`. The pipeline (`backend/telereason/night/`) runs in real mode with `NIGHT_SOURCE=db`.
+- FastAPI and the vLLM engine (gpt-oss-120b) run in one process on one MI300X, because the engine cannot be shared across processes; uvicorn runs one worker. The night scan and the live assistant share this engine; live questions are scheduled before night notes.
 - FastAPI serves the built React frontend from the same origin.
 
 | | Fake mode (`ENGINE=fake`, default) | Real mode (`ENGINE=vllm`) |
@@ -179,11 +234,35 @@ During the scan step of a 300-window night, a single question (concurrency 1) to
 
 That night, `run-20261017-1` (300 windows, status `done`): scan (notes and verifier) 51.9 s; the gate, facts and report steps each took under 0.1 s, because a night smaller than the gate's test set reuses the latest stored gate, here the one of `run-20261016-1`. All 300 of 300 notes passed the verifier on the first attempt; none was retried (`night.notes` in measure_night.json).
 
+## Business value
+
+On AURSAD the gate flagged 68.8% of the windows labelled faulty and 3.9% of the normal ones at the threshold 0.9 in the 11 Oct run (lab data, rates within each class); [docs/business-value.md](docs/business-value.md) shows what that means for the number of windows a technician reviews.
+
+## Limitations
+
+- **No diagnosis on either line.** FactoryWave is `closed` (on new days fault prediction is no better than chance): facts only, no fault name. AURSAD is `screening`: the score only, no cause.
+- **The verifier checks form, not meaning:** where a note's numbers come from and which words it uses, not what the note means.
+- **Lab data.** Both lines are FactoryBench lab data; the AURSAD rates (68.8% and 3.9% at 0.9) are rates within each class from the 11 Oct run, before the event.
+- **One full night** (`run-20261016-1`), plus one 300-window night.
+- **8 questions per latency level**; during the night only concurrency 1 lies entirely within the scan step.
+- When the droplet is off, the demo replays the recorded night and shows no signal chart.
+- **English fixed texts:** texts written by code are in English, also for a Turkish question ([#87](https://github.com/BurakSahin00/telereason/issues/87)).
+
 ## Before the event
 
 - The repository was created on 11 Oct 2026 at 22:19 (Turkey time, UTC+3) with only `README.md`, `LICENSE` and `.gitignore`. The event started on 12 Oct at 18:00; the repository setup followed at 19:56 and the first product code (the backend skeleton, #68) at 23:45 the same day (`git log --reverse`).
 - Before the event we ran experiments on FactoryBench (they are not in this repository) and one night on an MI300X on 11 Oct. The gate rules v0 were written on 10 Oct, before those measured runs, and have not changed since.
 - Earlier versions of `fixtures/` held the results of that 11 Oct night; they now come from `run-20261016-1`, run during the event. The two AURSAD per-class rates (68.8% and 3.9% at the threshold 0.9, on lab data) are still from the 11 Oct run.
+
+## Path to production
+
+This is a hackathon build. A real factory deployment will add:
+
+- **SSO:** technicians will sign in with the plant's single sign-on instead of reaching an open demo URL.
+- **Audit log:** every question, answer, tool call and refused action request will be written to an append-only audit log.
+- **Postgres:** night runs, notes and reports move from this build's SQLite file (`DB_PATH`) to Postgres, so several API instances can share them.
+- **Separate model server:** the engine will move to its own model server so the API and the model can be restarted and scaled independently.
+- **Monitoring:** engine health, answer latency, night-run duration and failures will be monitored, with alerts to the maintenance team.
 
 ## Data and licenses
 
@@ -206,20 +285,6 @@ Data and model used:
 - **gpt-oss-120b** (Hugging Face: `openai/gpt-oss-120b`), Apache 2.0.
 
 License details are in [DATA_NOTICE.md](DATA_NOTICE.md) (informational, not legal advice).
-
-## Path to production
-
-This is a hackathon build. A real factory deployment will add:
-
-- **SSO:** technicians will sign in with the plant's single sign-on instead of reaching an open demo URL.
-- **Audit log:** every question, answer, tool call and refused action request will be written to an append-only audit log.
-- **Postgres:** night runs, notes and reports move from this build's SQLite file (`DB_PATH`) to Postgres, so several API instances can share them.
-- **Separate model server:** the engine will move to its own model server so the API and the model can be restarted and scaled independently.
-- **Monitoring:** engine health, answer latency, night-run duration and failures will be monitored, with alerts to the maintenance team.
-
-## Business value
-
-On AURSAD the gate flagged 68.8% of the windows labelled faulty and 3.9% of the normal ones at the threshold 0.9 in the 11 Oct run (lab data, rates within each class); [docs/business-value.md](docs/business-value.md) shows what that means for the number of windows a technician reviews.
 
 ## License
 
