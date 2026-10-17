@@ -56,8 +56,11 @@ function SystemPanels() {
             />
             <p className="mt-3 text-muted">
               {fake
-                ? 'Recorded GPU memory from the 11 Oct run. This is not a live measurement.'
+                ? 'Recorded on the MI300X droplet. This is not a live measurement.'
                 : 'GPU memory reported by the backend.'}
+            </p>
+            <p className="mt-3 text-muted">
+              vLLM reserves 85% of GPU memory for its cache, so this is not what the model needs.
             </p>
           </>
         ) : (
@@ -79,7 +82,7 @@ function SystemPanels() {
             </div>
           ))}
         </dl>
-        {fake && <p className="mt-4 text-muted">Versions recorded with the stored night.</p>}
+        {fake && <p className="mt-4 text-muted">Versions recorded on the MI300X droplet.</p>}
       </Panel>
     </>
   )
@@ -130,7 +133,7 @@ function NightRunPanel() {
     <Panel title="Run a small night" brackets>
       <p className="text-muted">
         {fake
-          ? 'Preview the recorded night result. Fake mode does not start a new scan.'
+          ? 'This demo replays a recorded night; it does not start a new scan.'
           : 'Scan up to 300 telemetry windows and follow each step.'}
       </p>
       <button

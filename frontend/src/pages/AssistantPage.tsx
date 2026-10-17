@@ -163,7 +163,8 @@ export function AssistantPage() {
           <Panel title="Conversation" brackets>
             {fake && (
               <p className="mb-5 border border-dotted border-line-strong p-3 text-muted">
-                Fake mode replays the same recorded answer for every question.
+                This demo replays one recorded answer for every question. Live answers run on the
+                MI300X; the video shows them.
               </p>
             )}
             {conversations.length === 0 ? (
