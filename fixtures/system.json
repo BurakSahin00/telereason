@@ -1,12 +1,12 @@
 {
   "gpu": {
-    "name": "AMD Instinct MI300X",
+    "name": "AMD Instinct MI300X VF",
     "memory_total_gib": 191.6875,
-    "memory_used_gib": 160.11891174316406
+    "memory_used_gib": 157.85338592529297
   },
   "versions": {
     "rocm": "7.2.3",
-    "vllm": "0.27.1",
+    "vllm": "0.27.1+rocm723",
     "xgboost": "3.2.0",
     "python": "3.12"
   },

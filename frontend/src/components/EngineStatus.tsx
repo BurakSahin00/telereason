@@ -1,7 +1,7 @@
 import { useHealth } from '../api/queries.ts'
 import { StatusChip } from './StatusChip.tsx'
 
-/** Engine chip from /api/health, plus a FAKE DATA chip so a demo is never recorded in fake mode. */
+/** Engine chip from /api/health, plus a Recorded night chip so a demo in fake mode is never mistaken for a live run. */
 export function EngineStatus() {
   const health = useHealth()
 
@@ -16,7 +16,7 @@ export function EngineStatus() {
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
-      {health.data.engine === 'fake' && <StatusChip>Fake data</StatusChip>}
+      {health.data.engine === 'fake' && <StatusChip>Recorded night</StatusChip>}
       {health.data.ready ? (
         <StatusChip tone="open">Engine ready</StatusChip>
       ) : (

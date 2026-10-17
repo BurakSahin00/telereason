@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import type { components } from '../api/schema.d.ts'
 import { ApiError } from '../api/client.ts'
 import { useWindowSignals } from '../api/signals.ts'
-import { errorSentence } from '../api/queries.ts'
+import { errorSentence, useHealth } from '../api/queries.ts'
 import { SignalDataError } from './signalData.ts'
 import { ErrorState, LoadingBlocks } from './LoadStates.tsx'
 import { Panel } from './Panel.tsx'
@@ -19,6 +19,8 @@ export function SignalChartPanel({ detail }: { detail: components['schemas']['Wi
   ]
   const [selected, setSelected] = useState(channels[0] ?? '')
   const signals = useWindowSignals(detail.window_id, selected)
+  const health = useHealth()
+  const fake = health.data?.engine === 'fake'
   const missing =
     signals.error instanceof ApiError &&
     [404, 501, 503].includes(signals.error.status) &&
@@ -54,7 +56,9 @@ export function SignalChartPanel({ detail }: { detail: components['schemas']['Wi
               <ErrorState
                 message={
                   missing
-                    ? 'The time series and normal band are not available for this signal yet. You can still read the measured facts.'
+                    ? fake
+                      ? 'The recorded demo does not include the time series. The video shows this chart on the MI300X.'
+                      : 'The time series and normal band are not available for this signal yet. You can still read the measured facts.'
                     : signals.error instanceof SignalDataError
                       ? signals.error.message
                       : errorSentence(signals.error, 'the signal chart')

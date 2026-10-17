@@ -1,0 +1,1438 @@
+{
+  "measured_at": "2026-10-17T12:06:21+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "health": {
+    "status": "ok",
+    "engine": "vllm",
+    "model": "openai/gpt-oss-120b",
+    "ready": true
+  },
+  "system": {
+    "gpu": {
+      "name": "AMD Instinct MI300X VF",
+      "memory_total_gib": 191.6875,
+      "memory_used_gib": 158.0010871887207
+    },
+    "versions": {
+      "rocm": "7.2.3",
+      "vllm": "0.27.1+rocm723",
+      "xgboost": "3.2.0",
+      "python": "3.12"
+    },
+    "last_night": {
+      "run_id": "run-20261016-1",
+      "timings_s": {
+        "gate": 469.4342327019999,
+        "facts": 0.5049240789999203,
+        "scan": 1104.7385031989998,
+        "report": 0.17943471900025543,
+        "total": 1574.8713930689999
+      }
+    }
+  },
+  "settings": {
+    "levels": [
+      1,
+      4,
+      8
+    ],
+    "requests_per_level": 8,
+    "during_night": true,
+    "questions": [
+      {
+        "question": "What did last night's report find?",
+        "window_id": null
+      },
+      {
+        "question": "Which signal should I check first in this record?",
+        "window_id": "W-574006"
+      },
+      {
+        "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+        "window_id": "W-246062"
+      }
+    ]
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "requests": 8,
+      "errors": 0,
+      "wall_s": 47.94,
+      "first_event_ms": {
+        "n": 8,
+        "p50": 2438.7,
+        "p90": 4926.8,
+        "max": 5419.0
+      },
+      "done_ms": {
+        "n": 8,
+        "p50": 6320.6,
+        "p90": 7424.8,
+        "max": 8969.2
+      },
+      "tool_steps": {
+        "n": 8,
+        "p50": 1.0,
+        "p90": 1.0,
+        "max": 1
+      },
+      "completion_tokens": {
+        "n": 8,
+        "p50": 152.5,
+        "p90": 169.8,
+        "max": 202
+      },
+      "measurements": [
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 1569.9,
+          "done_ms": 6762.9,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 1569.9
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+                "ms": 0
+              },
+              "ms": 1569.9
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown)."
+              },
+              "ms": 6762.8
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 6761,
+                "tokens": 156
+              },
+              "ms": 6762.8
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 4715.9,
+          "done_ms": 5741.6,
+          "tool_steps": 1,
+          "completion_tokens": 85,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 4715.9
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+                "ms": 1
+              },
+              "ms": 4715.9
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+              },
+              "ms": 5741.5
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 5739,
+                "tokens": 85
+              },
+              "ms": 5741.5
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 5419.0,
+          "done_ms": 8969.2,
+          "tool_steps": 1,
+          "completion_tokens": 202,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 5419.0
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-246062: 3 facts, look first at true_force_5",
+                "ms": 1
+              },
+              "ms": 5419.0
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir."
+              },
+              "ms": 8969.0
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 8967,
+                "tokens": 202
+              },
+              "ms": 8969.1
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 1298.2,
+          "done_ms": 6533.7,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 1298.2
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+                "ms": 0
+              },
+              "ms": 1298.2
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown)."
+              },
+              "ms": 6533.6
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 6531,
+                "tokens": 156
+              },
+              "ms": 6533.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 2796.3,
+          "done_ms": 4641.6,
+          "tool_steps": 1,
+          "completion_tokens": 93,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "The line has screening only and no cause is named; check the look-first signal **feedback_tcp_4**.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 2796.3
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+                "ms": 1
+              },
+              "ms": 2796.4
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "The line has screening only and no cause is named; check the look-first signal **feedback_tcp_4**."
+              },
+              "ms": 4641.5
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 4639,
+                "tokens": 93
+              },
+              "ms": 4641.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 3889.1,
+          "done_ms": 6298.5,
+          "tool_steps": 1,
+          "completion_tokens": 149,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "En çok sapan sinyal **true_force_5** (z = -62.2).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 3889.1
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-246062: 3 facts, look first at true_force_5",
+                "ms": 1
+              },
+              "ms": 3889.2
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "En çok sapan sinyal **true_force_5** (z = -62.2)."
+              },
+              "ms": 6298.4
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 6296,
+                "tokens": 149
+              },
+              "ms": 6298.4
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 1275.7,
+          "done_ms": 6342.7,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 1275.7
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+                "ms": 0
+              },
+              "ms": 1275.7
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown)."
+              },
+              "ms": 6342.6
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 6340,
+                "tokens": 156
+              },
+              "ms": 6342.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 2081.1,
+          "done_ms": 2649.3,
+          "tool_steps": 1,
+          "completion_tokens": 85,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 2081.1
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+                "ms": 1
+              },
+              "ms": 2081.2
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+              },
+              "ms": 2649.2
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 2647,
+                "tokens": 85
+              },
+              "ms": 2649.2
+            }
+          ],
+          "status": 200
+        }
+      ],
+      "night_step": {
+        "before": "scan",
+        "after": "scan"
+      }
+    },
+    {
+      "concurrency": 4,
+      "requests": 8,
+      "errors": 0,
+      "wall_s": 7.11,
+      "first_event_ms": {
+        "n": 8,
+        "p50": 1017.5,
+        "p90": 1790.6,
+        "max": 1974.5
+      },
+      "done_ms": {
+        "n": 8,
+        "p50": 2625.1,
+        "p90": 3353.0,
+        "max": 4060.5
+      },
+      "tool_steps": {
+        "n": 8,
+        "p50": 1.0,
+        "p90": 1.0,
+        "max": 1
+      },
+      "completion_tokens": {
+        "n": 8,
+        "p50": 156.0,
+        "p90": 208.7,
+        "max": 320
+      },
+      "measurements": [
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 788.5,
+          "done_ms": 3049.8,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 788.5
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+                "ms": 0
+              },
+              "ms": 788.6
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown)."
+              },
+              "ms": 3049.5
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 3046,
+                "tokens": 156
+              },
+              "ms": 3049.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 1522.1,
+          "done_ms": 1894.5,
+          "tool_steps": 1,
+          "completion_tokens": 85,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 1522.1
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+                "ms": 1
+              },
+              "ms": 1522.1
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+              },
+              "ms": 1894.4
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1890,
+                "tokens": 85
+              },
+              "ms": 1894.4
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 1974.5,
+          "done_ms": 3049.4,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir (z = -62.2).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 1974.5
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-246062: 3 facts, look first at true_force_5",
+                "ms": 1
+              },
+              "ms": 1974.6
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Bu kayıtta en çok sapan sinyal **true_force_5**’tir (z = -62.2)."
+              },
+              "ms": 3048.7
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 3043,
+                "tokens": 156
+              },
+              "ms": 3048.7
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 787.4,
+          "done_ms": 3048.6,
+          "tool_steps": 1,
+          "completion_tokens": 156,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 787.4
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 4068 scanned; FactoryWave closed, 3354 scanned",
+                "ms": 0
+              },
+              "ms": 787.4
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – scanned 4068 windows, flagged 1887. Top windows: W-087879, W-261501, W-728862, W-123608, W-645386 (all score 1.0, look-first signals shown).  \n- **FactoryWave** – verdict **closed** – scanned 3354 windows. Top windows: W-107479, W-246062, W-573388, W-517135, W-618258 (look-first signals shown)."
+              },
+              "ms": 3048.2
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 3040,
+                "tokens": 156
+              },
+              "ms": 3048.3
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 1090.9,
+          "done_ms": 1408.9,
+          "tool_steps": 1,
+          "completion_tokens": 85,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 1090.9
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "W-574006: 3 facts, look first at feedback_tcp_4",
+                "ms": 1
+              },
+              "ms": 1091.0
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "The look-first signal for this window is **feedback_tcp_4**. AURSAD has abnormal-behaviour screening only; the data does not support naming a cause. Normal and faulty runs separate well, but the fault cause is not reliable. (AUROC 0.909, interval 0.898 to 0.920)."
+              },
+              "ms": 1408.8
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1407,
+                "tokens": 85
+              },
+              "ms": 1408.8
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 1711.8,
+          "done_ms": 2201.7,
+          "tool_steps": 1,
+          "completion_tokens": 161,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 1711.8
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-246062 does not exist",
+                "ms": 1
+              },
+              "ms": 1711.9
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 2201.6
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 2198,
+                "tokens": 161
+              },
+              "ms": 2201.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 440.2,
+          "done_ms": 4060.5,
+          "tool_steps": 1,
+          "completion_tokens": 320,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s morning report:\n\n- **AURSAD** – verdict **screening** – scanned 165 windows, flagged 68. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – scanned 135 windows. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 440.2
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 165 scanned; FactoryWave closed, 135 scanned",
+                "ms": 0
+              },
+              "ms": 440.2
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s morning report:\n\n- **AURSAD** – verdict **screening** – scanned 165 windows, flagged 68. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – scanned 135 windows. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3)."
+              },
+              "ms": 4060.4
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 4054,
+                "tokens": 320
+              },
+              "ms": 4060.4
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 944.1,
+          "done_ms": 1470.1,
+          "tool_steps": 1,
+          "completion_tokens": 102,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 944.1
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-574006 does not exist",
+                "ms": 1
+              },
+              "ms": 944.1
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 1470.0
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1465,
+                "tokens": 102
+              },
+              "ms": 1470.0
+            }
+          ],
+          "status": 200
+        }
+      ],
+      "night_step": {
+        "before": "scan",
+        "after": "report"
+      }
+    },
+    {
+      "concurrency": 8,
+      "requests": 8,
+      "errors": 0,
+      "wall_s": 4.61,
+      "first_event_ms": {
+        "n": 8,
+        "p50": 1095.8,
+        "p90": 1519.3,
+        "max": 1520.2
+      },
+      "done_ms": {
+        "n": 8,
+        "p50": 2120.7,
+        "p90": 4602.7,
+        "max": 4609.3
+      },
+      "tool_steps": {
+        "n": 8,
+        "p50": 1.0,
+        "p90": 1.0,
+        "max": 1
+      },
+      "completion_tokens": {
+        "n": 8,
+        "p50": 129.0,
+        "p90": 319.0,
+        "max": 319
+      },
+      "measurements": [
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 508.5,
+          "done_ms": 4587.3,
+          "tool_steps": 1,
+          "completion_tokens": 319,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 508.5
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 165 scanned; FactoryWave closed, 135 scanned",
+                "ms": 0
+              },
+              "ms": 508.5
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3)."
+              },
+              "ms": 4587.2
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 4585,
+                "tokens": 319
+              },
+              "ms": 4587.2
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 1096.3,
+          "done_ms": 1711.6,
+          "tool_steps": 1,
+          "completion_tokens": 102,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 1096.3
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-574006 does not exist",
+                "ms": 1
+              },
+              "ms": 1096.3
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 1711.4
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1703,
+                "tokens": 102
+              },
+              "ms": 1711.4
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 1520.2,
+          "done_ms": 2121.3,
+          "tool_steps": 1,
+          "completion_tokens": 129,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 1520.2
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-246062 does not exist",
+                "ms": 1
+              },
+              "ms": 1520.2
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 2121.1
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 2117,
+                "tokens": 129
+              },
+              "ms": 2121.2
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 524.1,
+          "done_ms": 4599.8,
+          "tool_steps": 1,
+          "completion_tokens": 319,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 524.1
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 165 scanned; FactoryWave closed, 135 scanned",
+                "ms": 0
+              },
+              "ms": 524.1
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3)."
+              },
+              "ms": 4599.7
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 4588,
+                "tokens": 319
+              },
+              "ms": 4599.7
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 1095.4,
+          "done_ms": 1710.7,
+          "tool_steps": 1,
+          "completion_tokens": 102,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 1095.4
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-574006 does not exist",
+                "ms": 0
+              },
+              "ms": 1095.5
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 1710.5
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1698,
+                "tokens": 102
+              },
+              "ms": 1710.6
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Bu kayıtta normalden en çok sapan sinyal hangisi?",
+          "window_id": "W-246062",
+          "first_event_ms": 1518.9,
+          "done_ms": 2120.1,
+          "tool_steps": 1,
+          "completion_tokens": 129,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-246062"
+                }
+              },
+              "ms": 1518.9
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-246062 does not exist",
+                "ms": 2
+              },
+              "ms": 1518.9
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 2119.9
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 2105,
+                "tokens": 129
+              },
+              "ms": 2119.9
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "What did last night's report find?",
+          "window_id": null,
+          "first_event_ms": 536.4,
+          "done_ms": 4609.3,
+          "tool_steps": 1,
+          "completion_tokens": 319,
+          "answer": "ANSWERED",
+          "answer_source": "model",
+          "answer_text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3).",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "args": {}
+              },
+              "ms": 536.4
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_report",
+                "summary": "AURSAD screening, 165 scanned; FactoryWave closed, 135 scanned",
+                "ms": 0
+              },
+              "ms": 536.4
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "ANSWERED",
+                "answer_source": "model",
+                "text": "Last night’s report:\n\n- **AURSAD** – verdict **screening** – 165 windows scanned, 68 flagged. Top windows: W-758840 (score 1.0, look-first est_contact_force_5), W-849710 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-127631 (score 1.0, look-first feedback_speed_5 vs setpoint_speed_5), W-787063 (score 1.0, look-first est_contact_force_1), W-058209 (score 0.999, look-first feedback_speed_5 vs setpoint_speed_5).\n\n- **FactoryWave** – verdict **closed** – 135 windows scanned. Top windows: W-748168 (look-first feedback_pos_3 vs setpoint_pos_3), W-733120 (look-first feedback_tcp_4 vs setpoint_tcp_4), W-948844 (look-first feedback_pos_0 vs setpoint_pos_0), W-615372 (look-first feedback_tcp_3 vs setpoint_tcp_3), W-839372 (look-first feedback_tcp_3 vs setpoint_tcp_3)."
+              },
+              "ms": 4609.3
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 4592,
+                "tokens": 319
+              },
+              "ms": 4609.3
+            }
+          ],
+          "status": 200
+        },
+        {
+          "question": "Which signal should I check first in this record?",
+          "window_id": "W-574006",
+          "first_event_ms": 1107.9,
+          "done_ms": 1723.9,
+          "tool_steps": 1,
+          "completion_tokens": 102,
+          "answer": "NOT_ANSWERABLE",
+          "answer_source": "tool",
+          "answer_text": "I cannot answer this question with the data.",
+          "error": null,
+          "events": [
+            {
+              "event": "tool_call",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "args": {
+                  "window_id": "W-574006"
+                }
+              },
+              "ms": 1107.9
+            },
+            {
+              "event": "tool_result",
+              "data": {
+                "turn": 1,
+                "tool": "get_window",
+                "summary": "window W-574006 does not exist",
+                "ms": 1
+              },
+              "ms": 1107.9
+            },
+            {
+              "event": "answer",
+              "data": {
+                "answer": "NOT_ANSWERABLE",
+                "answer_source": "tool",
+                "text": "I cannot answer this question with the data."
+              },
+              "ms": 1723.8
+            },
+            {
+              "event": "done",
+              "data": {
+                "total_ms": 1706,
+                "tokens": 102
+              },
+              "ms": 1723.9
+            }
+          ],
+          "status": 200
+        }
+      ],
+      "night_step": {
+        "before": "report",
+        "after": "report"
+      }
+    }
+  ],
+  "night": {
+    "run_id": "run-20261017-1",
+    "max_windows": 300,
+    "status": "done",
+    "total": 300,
+    "timings_s": {
+      "gate": 0.024674488000073325,
+      "facts": 0.01657978399998683,
+      "scan": 51.89912856199999,
+      "report": 0.009476972999891586
+    },
+    "notes": {
+      "windows": 300,
+      "passed_first_attempt": 300,
+      "passed_final": 300,
+      "retried": 0
+    }
+  }
+}
