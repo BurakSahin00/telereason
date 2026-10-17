@@ -49,7 +49,7 @@ By line: 10 flagged AURSAD, 1 unflagged AURSAD, 10 FactoryWave.
   normal.
 - `health.json`, `examples.json` and `night_run_started.json`: kept from the previous fixtures,
   because a night run does not store them. Example questions: `docs/api.md`.
-- `gpu` and `versions` in `system.json`: kept from the previous fixtures.
+- `gpu` and `versions` in `system.json`: saved `GET /api/system` response `system.json` (run `run-20261016-1`, file time 2026-10-17 12:16 UTC): the GPU as `rocm-smi` reported it and the installed versions.
 - `ask.sse`: recorded `POST /api/ask` stream `ask.sse` for `ask_request.json` (run `run-20261016-1`, file time 2026-10-16 23:07 UTC): one real answer, so `total_ms`, `tokens` and `ms` are that answer's.
 - The first fixtures took the kept values from the 11 Oct MI300X run: the model, the gate's
   XGBoost version, `memory_total_gib` (the card's memory), `memory_used_gib` (card peak in the

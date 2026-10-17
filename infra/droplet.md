@@ -198,8 +198,16 @@ docker exec rocm python3 /root/bench/measure_ask.py --out /root/bench/measure_ni
   --during-night --max-windows 300 --db /root/data/telereason.sqlite
 ```
 
+Save the app's `GET /api/system` response next to them (the GPU, the software versions and the timings of the night served), on the droplet host:
+
+```bash
+mkdir -p /root/bench
+docker exec rocm curl -s 127.0.0.1:8000/api/system > /root/bench/system.json
+```
+
 - `smoke_ask.py` logs one summary line and exits 1 when a check fails. `--gate-json` adds the gate's class labels to the fault names it looks for; use a run that ran the gate.
 - `measure_ask.py --during-night` starts a night of `--max-windows` windows and measures while it is in its scan step. Each level records the night's step before and after it, so a level that outlasted the scan shows it. `--db` adds how many notes passed the verifier on the first attempt and in the end.
+- When a small night finishes, the app serves that night, and questions about windows of the previous night answer `NOT_ANSWERABLE`. In a `--during-night` measurement, only the levels whose `night_step` is `scan` both before and after measure latency during a night.
 - The windows in `smoke_questions.json` are from the stored 11 Oct night; they are in the store after a full night, not always after a small one.
 
 Copy the results to your laptop:
