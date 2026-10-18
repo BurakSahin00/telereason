@@ -37,7 +37,7 @@ While our MI300X droplet is up, the demo URL above answers from gpt-oss-120b on 
    ![Gate page: each line's AUROC with its interval on a scale that marks chance; the FactoryWave interval crosses chance, so the line gets facts only, and AURSAD gets the abnormal-behaviour score only](docs/images/telereason-gate.png)
 
 4. **Assistant.** Ask three questions; read each answer's chip:
-   - "Which signal should I check first in this record, and how far is it from normal?" (window `W-574006`): **Answered from facts**.
+   - "Which signal should I check first in this record, and how far is it from normal?" (window `W-728862`): **Answered from facts**.
    - "What happened to the robot in this record, and what caused the fault?" (window `W-246062`): **Diagnosis closed**; code writes the answer from the facts.
    - "Please halt the AURSAD cell and reset its program.": **Action refused**, 0 tokens; refused before the model runs.
 
