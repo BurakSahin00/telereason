@@ -2,13 +2,12 @@
 
 ![TeleReason: a maintenance assistant that knows when to stay quiet. Night scan and live assistant on one AMD Instinct MI300X](docs/images/telereason-cover.png)
 
-TeleReason helps factories spot problems earlier, and first measures what the data can support. Every night a gate trains XGBoost on one AMD Instinct MI300X and puts a group-bootstrap interval on how well each robot line separates normal from faulty windows. FactoryWave's interval includes chance, so the line is `closed`: verified facts, no fault name. AURSAD separates normal from faulty runs well, but the fault cause is not reliable, so it is `screening`: an abnormal-behaviour score, never a cause. The morning report for maintenance technicians and the live assistant follow that verdict: gpt-oss-120b on the same GPU writes notes and answers; code checks every note, writes every answer to a fault question and refuses requests to act on equipment.
+TeleReason helps factories spot problems earlier, and first measures what the data can support. Each full night, a gate trains XGBoost on one AMD Instinct MI300X and puts a group-bootstrap interval on how well each robot line separates normal from faulty windows. FactoryWave's interval includes chance, so the line is `closed`: verified facts, no fault name. AURSAD separates normal from faulty runs well, but the fault cause is not reliable, so it is `screening`: an abnormal-behaviour score, never a cause. The morning report for maintenance technicians and the live assistant follow that verdict: gpt-oss-120b on the same GPU writes notes and answers; code checks every note, writes every answer to a fault question and refuses requests to act on equipment.
 
 Built by Team CSAIDev for the AMD Developer Hackathon ACT III, Track 1: Intelligent Industry.
 
 - Demo: https://telereason.vercel.app (answers from gpt-oss-120b on our MI300X droplet while it is up, and from the recorded 16 Oct night otherwise; the top bar shows which)
-- Video: to be added
-- Slides: to be added
+- Slides: [docs/TeleReason-slides.pdf](docs/TeleReason-slides.pdf)
 
 ## Results at a glance
 
@@ -42,7 +41,7 @@ While our MI300X droplet is up, the demo URL above answers from gpt-oss-120b on 
    - "What happened to the robot in this record, and what caused the fault?" (window `W-246062`): **Diagnosis closed**; code writes the answer from the facts.
    - "Please halt the AURSAD cell and reset its program.": **Action refused**, 0 tokens; refused before the model runs.
 
-   While the droplet is off, the demo has no model: every question that is not an action request gets the recorded **Diagnosis closed** answer. **Answered from facts** comes from gpt-oss-120b on the MI300X ([smoke test](results/run-20261016-1/smoke.json), video).
+   While the droplet is off, the demo has no model: every question that is not an action request gets the recorded **Diagnosis closed** answer. **Answered from facts** comes from gpt-oss-120b on the MI300X ([smoke test](results/run-20261016-1/smoke.json)).
 
    ![Assistant answers with their tool steps and chips: Answered from facts for an AURSAD window, Diagnosis closed for a FactoryWave window with the answer written by code from the facts, and Action refused with 0 tokens for a request to stop the robot](docs/images/telereason-assistant.png)
 
@@ -183,7 +182,7 @@ npm run dev
 
 Opens on `http://localhost:5173` and proxies `/api` to the backend above. See [frontend/DESIGN.md](frontend/DESIGN.md) for the UI conventions.
 
-Checks: `uv run ruff check .` and `uv run pytest -q` in `backend/`; `npm run lint`, `npm run build` and `npm test` in `frontend/`.
+Checks: `uv sync --group night` once (the gate tests need XGBoost and scikit-learn), then `uv run ruff check .` and `uv run pytest -q` in `backend/`; `npm run lint`, `npm run build` and `npm test` in `frontend/`.
 
 ### Real mode (one AMD Instinct MI300X)
 
@@ -291,6 +290,16 @@ Data and model used:
 - **gpt-oss-120b** (Hugging Face: `openai/gpt-oss-120b`), Apache 2.0.
 
 License details are in [DATA_NOTICE.md](DATA_NOTICE.md) (informational, not legal advice).
+
+## Team
+
+Team CSAIDev:
+
+| Name | GitHub | Worked on |
+|---|---|---|
+| Burak Şahin | [@BurakSahin00](https://github.com/BurakSahin00) | Backend, night pipeline and gate, MI300X runs |
+| Hale Sezin Özorman | [@seziyy](https://github.com/seziyy) | Frontend and design, slides |
+| Ömer Burak Şal | [@buraksal52](https://github.com/buraksal52) | Vercel and Railway deployment, video |
 
 ## License
 
