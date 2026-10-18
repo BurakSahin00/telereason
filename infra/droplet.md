@@ -293,8 +293,9 @@ The always-on demo runs in fake mode. With `REMOTE_API_URL` set, it answers ever
    ```bash
    curl -fsSLO https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
    dpkg -i cloudflared-linux-amd64.deb
-   systemd-run --unit=telereason-tunnel cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8000
-   sleep 15; journalctl -u telereason-tunnel --no-pager | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' | tail -1
+   mv /root/cloudflared.log /root/cloudflared.log.old 2>/dev/null
+   systemd-run --unit=telereason-tunnel cloudflared tunnel --no-autoupdate --logfile /root/cloudflared.log --url http://127.0.0.1:8000
+   sleep 15; grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' /root/cloudflared.log | tail -1
    ```
 
 4. **Point the demo at it.** In the Railway service, set `REMOTE_API_URL` to the tunnel address, `REMOTE_API_KEY` to the key, and `TRUST_PROXY_HEADERS=1` so the question limit counts each visitor. Railway deploys again.
