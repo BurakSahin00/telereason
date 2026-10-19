@@ -284,12 +284,23 @@ The destination is `DATA_DIR/factorybench` (`DATA_DIR` defaults to `./data`). Ex
 
 Data and model used:
 
-- **FactoryBench** (Hugging Face: `FactoryBench/FactoryBench`). Its card asks users to also cite AURSAD and voraus-AD.
-- **AURSAD** (Zenodo record 4487073).
-- **voraus-AD**.
+- **FactoryBench**: Merzouki et al., *FactoryBench: Evaluating Industrial Machine Understanding*, arXiv 2605.07675. Hugging Face `FactoryBench/FactoryBench`, revision `2561c2c9`, whose card states CC BY 4.0. The named release `Forgis/FactoryBench` states CC BY-NC 4.0 for the same data; see [DATA_NOTICE.md](DATA_NOTICE.md).
+- **AURSAD**: Leporowski et al., Zenodo record 4487073, CC BY 4.0. Used as incorporated in FactoryBench.
+- **voraus-AD**: Brockmann et al., arXiv 2311.04765, CC BY-NC-SA 4.0. Cited because the FactoryBench card asks for it; not used (the night pipeline excludes its items).
 - **gpt-oss-120b** (Hugging Face: `openai/gpt-oss-120b`), Apache 2.0.
 
 License details are in [DATA_NOTICE.md](DATA_NOTICE.md) (informational, not legal advice).
+
+If you build on this work, please also cite FactoryBench:
+
+```bibtex
+@article{factorybench2026,
+  title   = {FactoryBench: Evaluating Industrial Machine Understanding},
+  author  = {Merzouki, Yanis and Izquierdo, Coral and Ignuta-Ciuncanu, Matei and G{\'o}mez-Bracamonte, Marcos and Maggioni, Riccardo and Lombardi, Alessandro and Mazzoleni, Camilla and Martelli, Federico and G{\"u}nther, Bal{\'a}zs and Petersen, Jonas and Petersen, Philipp},
+  journal = {arXiv preprint arXiv:2605.07675},
+  year    = {2026}
+}
+```
 
 ## Team
 
